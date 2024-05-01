@@ -392,3 +392,18 @@ Version: 2015-12-08 2023-04-07"
 ;; enable emacs everywhere in markdown mode
 (remove-hook 'emacs-everywhere-init-hooks #'emacs-everywhere-major-mode-org-or-markdown) ; or #'org-mode if that's what's present
 (add-hook 'emacs-everywhere-init-hooks #'gfm-mode)
+
+;; added windows resize key-bindings
+(use-package! hydra
+  :defer
+  :config
+  (defhydra hydra/evil-window-resize (:color red)
+    "Resize window"
+    ("h" evil-window-decrease-width "decrease width")
+    ("j" evil-window-decrease-height "decrease height")
+    ("k" evil-window-increase-height "increase height")
+    ("l" evil-window-increase-width "increase width")
+    ("q" nil "quit")))
+(map! :leader
+      :prefix ("w" . "window")
+      :n "r" #'hydra/evil-window-resize/body)
