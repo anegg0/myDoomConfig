@@ -299,7 +299,7 @@
 ;; gptel
 (use-package! gptel
   :config
-  (setq! gptel-api-key "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"))
+  (setq! gptel-api-key <my-chatGPT-API-key>))
 
 (use-package! epa-file
   :config
