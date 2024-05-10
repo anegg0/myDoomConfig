@@ -296,10 +296,6 @@
              #'(lambda ()
                  (and yas-root-directory
                       (null (yas-get-snippet-tables)))))
-;; gptel
-(use-package! gptel
-  :config
-  (setq! gptel-api-key <my-chatGPT-API-key>))
 
 (use-package! epa-file
   :config
@@ -407,3 +403,73 @@ Version: 2015-12-08 2023-04-07"
 (map! :leader
       :prefix ("w" . "window")
       :n "r" #'hydra/evil-window-resize/body)
+
+(setq auth-sources '("~/.authinfo.gpg" "~/.authinfo" "~/.netrc"))
+
+;; gptel
+(use-package! gptel
+  :config
+  (after! gptel
+    (setq gptel-openai-api-key (getenv "OPENAI_API_KEY"))))
+
+
+;;Assuming the buffer finishes successfully, close after 1 second.
+(defun bury-compile-buffer-if-successful (buffer string)
+  "Bury a compilation buffer if succeeded without warnings "
+  (when (and (eq major-mode 'comint-mode)
+             (string-match "finished" string)
+             (not
+              (with-current-buffer buffer
+                (search-forward "warning" nil t))))
+    (run-with-timer 1 nil
+                    (lambda (buf)
+                      (let ((window (get-buffer-window buf)))
+                        (when (and (window-live-p window)
+                                   (eq buf (window-buffer window)))
+                          (delete-window window))))
+                    buffer)))
+
+(add-hook 'compilation-finish-functions #'bury-compile-buffer-if-successful)
+
+;; if the process exits, kill the vterm buffer
+(setq vterm-kill-buffer-on-exit t)
+
+;; enable follow-mode so the treemacs cursor follows the buffer file. Also increase the default width to show more stuff.
+(after! treemacs
+  (treemacs-follow-mode 1)
+  (setq treemacs-width 40))
+
+;; gives a much better experience for files with marginalia
+(after! marginalia
+  (setq marginalia-censor-variables nil)
+
+  (defadvice! +marginalia--anotate-local-file-colorful (cand)
+    "Just a more colourful version of `marginalia--anotate-local-file'."
+    :override #'marginalia--annotate-local-file
+    (when-let (attrs (file-attributes (substitute-in-file-name
+                                       (marginalia--full-candidate cand))
+                                      'integer))
+      (marginalia--fields
+       ((marginalia--file-owner attrs)
+        :width 12 :face 'marginalia-file-owner)
+       ((marginalia--file-modes attrs))
+       ((+marginalia-file-size-colorful (file-attribute-size attrs))
+        :width 7)
+       ((+marginalia--time-colorful (file-attribute-modification-time attrs))
+        :width 12))))
+
+  (defun +marginalia--time-colorful (time)
+    (let* ((seconds (float-time (time-subtract (current-time) time)))
+           (color (doom-blend
+                   (face-attribute 'marginalia-date :foreground nil t)
+                   (face-attribute 'marginalia-documentation :foreground nil t)
+                   (/ 1.0 (log (+ 3 (/ (+ 1 seconds) 345600.0)))))))
+      ;; 1 - log(3 + 1/(days + 1)) % grey
+      (propertize (marginalia--time time) 'face (list :foreground color))))
+
+  (defun +marginalia-file-size-colorful (size)
+    (let* ((size-index (/ (log10 (+ 1 size)) 7.0))
+           (color (if (< size-index 10000000) ; 10m
+                      (doom-blend 'orange 'green size-index)
+                    (doom-blend 'red 'orange (- size-index 1)))))
+      (propertize (file-size-human-readable size) 'face (list :foreground color)))))
