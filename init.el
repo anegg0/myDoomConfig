@@ -1,4 +1,4 @@
-;;; init.el -*- lexical-binding: t; -*-
+ ;;; init.el -*- lexical-binding: t; -*-
 
 ;; This file controls what Doom modules are enabled and what order they load
 ;; in. Remember to run 'doom sync' after modifying it!
@@ -26,7 +26,7 @@
        ;;helm              ; the *other* search engine for love and life
        ;;ido               ; the other *other* search engine...
        ;;ivy               ; a search engine for love and life
-       vertico           ; the search engine of the future
+       (vertico +consult); the search engine of the future
 
        :ui
        deft              ; notational velocity for Emacs
