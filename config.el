@@ -163,6 +163,8 @@
         :desc "org-roam-node-find" "f" #'org-roam-node-find
         :desc "org-roam-ref-find" "r" #'org-roam-ref-find
         :desc "org-roam-show-graph" "g" #'org-roam-show-graph
+        :desc "org-roam-dailies-capture-today" "T" #'org-roam-dailies-capture-today
+        :desc "org-roam-dailies-goto-today" "t" #'org-roam-dailies-goto-today
         :desc "jethro/org-capture-slipbox" "<tab>" #'jethro/org-capture-slipbox
         :desc "org-roam-capture" "c" #'org-roam-capture)
   (setq org-roam-directory (file-truename "~/Library/CloudStorage/Dropbox/orgmode")
@@ -499,8 +501,24 @@ Version: 2015-12-08 2023-04-07"
 ;;
 
 ;; Forge config
-(setq forge-topic-list-limit '(100 . 0))
+;; (setq forge-topic-list-limit '(100 . 0))
+;; (setq forge-topic-list-limit '(100 . -10))
 
-(setq forge-topic-list-limit '(100 . -10))
-;;(setq forge-pull-notifications nil)
-;;(setq forge-add-repository "https://github.com/OffchainLabs/arbitrum-docs.git")
+;; Ensure that `mdx` files are open in `rjsx-mode` in doom emacs
+(add-to-list 'auto-mode-alist '("\\.mdx\\'" . markdown-mode))
+
+;; accept completion from copilot and fallback to company
+(use-package! copilot
+  :hook (prog-mode . copilot-mode)
+  :bind (:map copilot-completion-map
+              ("<tab>" . 'copilot-accept-completion)
+              ("TAB" . 'copilot-accept-completion)
+              ("C-TAB" . 'copilot-accept-completion-by-word)
+              ("C-<tab>" . 'copilot-accept-completion-by-word)))
+
+;; github copilot completion customization
+;; complete by copilot first, then company-mode
+;; (defun my-tab ()
+;;   (interactive)
+;;   (or (copilot-accept-completion)
+;;       (company-indent-or-complete-common nil)))

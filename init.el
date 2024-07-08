@@ -25,8 +25,8 @@
        ;;(corfu +orderless)  ; complete with cap(f), cape and a flying feather!
        ;;helm              ; the *other* search engine for love and life
        ;;ido               ; the other *other* search engine...
-       (ivy +fuzzy +icons +prescient)              ; a search engine for love and life
-       ;; (vertico  +icons); the search engine of the future
+       ;; (ivy +fuzzy +icons +prescient)              ; a search engine for love and life
+       (vertico  +icons); the search engine of the future
 
        :ui
        deft              ; notational velocity for Emacs
@@ -35,7 +35,7 @@
        ;;doom-quit         ; DOOM quit-message prompts when you quit Emacs
        (emoji +unicode)  ; 🙂
        hl-todo           ; highlight TODO/FIXME/NOTE/DEPRECATED/HACK/REVIEW
-       hydra
+       ;; hydra
        indent-guides     ; highlighted indent columns
        ;;ligatures         ; ligatures and symbols to make your code pretty again
        ;;minimap           ; show a map of the code on the side
@@ -64,7 +64,7 @@
        ;;objed             ; text object editing for the innocent
        ;;parinfer          ; turn lisp into python, sort of
        ;;rotate-text       ; cycle region at point between text candidates
-       ;;snippets          ; my elves. They type so I don't have to
+       ;; snippets          ; my elves. They type so I don't have to
        word-wrap         ; soft wrapping with language-aware indent
 
        :emacs
@@ -96,8 +96,8 @@
        ;;ein               ; tame Jupyter notebooks with emacs
        (eval +overlay)     ; run code, run (also, repls)
        lookup              ; navigate your code and its documentation
-       ;;lsp               ; M-x vscode
-       (magit)             ; a git porcelain for Emacs
+       lsp               ; M-x vscode
+       (magit +forge)             ; a git porcelain for Emacs
        ;;make              ; run make tasks from Emacs
        pass              ; password manager for nerds
        pdf               ; pdf enhancements
@@ -136,7 +136,7 @@
        ;;fsharp            ; ML stands for Microsoft's Language
        ;;fstar             ; (dependent) types and (monadic) effects and Z3
        ;;gdscript          ; the language you waited for
-       ;;(go +lsp)         ; the hipster dialect
+       (go +lsp)         ; the hipster dialect
        ;;(graphql +lsp)    ; Give queries a REST
        ;;(haskell +lsp)    ; a language that's lazier than I am
        ;;hy                ; readability of scheme w/ speed of python
@@ -165,7 +165,7 @@
        ;;rest              ; Emacs as a REST client
        ;;rst               ; ReST in peace
        ;;(ruby +rails)     ; 1.step {|i| p "Ruby is #{i.even? ? 'love' : 'life'}"}
-       ;;(rust +lsp)       ; Fe2O3.unwrap().unwrap().unwrap().unwrap()
+       (rust +lsp)       ; Fe2O3.unwrap().unwrap().unwrap().unwrap()
        ;;scala             ; java, but good
        ;;(scheme +guile)   ; a fully conniving family of lisps
        sh                ; she sells {ba,z,fi}sh shells on the C xor
