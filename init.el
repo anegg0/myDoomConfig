@@ -21,7 +21,7 @@
        ;;layout            ; auie,ctsrnm is the superior home row
 
        :completion
-       (company +childframe +tng); he ultimate code completion backend
+       (company +childframe); he ultimate code completion backend
        ;;(corfu +orderless)  ; complete with cap(f), cape and a flying feather!
        ;;helm              ; the *other* search engine for love and life
        ;;ido               ; the other *other* search engine...
@@ -83,7 +83,7 @@
        :checkers
        syntax              ; tasing you for every semicolon you forget
        (spell +flyspell) ; tasing you for misspelling mispelling
-       ;;grammar           ; tasing grammar mistake every you make
+       grammar           ; tasing grammar mistake every you make
 
        :tools
        ;;ansible
@@ -97,7 +97,7 @@
        (eval +overlay)     ; run code, run (also, repls)
        lookup              ; navigate your code and its documentation
        lsp               ; M-x vscode
-       (magit +forge)             ; a git porcelain for Emacs
+       (magit +forge)            ; a git porcelain for Emacs
        ;;make              ; run make tasks from Emacs
        pass              ; password manager for nerds
        pdf               ; pdf enhancements
@@ -158,7 +158,7 @@
        ;;php               ; perl's insecure younger brother
        ;;plantuml          ; diagrams for confusing people more
        ;;purescript        ; javascript, but functional
-       ;;python            ; beautiful is better than ugly
+       python            ; beautiful is better than ugly
        ;;qt                ; the 'cutest' gui framework ever
        ;;racket            ; a DSL for DSLs
        ;;raku              ; the artist formerly known as perl6

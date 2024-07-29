@@ -84,6 +84,15 @@
 ;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
 ;; they are implemented.
 ;; avy lines
+
+;; (defun frame-opacity (frame)
+;;   (set-frame-parameter frame 'alpha-background 90))
+;; (frame-opacity nil)
+;; (add-to-list 'after-make-frame-functions 'frame-opacity)
+;; set transparency
+(set-frame-parameter (selected-frame) 'alpha '(85 85))
+(add-to-list 'default-frame-alist '(alpha 85 85))
+
 (map! :leader
       :desc "evil-avy-goto-line"
       "j" #'evil-avy-goto-line)
@@ -122,7 +131,6 @@
 (map! :leader
       :desc "insert-register"
       "4" #'insert-register)
-
 
 ;; Display notmuch-hello
 (map! :leader
@@ -347,6 +355,7 @@ Version: 2015-12-08 2023-04-07"
     (delete-region (region-beginning) (region-end)))
   (insert-register ?1 t))
 
+
 ;;make centered-cursor-mode global
 (use-package centered-cursor-mode
   :demand
@@ -374,6 +383,37 @@ Version: 2015-12-08 2023-04-07"
 
 ;; using apheleia everywhere
 (apheleia-global-mode +1)
+(setf (alist-get 'prettier apheleia-formatters)
+      '(npx "prettier"
+        "--trailing-comma"  "es5"
+        "--bracket-spacing" "true"
+        "--single-quote"    "true"
+        "--semi"            "false"
+        "--print-width"     "100"
+        "--tabWidth" "2"
+        "--useTabs" "false"
+        "--semi" "true"
+        "--singleQuote" "true"
+        "--bracketSpacing" "true"
+        "--ignorePath" "true"
+        "--printWidth" "100"
+        "--quoteProps" "consistent"
+        ;; Set next import (@/...) after third party imports but before relative imports
+        "--importOrder" "['^[./]', '^@/(.*)$']"
+        "--importOrderSeparation" "true"
+        "--importOrderSortSpecifiers" "true"
+        file))
+(add-to-list 'apheleia-mode-alist '(rjsx-mode . prettier))
+;; (add-to-list 'apheleia-mode-alist '(markdown-mode . prettier))
+(add-to-list 'apheleia-mode-alist '(js-mode . prettier))
+
+;; (setf (alist-get 'prettier apheleia-formatters)
+;;       '("prettier" "--write" "--" "./**/*.{md,mdx}"))
+;; former config below
+;; '("prettier" "--write" "--config" "/Users/allup/.prettierrc.js" "--" "./**/*.{md,mdx}"))
+
+(setf (alist-get 'black apheleia-formatters)
+      '("black" "--option" "..." "-"))
 
 ;; disable dired-omit-mode
 (after! dired
@@ -500,25 +540,24 @@ Version: 2015-12-08 2023-04-07"
 ;; (dired-preview-global-mode 1)
 ;;
 
-;; Forge config
-;; (setq forge-topic-list-limit '(100 . 0))
-;; (setq forge-topic-list-limit '(100 . -10))
-
+Asses
 ;; Ensure that `mdx` files are open in `rjsx-mode` in doom emacs
 (add-to-list 'auto-mode-alist '("\\.mdx\\'" . markdown-mode))
 
 ;; accept completion from copilot and fallback to company
 (use-package! copilot
   :hook (prog-mode . copilot-mode)
+  :hook (markdown-mode . copilot-mode)
   :bind (:map copilot-completion-map
               ("<tab>" . 'copilot-accept-completion)
               ("TAB" . 'copilot-accept-completion)
               ("C-TAB" . 'copilot-accept-completion-by-word)
-              ("C-<tab>" . 'copilot-accept-completion-by-word)))
+              ("C-<tab>" . 'copilot-accept-completion-by-word)
+              ("C-p" . 'copilot-previous-completion)
+              ("C-n" . 'copilot-next-completion)
+              ))
+(setq copilot-indent-offset-warning-disable t)
 
-;; github copilot completion customization
-;; complete by copilot first, then company-mode
-;; (defun my-tab ()
-;;   (interactive)
-;;   (or (copilot-accept-completion)
-;;       (company-indent-or-complete-common nil)))
+
+(when (daemonp)
+  (exec-path-from-shell-initialize))

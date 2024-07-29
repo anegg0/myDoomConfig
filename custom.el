@@ -3,7 +3,10 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(package-selected-packages '(yasnippet treesit-auto)))
+ '(custom-safe-themes
+   '("88f7ee5594021c60a4a6a1c275614103de8c1435d6d08cc58882f920e0cec65e" "7964b513f8a2bb14803e717e0ac0123f100fb92160dcf4a467f530868ebaae3e" "9d5124bef86c2348d7d4774ca384ae7b6027ff7f6eb3c401378e298ce605f83a" "13096a9a6e75c7330c1bc500f30a8f4407bd618431c94aeab55c9855731a95e1" "b754d3a03c34cfba9ad7991380d26984ebd0761925773530e24d8dd8b6894738" default))
+ '(package-selected-packages
+   '(lsp-grammarly yaml treesit-auto markdown-mode magit ghub company-auctex auctex-lua)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.

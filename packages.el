@@ -77,5 +77,7 @@
 (package! ob-mermaid)
 (package! centered-cursor-mode)
 (package! treesit-auto)
+(package! exec-path-from-shell)
 (package! copilot
   :recipe (:host github :repo "copilot-emacs/copilot.el" :files ("*.el")))
+(package! prettier)
