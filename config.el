@@ -145,6 +145,12 @@
 (map! :leader
       :desc "notmuch-hello"
       "9" #'notmuch-hello)
+
+;; Display notmuch-hello
+(map! :leader
+      :desc "avy-move-line"
+      "a" #'avy-move-line)
+
 ;; better markdown hightlighting
 (custom-set-faces!
   '(markdown-header-delimiter-face :foreground "#616161" :height 0.9)
@@ -299,12 +305,8 @@
 	            (format "%s" file))))))
 
 ;; Associate .mdx and with markdown-mode
-(add-to-list 'auto-mode-alist '("\\.mdx\\'" . markdown-mode))
+(add-to-list 'auto-mode-alist '("\\.mdx\\'" . gfm-mode))
 
-(set-default 'yas-dont-activate
-             #'(lambda ()
-                 (and yas-root-directory
-                      (null (yas-get-snippet-tables)))))
 
 (use-package! epa-file
   :config
@@ -383,37 +385,36 @@ Version: 2015-12-08 2023-04-07"
 
 ;; using apheleia everywhere
 (apheleia-global-mode +1)
-(setf (alist-get 'prettier apheleia-formatters)
-      '(npx "prettier"
-        "--trailing-comma"  "es5"
-        "--bracket-spacing" "true"
-        "--single-quote"    "true"
-        "--semi"            "false"
-        "--print-width"     "100"
-        "--tabWidth" "2"
-        "--useTabs" "false"
-        "--semi" "true"
-        "--singleQuote" "true"
-        "--bracketSpacing" "true"
-        "--ignorePath" "true"
-        "--printWidth" "100"
-        "--quoteProps" "consistent"
-        ;; Set next import (@/...) after third party imports but before relative imports
-        "--importOrder" "['^[./]', '^@/(.*)$']"
-        "--importOrderSeparation" "true"
-        "--importOrderSortSpecifiers" "true"
-        file))
-(add-to-list 'apheleia-mode-alist '(rjsx-mode . prettier))
+;; (setf (alist-get 'prettier apheleia-formatter)
+;;       '(npx "prettier"
+;;         "--trailing-comma"  "es5"
+;;         "--bracket-spacing" "true"
+;;         "--proseWrap" "never"
+;;         "--single-quote"    "true"
+;;         "--semi"            "false"
+;;         "--print-width"     "80"
+;;         "--tabWidth" "2"
+;;         "--useTabs" "false"
+;;         "--semi" "true"
+;;         "--singleQuote" "true"
+;;         "--bracketSpacing" "true"
+;;         "--ignorePath" "true"
+;;         "--printWidth" "100"
+;;         "--quoteProps" "consistent"
+;;         ;; Set next import (@/...) after third party imports but before relative imports
+;;         ;;"--importOrder" "['^[./]', '^@/(.*)$']"
+;;         "--importOrderSeparation" "true"
+;;         "--importOrderSortSpecifiers" "true"
+;;         file)
+
+;; (add-to-list 'apheleia-mode-alist '(rjsx-mode . prettier))
 ;; (add-to-list 'apheleia-mode-alist '(markdown-mode . prettier))
-(add-to-list 'apheleia-mode-alist '(js-mode . prettier))
+;; (add-to-list 'apheleia-mode-alist '(js-mode . prettier))
+;; (add-to-list 'apheleia-mode-alist '(gfm-mode . prettier))
 
-;; (setf (alist-get 'prettier apheleia-formatters)
-;;       '("prettier" "--write" "--" "./**/*.{md,mdx}"))
-;; former config below
-;; '("prettier" "--write" "--config" "/Users/allup/.prettierrc.js" "--" "./**/*.{md,mdx}"))
 
-(setf (alist-get 'black apheleia-formatters)
-      '("black" "--option" "..." "-"))
+;; (setf (alist-get 'black apheleia-formatters)
+;;       '("black" "--option" "..." "-"))
 
 ;; disable dired-omit-mode
 (after! dired
@@ -448,11 +449,21 @@ Version: 2015-12-08 2023-04-07"
 (setq auth-sources '("~/.authinfo" "~/.authinfo.gpg" "~/.netrc"))
 
 ;; gptel
+;; (use-package! gptel
+;;   :config
+;;   (after! gptel
+;;     (setq gptel-api-key (auth-source-pick-first-password (getenv "OPENAI_API_KEY"))
+;;           (setq gptel-default-mode 'gfm-mode)
+;;           (setq gptel-model "gpt-4o")))
+
+
+;; gptel
 (use-package! gptel
   :config
   (after! gptel
-    (setq gptel-openai-api-key (getenv "OPENAI_API_KEY"))))
-
+    (setq gptel-openai-api-key (getenv "OPENAI_API_KEY"))
+    (setq gptel-default-mode 'org-mode)
+    (setq gptel-model "gpt-4o")))
 
 ;;Assuming the buffer finishes successfully, close after 1 second.
 (defun bury-compile-buffer-if-successful (buffer string)
@@ -524,34 +535,20 @@ Version: 2015-12-08 2023-04-07"
 ;;multi-vterm
 (setq multi-vterm-dedicated-window-height-percent 30)
 
-
-;; (use-package! dired-preview
-;;   ;;   ;; Default values for demo purposes
-;;   (setq dired-preview-delay 0.2)
-;;   (setq dired-preview-max-size (expt 2 20))
-;;   (setq dired-preview-ignored-extensions-regexp
-;;         (concat "\\."
-;;                 "\\(mkv\\|webm\\|mp4\\|mp3\\|ogg\\|m4a"
-;;                 "\\|gz\\|zst\\|tar\\|xz\\|rar\\|zip"
-;;                 "\\|iso\\|epub\\|pdf\\|md\\))"))
-
-;;   ;; Enable `dired-preview-mode' in a given Dired buffer or do it
-;;   ;; globally:
-;; (dired-preview-global-mode 1)
-;;
-
-Asses
 ;; Ensure that `mdx` files are open in `rjsx-mode` in doom emacs
-(add-to-list 'auto-mode-alist '("\\.mdx\\'" . markdown-mode))
+(add-to-list 'auto-mode-alist '("\\.mdx\\'" . rjsx-mode))
 
+;; Ensure that `mdx` files are open in `rjsx-mode` in doom emacs
+(add-to-list 'auto-mode-alist '("\\.md\\'" . gfm-mode))
 ;; accept completion from copilot and fallback to company
 (use-package! copilot
   :hook (prog-mode . copilot-mode)
   :hook (markdown-mode . copilot-mode)
+  :hook (gfm-mode . copilot-mode)
   :bind (:map copilot-completion-map
-              ("<tab>" . 'copilot-accept-completion)
+              ;; ("<tab>" . 'copilot-accept-completion)
               ("TAB" . 'copilot-accept-completion)
-              ("C-TAB" . 'copilot-accept-completion-by-word)
+              ;; ("C-TAB" . 'copilot-accept-completion-by-word)
               ("C-<tab>" . 'copilot-accept-completion-by-word)
               ("C-p" . 'copilot-previous-completion)
               ("C-n" . 'copilot-next-completion)
@@ -561,3 +558,38 @@ Asses
 
 (when (daemonp)
   (exec-path-from-shell-initialize))
+
+;; rust
+;; debub adapter protocol
+(require 'dap-lldb)
+(require 'dap-cpptools)
+(use-package dap-mode
+  :ensure
+  :config
+  (dap-ui-mode)
+  (dap-ui-controls-mode 1)
+
+  (require 'dap-lldb)
+  (require 'dap-cpptools)
+  (require 'dap-gdb-lldb)
+  ;; installs .extension/vscode
+  (dap-gdb-lldb-setup)
+  (dap-cpptools-setup)
+  (dap-register-debug-template "Rust::CppTools Run Configuration"
+                               (list :type "cppdbg"
+                                     :request "launch"
+                                     :name "Rust::Run"
+                                     :MIMode "gdb"
+                                     :miDebuggerPath "rust-gdb"
+                                     :environment []
+                                     :program "${workspaceFolder}/target/debug/"
+                                     :cwd "${workspaceFolder}"
+                                     :console "external"
+                                     :dap-compilation "cargo build"
+                                     :dap-compilation-dir "${workspaceFolder}")))
+
+(with-eval-after-load 'dap-mode
+  (setq dap-default-terminal-kind "integrated") ;; Make sure that terminal programs open a term for I/O in an Emacs buffer
+  (dap-auto-configure-mode +1))
+
+(add-hook 'rust-mode-hook 'lsp-deferred)
