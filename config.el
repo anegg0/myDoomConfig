@@ -382,39 +382,8 @@ Version: 2015-12-08 2023-04-07"
 (setq evil-want-minibuffer t)
 
 (setq vterm-always-compile-module t)
-
 ;; using apheleia everywhere
 (apheleia-global-mode +1)
-;; (setf (alist-get 'prettier apheleia-formatter)
-;;       '(npx "prettier"
-;;         "--trailing-comma"  "es5"
-;;         "--bracket-spacing" "true"
-;;         "--proseWrap" "never"
-;;         "--single-quote"    "true"
-;;         "--semi"            "false"
-;;         "--print-width"     "80"
-;;         "--tabWidth" "2"
-;;         "--useTabs" "false"
-;;         "--semi" "true"
-;;         "--singleQuote" "true"
-;;         "--bracketSpacing" "true"
-;;         "--ignorePath" "true"
-;;         "--printWidth" "100"
-;;         "--quoteProps" "consistent"
-;;         ;; Set next import (@/...) after third party imports but before relative imports
-;;         ;;"--importOrder" "['^[./]', '^@/(.*)$']"
-;;         "--importOrderSeparation" "true"
-;;         "--importOrderSortSpecifiers" "true"
-;;         file)
-
-;; (add-to-list 'apheleia-mode-alist '(rjsx-mode . prettier))
-;; (add-to-list 'apheleia-mode-alist '(markdown-mode . prettier))
-;; (add-to-list 'apheleia-mode-alist '(js-mode . prettier))
-;; (add-to-list 'apheleia-mode-alist '(gfm-mode . prettier))
-
-
-;; (setf (alist-get 'black apheleia-formatters)
-;;       '("black" "--option" "..." "-"))
 
 ;; disable dired-omit-mode
 (after! dired
@@ -447,15 +416,6 @@ Version: 2015-12-08 2023-04-07"
       :n "r" #'hydra/evil-window-resize/body)
 
 (setq auth-sources '("~/.authinfo" "~/.authinfo.gpg" "~/.netrc"))
-
-;; gptel
-;; (use-package! gptel
-;;   :config
-;;   (after! gptel
-;;     (setq gptel-api-key (auth-source-pick-first-password (getenv "OPENAI_API_KEY"))
-;;           (setq gptel-default-mode 'gfm-mode)
-;;           (setq gptel-model "gpt-4o")))
-
 
 ;; gptel
 (use-package! gptel
@@ -528,15 +488,9 @@ Version: 2015-12-08 2023-04-07"
 
 (blink-cursor-mode 1)
 
-;; (setq consult-preview-key "M-x")
-;; (setq consult-preview-default-mappings
-;;       '((t . consult--buffer-preview))) ; Enable for all file types
-
-;;multi-vterm
-(setq multi-vterm-dedicated-window-height-percent 30)
 
 ;; Ensure that `mdx` files are open in `rjsx-mode` in doom emacs
-(add-to-list 'auto-mode-alist '("\\.mdx\\'" . rjsx-mode))
+(add-to-list 'auto-mode-alist '("\\.mdx\\'" . gfm-mode))
 
 ;; Ensure that `mdx` files are open in `rjsx-mode` in doom emacs
 (add-to-list 'auto-mode-alist '("\\.md\\'" . gfm-mode))
