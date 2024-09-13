@@ -81,3 +81,5 @@
 (package! copilot
   :recipe (:host github :repo "copilot-emacs/copilot.el" :files ("*.el")))
 (package! prettier)
+(package! svg-tag-mode)
+(package! nvm)
