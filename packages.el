@@ -62,7 +62,7 @@
   :recipe (:host github :repo "org-roam/org-roam" :branch "main"))
 (package! citar-org-roam)
 (package! org-roam-ui)
-(package! emacsql-sqlite-builtin)
+(package! sqlite3)
 (package! pinentry)
 (package! gptel)
 (package! evil-visual-mark-mode)
@@ -83,3 +83,4 @@
 (package! prettier)
 (package! svg-tag-mode)
 (package! nvm)
+(package! aider :recipe (:host github :repo "tninja/aider.el" :files ("aider.el" "aider-doom.el")))

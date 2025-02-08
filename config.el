@@ -23,7 +23,7 @@
 ;;
 ;;(setq doom-font (font-spec :family "Fira Code" :size 12 :weight 'semi-light)
 ;;      doom-variable-pitch-font (font-spec :family "Fira Sans" :size 13))
-;;
+(setq doom-font (font-spec :family "Fira Code" :size 10));
 ;; If you or Emacs can't find your font, use 'M-x describe-font' to look them
 ;; up, `M-x eval-region' to execute elisp code, and 'M-x doom/reload-font' to
 ;; refresh your font settings. If Emacs still can't find your font, it likely
@@ -90,8 +90,75 @@
 ;; (frame-opacity nil)
 ;; (add-to-list 'after-make-frame-functions 'frame-opacity)
 ;; set transparency
-(set-frame-parameter (selected-frame) 'alpha '(85 85))
-(add-to-list 'default-frame-alist '(alpha 85 85))
+;;
+(defun my-weebery-is-always-greater ()
+  (let* ((banner '("                                                                                "
+                   "                                       .=%@@*:                                  "
+                   "                                      -%@@@@@%-.                                "
+                   "                                      %@@@@@@@#:                                "
+                   "                                   .:=@@@@@@@@#:.                               "
+                   "                                .:+%@@@@@@@@@@@@%=..                            "
+                   "                               .-%@@@@@@@@@@@@@@@@#:.                           "
+                   "                               :*@@@@@@@@@@@@@@@@@@*.                           "
+                   "                               :#@@@@@@@@@@@@@@@@@@%.                           "
+                   "                              .:#@@@@@@@@@@@@@@@@@@%.                           "
+                   "                             .-#@@@@@@@@@@@@@@@@@@@@#-                          "
+                   "                              .-%@@@@@@@@@@@@@@@@@@%:                           "
+                   "                               .=@@@@@@@@@@@@@@@@@@:.                           "
+                   "                                -%@@@@@@@@@@@@@@@@+.                            "
+                   "                                .+@@@@@@@@@@@@@@@#:.                            "
+                   "                                 :#@@@@@@@@@@@@@@-.                             "
+                   "                                 .*@@@@@@@@@@@@@*:                              "
+                   "                                 .+*%@@@@@@@@@@@+.                              "
+                   "                                 :#+*@@@@@@@@@#*+.                              "
+                   "                                .::-#@@@@@@@@@#-=:.                             "
+                   "                             ...-+%@@@@@@@@@@@@%*-..                            "
+                   "                       ..+#%@@@@@@@@@@@@@@@@@@@@@@@@@%*=:..                     "
+                   "                      -%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%=.                   "
+                   "                     -%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@*.                  "
+                   "                    .*@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%-                  "
+                   "                    :#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@=                  "
+                   "                    -%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@=                  "
+                   "                    =@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@+.                 "
+                   "                   .+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@*.                 "
+                   "                   .*@@@@@@@@#@@@@@@@@@@@@@@@@@@@@@%:@@@@@@@@*:                 "
+                   "                   :#@@@@@@@=.+@@@@@@@@@@@@@@@@@@@@:.*@@@@@@@#:                 "
+                   "                   -%@@@@@@@..:#@@@@@@@@@@@@@@@@@@=..-@@@@@@@%-                 "
+                   "                  .=@@@@@@@#..:*@@@@@@@@@@@@@@@@@%:...%@@@@@@%-                 "
+                   "                  .+@@@@@@@+ .:*@@@@@@@@@@@@@@@@@%:...+@@@@@@@=.                "
+                   "                 .:#@@@@@@@: .-@@@@@@@@@@@@@@@@@@@-...:@@@@@@@=.                "
+                   "                ..*@@@@@@@+..:*@@@@@@@@@@@@@@@@@@@*...+@@@@@@@+.                "
+                   "                .+@@@@@@@*...*@@@@@@@@@@@@@@@@@@@@@=:*@@@@@@@%-.                "
+                   "               .-@@@@@@@*..-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@=.                 "
+                   "              .-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@*:...               "
+                   "          ....=@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@+-...            "
+                   "    ....:-+%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@+-:...       "
+                   " ...-*@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%+:...   "
+                   " .=@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#=.. "
+                   " =@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%-."
+                   ".@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@-"
+                   ".@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#"
+                   " +@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@+"
+                   " .*@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#."
+                   " ..+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#:."
+                   " .+%@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#:.."
+                   " *@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@%-."
+                   " +############################################################################+."))
+         (longest-line (apply #'max (mapcar #'length banner))))
+    (put-text-property
+     (point)
+     (dolist (line banner (point))
+       (insert (+doom-dashboard--center
+                +doom-dashboard--width
+                (concat line (make-string (max 0 (- longest-line (length line))) 32)))
+               "\n"))
+     'face 'doom-dashboard-banner)))
+
+(setq +doom-dashboard-ascii-banner-fn #'my-weebery-is-always-greater)
+;;
+;;
+(set-frame-parameter (selected-frame) 'alpha '(95 95))
+(add-to-list 'default-frame-alist '(alpha 95 95))
 
 (map! :leader
       :desc "evil-avy-goto-line"
@@ -136,10 +203,10 @@
 (map! :leader
       :desc "switch-to-other-frame"
       "7" #'switch-to-buffer-other-frame)
-;; markdown-insert-bold
+;; move-one-dir-up
 (map! :leader
-      :desc "markdown-insert-bold"
-      "8" #'markdown-insert-bold)
+      :desc "move-one-dir-up"
+      "8" #'move-one-dir-up)
 
 ;; Display notmuch-hello
 (map! :leader
@@ -161,6 +228,7 @@
   '(markdown-header-face-5 :height 1.1 :foreground "#b48ead" :weight bold :inherit markdown-header-face)
   '(markdown-header-face-6 :height 1.05 :foreground "#5e81ac" :weight semi-bold :inherit markdown-header-face))
 (add-hook! (gfm-mode markdown-mode) #'visual-line-mode #'turn-off-auto-fill)
+(global-visual-line-mode +1)
 
 ;; treesit-auto
 (use-package! treesit-auto
@@ -201,6 +269,12 @@
                               "#+title: ${title}\n#+TAGS: :\n")
            :immediate-finish t
            :unnarrowed t)
+          ("c" "catb" plain
+           "%?"
+           :if-new (file+head "main/gb_b_catb_${slug}.org"
+                              "#+title: ${title}\n#+TAGS: :\n")
+           :immediate-finish t
+           :unnarrowed t)
           ("r" "reference" plain "%?"
            :if-new
            (file+head "reference/${slug}.org" "#+title: ${title}\n")
@@ -230,6 +304,17 @@
   (setq org-roam-node-display-template
         (concat "${type:15} ${title:*} " (propertize "${tags:10}" 'face 'org-tag))))
 (require 'citar)
+(use-package citar
+  :no-require
+  :custom
+  (org-cite-global-bibliography '("~/bib/references.bib"))
+  (org-cite-insert-processor 'citar)
+  (org-cite-follow-processor 'citar)
+  (org-cite-activate-processor 'citar)
+  (citar-bibliography org-cite-global-bibliography)
+  ;; optional: org-cite-insert is also bound to C-c C-x C-@
+  :bind
+  (:map org-mode-map :package org ("C-c b" . #'org-cite-insert)))
 (defun jethro/org-roam-node-from-cite (keys-entries)
   (interactive (list (citar-select-ref :multiple nil :rebuild-cache t)))
   (let ((title (citar--format-entry-no-widths (cdr keys-entries)
@@ -238,9 +323,9 @@
                        '(("r" "reference" plain "%?" :if-new
                           (file+head "reference/${citekey}.org"
                                      ":PROPERTIES:
-                                      :ROAM_REFS: [cite:@${citekey}]
-                                      :END:
-                                      #+title: ${title}\n")
+                                     :ROAM_REFS: [cite:@${citekey}]
+                                     :END:
+                                     #+title: ${title}\n")
                           :immediate-finish t
                           :unnarrowed t))
                        :info (list :citekey (car keys-entries))
@@ -307,6 +392,8 @@
 ;; Associate .mdx and with markdown-mode
 (add-to-list 'auto-mode-alist '("\\.mdx\\'" . gfm-mode))
 
+;; Associate .svg and with xml-mode
+(add-to-list 'auto-mode-alist '("\\.svg\\'" . xml-mode))
 
 (use-package! epa-file
   :config
@@ -324,8 +411,8 @@
 (defun my-remove-cr (&optional begin end)
   "Remove line prefixes ending with carriage-return.
 
-;;xha's copy/paste to/from register
-BEGIN END specifies region, otherwise works on entire buffer."
+                                     ;;xha's copy/paste to/from register
+                                     BEGIN END specifies region, otherwise works on entire buffer."
   (save-excursion
     (goto-char (or begin (point-min)))
     (while (re-search-forward "^.*\033\\[2K\033\\[1G" end t)
@@ -335,8 +422,8 @@ BEGIN END specifies region, otherwise works on entire buffer."
 (defun xah-copy-to-register-1 ()
   "Copy current line or selection to register 1.
 
-URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'
-Version: 2012-07-17 2022-10-03 2023-04-07"
+  URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'
+  Version: 2012-07-17 2022-10-03 2023-04-07"
   (interactive)
   (let (xp1 xp2)
     (if (region-active-p)
@@ -350,8 +437,8 @@ Version: 2012-07-17 2022-10-03 2023-04-07"
 (defun xah-paste-from-register-1 ()
   "Copy current line or selection to register 1.
 
-URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'
-Version: 2015-12-08 2023-04-07"
+  URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'
+  Version: 2015-12-08 2023-04-07"
   (interactive)
   (when (region-active-p)
     (delete-region (region-beginning) (region-end)))
@@ -393,7 +480,7 @@ Version: 2015-12-08 2023-04-07"
 (setq transient-default-level 5)
 
 ;; disable smart parens globally
-(remove-hook 'doom-first-buffer-hook #'smartparens-global-mode)
+;;(remove-hook 'doom-first-buffer-hook #'smartparens-global-mode)
 
 
 ;; enable emacs everywhere in markdown mode
@@ -417,13 +504,24 @@ Version: 2015-12-08 2023-04-07"
 
 (setq auth-sources '("~/.authinfo" "~/.authinfo.gpg" "~/.netrc"))
 
-;; gptel
-(use-package! gptel
+;; basic aider config
+(use-package aider
   :config
-  (after! gptel
-    (setq gptel-openai-api-key (getenv "OPENAI_API_KEY"))
-    (setq gptel-default-mode 'org-mode)
-    (setq gptel-model "gpt-4o")))
+  (setq aider-args '("--model" "anthropic/claude-3-5-sonnet-20241022")))
+;; (setenv "ANTHROPIC_API_KEY" anthropic-api-key)
+;; enable aider minor mode in aider files
+(add-hook 'find-file-hook
+          (lambda ()
+            (when (and (buffer-file-name)
+                       (string-match-p "aider" (buffer-file-name)))
+              (aider-minor-mode 1))))
+
+(setq
+ gptel-model 'llama3.2
+ gptel-backend (gptel-make-ollama "Ollama"
+                 :host "localhost:11434"
+                 :stream t
+                 :models '("llama3.2")))
 
 ;;Assuming the buffer finishes successfully, close after 1 second.
 (defun bury-compile-buffer-if-successful (buffer string)
@@ -499,16 +597,18 @@ Version: 2015-12-08 2023-04-07"
   :hook (prog-mode . copilot-mode)
   :hook (markdown-mode . copilot-mode)
   :hook (gfm-mode . copilot-mode)
+  :hook (org-mode . copilot-mode)
   :bind (:map copilot-completion-map
-              ;; ("<tab>" . 'copilot-accept-completion)
               ("TAB" . 'copilot-accept-completion)
-              ;; ("C-TAB" . 'copilot-accept-completion-by-word)
               ("C-<tab>" . 'copilot-accept-completion-by-word)
               ("C-p" . 'copilot-previous-completion)
-              ("C-n" . 'copilot-next-completion)
-              ))
+              ("C-n" . 'copilot-next-completion))
+  :config
+  ;; Disable company when copilot is active
+  (add-hook 'copilot-mode-hook (lambda ()
+                                 (when copilot-mode
+                                   (company-mode -1)))))
 (setq copilot-indent-offset-warning-disable t)
-
 
 (when (daemonp)
   (exec-path-from-shell-initialize))
@@ -532,18 +632,55 @@ Version: 2015-12-08 2023-04-07"
   (dap-register-debug-template "Rust::CppTools Run Configuration"
                                (list :type "cppdbg"
                                      :request "launch"
-                                     :name "Rust::Run"
+                                     :name "Rust::debug"
                                      :MIMode "gdb"
                                      :miDebuggerPath "rust-gdb"
                                      :environment []
-                                     :program "${workspaceFolder}/target/debug/"
+                                     :program "${workspaceFolder}/target/debug/${workspaceRootFolderName}"
                                      :cwd "${workspaceFolder}"
                                      :console "external"
                                      :dap-compilation "cargo build"
                                      :dap-compilation-dir "${workspaceFolder}")))
 
-(with-eval-after-load 'dap-mode
+
+(after! 'dap-mode
   (setq dap-default-terminal-kind "integrated") ;; Make sure that terminal programs open a term for I/O in an Emacs buffer
   (dap-auto-configure-mode +1))
 
 (add-hook 'rust-mode-hook 'lsp-deferred)
+(add-to-list 'warning-suppress-log-types '(lsp-mode))
+(add-to-list 'warning-suppress-types '(lsp-mode))
+;;ditaa
+(setq org-ditaa-jar-path "/opt/homebrew/bin/ditaa.jar") ;; Make sure that terminal programs open a term for I/O in an Emacs buffer
+
+;; Whitespace color corrections.
+(require 'color)
+(let* ((ws-lighten 30) ;; Amount in percentage to lighten up black.
+       (ws-color (color-lighten-name "#000000" ws-lighten)))
+  (custom-set-faces
+   `(whitespace-newline                ((t (:foreground ,ws-color))))
+   `(whitespace-missing-newline-at-eof ((t (:foreground ,ws-color))))
+   `(whitespace-space                  ((t (:foreground ,ws-color))))
+   `(whitespace-space-after-tab        ((t (:foreground ,ws-color))))
+   `(whitespace-space-before-tab       ((t (:foreground ,ws-color))))
+   `(whitespace-tab                    ((t (:foreground ,ws-color))))
+   `(whitespace-trailing               ((t (:foreground ,ws-color))))))
+
+;; svg-tag-mode
+(use-package! svg-tag-mode
+  :config
+  (svg-tag-mode +1))
+
+;; lsp-rust-analyzer-store-path, edit with the active path if rustic complains about rust-analyzer
+(setq lsp-rust-analyzer-store-path "/Users/allup/.cargo/bin/rust-analyzer")
+
+
+(after! persp-mode
+  (defun display-workspaces-in-minibuffer ()
+    (with-current-buffer " *Minibuf-0*"
+      (erase-buffer)
+      (insert (+workspace--tabline))))
+  (run-with-idle-timer 1 t #'display-workspaces-in-minibuffer)
+  (+workspace/display))
+;; load env vars > EXPERIMENT!
+(doom-load-envvars-file "~/.config/emacs/.local/env")
