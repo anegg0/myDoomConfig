@@ -684,3 +684,10 @@
   (+workspace/display))
 ;; load env vars > EXPERIMENT!
 (doom-load-envvars-file "~/.config/emacs/.local/env")
+
+;; Invalidate projectile cache when switching projects
+(defun my/projectile-invalidate-cache-on-switch ()
+  "Invalidate projectile cache when switching projects."
+  (projectile-invalidate-cache nil))
+
+(add-hook 'projectile-after-switch-project-hook #'my/projectile-invalidate-cache-on-switch)
