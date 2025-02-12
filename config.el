@@ -598,6 +598,7 @@
   :hook (markdown-mode . copilot-mode)
   :hook (gfm-mode . copilot-mode)
   :hook (org-mode . copilot-mode)
+  :hook (magit-mode . copilot-mode)
   :bind (:map copilot-completion-map
               ("TAB" . 'copilot-accept-completion)
               ("C-<tab>" . 'copilot-accept-completion-by-word)
@@ -607,7 +608,11 @@
   ;; Disable company when copilot is active
   (add-hook 'copilot-mode-hook (lambda ()
                                  (when copilot-mode
-                                   (company-mode -1)))))
+                                   (company-mode -1))))
+  ;; Ensure company-mode is disabled in magit
+  (add-hook 'magit-mode-hook (lambda ()
+                              (company-mode -1)
+                              (copilot-mode 1))))
 (setq copilot-indent-offset-warning-disable t)
 
 (when (daemonp)
