@@ -707,6 +707,12 @@
   (add-to-list 'image-types 'svg)  ; Enable SVG support
   (add-to-list 'image-types 'jpeg))  ; Enable jpeg support
 
+;; Configure org-mode for inline images
+(after! org
+  (setq org-startup-with-inline-images t)  ; Show inline images when opening org files
+  (setq org-image-actual-width nil)        ; Use image size specifications in org files
+  (add-hook 'org-mode-hook #'org-display-inline-images)) ; Auto-display images in org buffers
+
 (use-package solaire-mode
   :demand t
   :config
