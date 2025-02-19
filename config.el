@@ -704,7 +704,8 @@
 (use-package image
   :config
   (setq image-use-external-converter t)
-  (add-to-list 'image-types 'svg))  ; Enable SVG support
+  (add-to-list 'image-types 'svg)  ; Enable SVG support
+  (add-to-list 'image-types 'jpeg))  ; Enable jpeg support
 
 (use-package solaire-mode
   :demand t
