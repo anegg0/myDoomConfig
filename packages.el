@@ -84,3 +84,6 @@
 (package! svg-tag-mode)
 (package! nvm)
 (package! aider :recipe (:host github :repo "tninja/aider.el" :files ("aider.el" "aider-doom.el")))
+(package! solaire-mode)
+(package! pdf-tools)
+(package! org-download)
