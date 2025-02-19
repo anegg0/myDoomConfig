@@ -700,6 +700,12 @@
   (add-to-list 'yas-snippet-dirs "~/.config/emacs/snippets")
   (yas-global-mode 1))
 
+;; Enable image viewing
+(use-package image
+  :config
+  (setq image-use-external-converter t)
+  (add-to-list 'image-types 'svg))  ; Enable SVG support
+
 (use-package solaire-mode
   :demand t
   :config
