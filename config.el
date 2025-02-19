@@ -23,7 +23,7 @@
 ;;
 ;;(setq doom-font (font-spec :family "Fira Code" :size 12 :weight 'semi-light)
 ;;      doom-variable-pitch-font (font-spec :family "Fira Sans" :size 13))
-(setq doom-font (font-spec :family "Fira Code" :size 10));
+(setq doom-font (font-spec :family "Fira Code" :size 13));
 ;; If you or Emacs can't find your font, use 'M-x describe-font' to look them
 ;; up, `M-x eval-region' to execute elisp code, and 'M-x doom/reload-font' to
 ;; refresh your font settings. If Emacs still can't find your font, it likely
@@ -307,7 +307,7 @@
 (use-package citar
   :no-require
   :custom
-  (org-cite-global-bibliography '("~/bib/references.bib"))
+  (org-cite-global-bibliography '("~/Library/CloudStorage/Dropbox/orgmode/master.json"))
   (org-cite-insert-processor 'citar)
   (org-cite-follow-processor 'citar)
   (org-cite-activate-processor 'citar)
@@ -587,32 +587,28 @@
 (blink-cursor-mode 1)
 
 
-;; Ensure that `mdx` files are open in `rjsx-mode` in doom emacs
-(add-to-list 'auto-mode-alist '("\\.mdx\\'" . gfm-mode))
+;; Ensure that `md` files are open in `gfm-mode` in doom emacs
+(add-to-list 'auto-mode-alist '("\\.md\\'" . gfm-mode))
 
 ;; Ensure that `mdx` files are open in `rjsx-mode` in doom emacs
-(add-to-list 'auto-mode-alist '("\\.md\\'" . gfm-mode))
+(add-to-list 'auto-mode-alist '("\\.mdx\\'" . gfm-mode))
+;; Ensure that `svg` files are open in `rjsx-mode` in doom emacs
+(add-to-list 'auto-mode-alist '("\\.svg\\'" . rjsx-mode))
 ;; accept completion from copilot and fallback to company
 (use-package! copilot
   :hook (prog-mode . copilot-mode)
   :hook (markdown-mode . copilot-mode)
   :hook (gfm-mode . copilot-mode)
   :hook (org-mode . copilot-mode)
-  :hook (magit-mode . copilot-mode)
   :bind (:map copilot-completion-map
               ("TAB" . 'copilot-accept-completion)
               ("C-<tab>" . 'copilot-accept-completion-by-word)
               ("C-p" . 'copilot-previous-completion)
-              ("C-n" . 'copilot-next-completion))
-  :config
-  ;; Disable company when copilot is active
-  (add-hook 'copilot-mode-hook (lambda ()
-                                 (when copilot-mode
-                                   (company-mode -1))))
-  ;; Ensure company-mode is disabled in magit
-  (add-hook 'magit-mode-hook (lambda ()
-                              (company-mode -1)
-                              (copilot-mode 1))))
+              ("C-n" . 'copilot-next-completion)))
+;; :config
+;; Disable company when copilot is active
+;; (add-hook 'copilot-mode-hook (lambda ()
+;;                                (when copilot-mode
 (setq copilot-indent-offset-warning-disable t)
 
 (when (daemonp)
@@ -696,3 +692,15 @@
   (projectile-invalidate-cache nil))
 
 (add-hook 'projectile-after-switch-project-hook #'my/projectile-invalidate-cache-on-switch)
+
+
+(use-package yasnippet
+  :config
+  (yas-reload-all)
+  (add-to-list 'yas-snippet-dirs "~/.config/emacs/snippets")
+  (yas-global-mode 1))
+
+(use-package solaire-mode
+  :demand t
+  :config
+  (solaire-global-mode +1))
