@@ -483,9 +483,10 @@
 ;;(remove-hook 'doom-first-buffer-hook #'smartparens-global-mode)
 
 
-;; enable emacs everywhere in markdown mode
+;; enable emacs everywhere in markdown mode with copilot
 (remove-hook 'emacs-everywhere-init-hooks #'emacs-everywhere-major-mode-org-or-markdown) ; or #'org-mode if that's what's present
 (add-hook 'emacs-everywhere-init-hooks #'gfm-mode)
+(add-hook 'emacs-everywhere-init-hooks #'copilot-mode)
 
 ;; added windows resize key-bindings
 (use-package! hydra
