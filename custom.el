@@ -7,7 +7,7 @@
  '(org-agenda-files
    '("~/Library/CloudStorage/Dropbox/orgmode/main/gb_m_organizer.org"))
  '(package-selected-packages
-   '(org-download dired-open-with sqlite3 emacsql emacsql-sqlite-builtin osx-dictionary dap-mode svg-tag-mode yaml treesit-auto magit lsp-grammarly ghub company-auctex auctex-lua)))
+   '(elmacro org-download dired-open-with sqlite3 emacsql emacsql-sqlite-builtin osx-dictionary dap-mode svg-tag-mode yaml treesit-auto magit lsp-grammarly ghub company-auctex auctex-lua)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.

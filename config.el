@@ -203,15 +203,15 @@
 (map! :leader
       :desc "switch-to-other-frame"
       "7" #'switch-to-buffer-other-frame)
-;; move-one-dir-up
+;; add-to-aider macro
 (map! :leader
-      :desc "move-one-dir-up"
-      "8" #'move-one-dir-up)
+      :desc "add-to-aider"
+      "8" #'add-to-aider)
 
 ;; Display notmuch-hello
 (map! :leader
-      :desc "notmuch-hello"
-      "9" #'notmuch-hello)
+      :desc "file-one-up"
+      "9" #'file-one-up)
 
 ;; Display notmuch-hello
 (map! :leader
@@ -484,9 +484,9 @@
 
 
 ;; enable emacs everywhere in markdown mode with copilot
-(remove-hook 'emacs-everywhere-init-hooks #'emacs-everywhere-major-mode-org-or-markdown) ; or #'org-mode if that's what's present
-(add-hook 'emacs-everywhere-init-hooks #'gfm-mode)
-(add-hook 'emacs-everywhere-init-hooks #'copilot-mode)
+;; (remove-hook 'emacs-everywhere-init-hooks #'emacs-everywhere-major-mode-org-or-markdown) ; or #'org-mode if that's what's present
+;; (add-hook 'emacs-everywhere-init-hooks #'gfm-mode)
+;; (add-hook 'emacs-everywhere-init-hooks #'copilot-mode)
 
 ;; added windows resize key-bindings
 (use-package! hydra
@@ -719,3 +719,31 @@
   :config
   (solaire-global-mode +1))
 
+(setq projectile-indexing-method 'hybrid)
+
+(setq
+ indent-bars-color '(highlight :face-bg t :blend 0)
+ indent-bars-pattern " . . . . ." ; play with the number of dots for your usual font size
+ indent-bars-width-frac 0.25
+ indent-bars-pad-frac 0.1)
+
+;; allow for the use of the clipboard
+(defun copy-from-osx ()
+  (shell-command-to-string "pbpaste"))
+
+(defun paste-to-osx (text &optional push)
+  (let ((process-connection-type nil))
+    (let ((proc (start-process "pbcopy" "*Messages*" "pbcopy")))
+      (process-send-string proc text)
+      (process-send-eof proc))))
+
+(setq interprogram-cut-function 'paste-to-osx)
+(setq interprogram-paste-function 'copy-from-osx)
+
+;; add-to-aider macro
+(defalias 'add-to-aider
+  (kmacro "<return> SPC A a c SPC o -"))
+
+;; file-one-up macro
+(defalias 'file-one-up
+  (kmacro "SPC o -"))
