@@ -345,17 +345,15 @@
          ,(concat "* TODO %?\n"
                   "/Entered on/ %U"))
         ("s" "Slipbox" entry  (file "braindump/org/inbox.org")
-         "* %?\n"))
-      '("l" "Linear Task" entry
-        (file+headline "~/Library/CloudStorage/Dropbox/orgmode/linear.org" "Linear Tasks")
-        "* TODO %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n%i\n"
-        :immediate-finish t
-        :after-finalize (lambda ()
+         "* %?\n")
+        ("l" "Linear Task" entry
+         (file+headline "~/Library/CloudStorage/Dropbox/orgmode/linear.org" "Linear Tasks")
+         "* TODO %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n%i\n"
+         :immediate-finish t
+         :after-finalize (lambda ()
                           (create-linear-issue
                            (org-get-heading t t t t)
-                           (org-get-entry))))
-
-      )
+                           (org-get-entry))))))
 (require 'find-lisp)
 (defun jethro/org-capture-inbox ()
   (interactive)
