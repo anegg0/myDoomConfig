@@ -345,8 +345,17 @@
          ,(concat "* TODO %?\n"
                   "/Entered on/ %U"))
         ("s" "Slipbox" entry  (file "braindump/org/inbox.org")
-         "* %?\n")))
+         "* %?\n"))
+      '("l" "Linear Task" entry
+        (file+headline "~/Library/CloudStorage/Dropbox/orgmode/linear.org" "Linear Tasks")
+        "* TODO %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n%i\n"
+        :immediate-finish t
+        :after-finalize (lambda ()
+                          (create-linear-issue
+                           (org-get-heading t t t t)
+                           (org-get-entry))))
 
+      )
 (require 'find-lisp)
 (defun jethro/org-capture-inbox ()
   (interactive)
@@ -388,6 +397,31 @@
 	          (if begin
 	              (substring contents end-of-begin end)
 	            (format "%s" file))))))
+(defun create-linear-issue (title description)
+  (let ((url "https://api.linear.app/graphql")
+        (headers `(("Content-Type" . "application/json")
+                   ("Authorization" . ,(concat "Bearer " LINEAR_API_KEY))))
+        (query "mutation CreateIssue($title: String!, $description: String!) {
+                  issueCreate(input: {title: $title, description: $description}) {
+                    success
+                    issue {
+                      id
+                      url
+                    }
+                  }
+                }"))
+    (request
+      url
+      :type "POST"
+      :headers headers
+      :data (json-encode `(("query" . ,query)
+                           ("variables" . (("title" . ,title)
+                                           ("description" . ,description)))))
+      :parser 'json-read
+      :success (cl-function
+                (lambda (&key data &allow-other-keys)
+                  (message "Issue created successfully"))))))
+
 
 ;; Associate .mdx and with markdown-mode
 (add-to-list 'auto-mode-alist '("\\.mdx\\'" . gfm-mode))
@@ -691,7 +725,6 @@
 (defun my/projectile-invalidate-cache-on-switch ()
   "Invalidate projectile cache when switching projects."
   (projectile-invalidate-cache nil))
-
 (add-hook 'projectile-after-switch-project-hook #'my/projectile-invalidate-cache-on-switch)
 
 
