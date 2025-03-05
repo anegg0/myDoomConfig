@@ -231,8 +231,7 @@
 (global-visual-line-mode +1)
 
 ;; treesit-auto
-(use-package! treesit-auto
-  :config
+(after! treesit
   (global-treesit-auto-mode))
 
 ;; Org roam
@@ -527,16 +526,13 @@
 ;; (add-hook 'emacs-everywhere-init-hooks #'copilot-mode)
 
 ;; added windows resize key-bindings
-(use-package! hydra
-  :defer
-  :config
-  (defhydra hydra/evil-window-resize (:color red)
-    "Resize window"
-    ("h" evil-window-decrease-width "decrease width")
-    ("j" evil-window-decrease-height "decrease height")
-    ("k" evil-window-increase-height "increase height")
-    ("l" evil-window-increase-width "increase width")
-    ("q" nil "quit")))
+(defhydra hydra/evil-window-resize (:color red)
+  "Resize window"
+  ("h" evil-window-decrease-width "decrease width")
+  ("j" evil-window-decrease-height "decrease height")
+  ("k" evil-window-increase-height "increase height")
+  ("l" evil-window-increase-width "increase width")
+  ("q" nil "quit"))
 (map! :leader
       :prefix ("w" . "window")
       :n "r" #'hydra/evil-window-resize/body)
@@ -634,16 +630,13 @@
 ;; Ensure that `svg` files are open in `rjsx-mode` in doom emacs
 (add-to-list 'auto-mode-alist '("\\.svg\\'" . rjsx-mode))
 ;; accept completion from copilot and fallback to company
-(use-package! copilot
-  :hook (prog-mode . copilot-mode)
-  :hook (markdown-mode . copilot-mode)
-  :hook (gfm-mode . copilot-mode)
-  :hook (org-mode . copilot-mode)
-  :bind (:map copilot-completion-map
-              ("TAB" . 'copilot-accept-completion)
-              ("C-<tab>" . 'copilot-accept-completion-by-word)
-              ("C-p" . 'copilot-previous-completion)
-              ("C-n" . 'copilot-next-completion)))
+(after! copilot
+  (add-hook! (prog-mode markdown-mode gfm-mode org-mode) #'copilot-mode)
+  (map! :map copilot-completion-map
+        "TAB"     #'copilot-accept-completion
+        "C-<tab>" #'copilot-accept-completion-by-word
+        "C-p"     #'copilot-previous-completion
+        "C-n"     #'copilot-next-completion))
 ;; :config
 ;; Disable company when copilot is active
 ;; (add-hook 'copilot-mode-hook (lambda ()
@@ -657,16 +650,12 @@
 ;; debub adapter protocol
 (require 'dap-lldb)
 (require 'dap-cpptools)
-(use-package dap-mode
-  :ensure
-  :config
+(after! dap-mode
   (dap-ui-mode)
   (dap-ui-controls-mode 1)
-
   (require 'dap-lldb)
   (require 'dap-cpptools)
   (require 'dap-gdb-lldb)
-  ;; installs .extension/vscode
   (dap-gdb-lldb-setup)
   (dap-cpptools-setup)
   (dap-register-debug-template "Rust::CppTools Run Configuration"
@@ -732,15 +721,12 @@
 (add-hook 'projectile-after-switch-project-hook #'my/projectile-invalidate-cache-on-switch)
 
 
-(use-package yasnippet
-  :config
+(after! yasnippet
   (yas-reload-all)
-  (add-to-list 'yas-snippet-dirs "~/.config/emacs/snippets")
-  (yas-global-mode 1))
+  (add-to-list 'yas-snippet-dirs "~/.config/emacs/snippets"))
 
 ;; Enable image viewing
-(use-package image
-  :config
+(after! image
   (setq image-use-external-converter t)
   (add-to-list 'image-types 'svg)  ; Enable SVG support
   (add-to-list 'image-types 'jpeg))  ; Enable jpeg support
@@ -751,9 +737,7 @@
   (setq org-image-actual-width nil)        ; Use image size specifications in org files
   (add-hook 'org-mode-hook #'org-display-inline-images)) ; Auto-display images in org buffers
 
-(use-package solaire-mode
-  :demand t
-  :config
+(after! solaire-mode
   (solaire-global-mode +1))
 
 (setq projectile-indexing-method 'hybrid)
