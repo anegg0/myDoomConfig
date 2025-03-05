@@ -231,8 +231,7 @@
 (global-visual-line-mode +1)
 
 ;; treesit-auto
-(after! treesit
-  (global-treesit-auto-mode))
+(global-treesit-auto-mode)
 
 ;; Org roam
 (use-package! org-roam
@@ -768,3 +767,5 @@
 ;; file-one-up macro
 (defalias 'file-one-up
   (kmacro "SPC o -"))
+(add-load-path! "~/.config/emacs/site-lisp")
+(require 'linear)
