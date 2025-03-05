@@ -1,10 +1,15 @@
-;;; linear.el --- Linear UI          -*- lexical-binding: t; -*-
-
-;; Copyright (C) 2022 Mikey Hoy
-
+;;; linear.el --- Linear issue tracker interface -*- lexical-binding: t; -*-
+;;
+;; Copyright (C) 2022-2025 Mikey Hoy
+;;
 ;; Author: Mikey Hoy <mjh@mjhoy.com>
-;; Keywords: linear
+;; Maintainer: Mikey Hoy <mjh@mjhoy.com>
+;; Created: March 05, 2025
+;; Modified: March 05, 2025
 ;; Version: 0.0.1
+;; Keywords: tools convenience
+;; Homepage: https://github.com/mjhoy/linear.el
+;; Package-Requires: ((emacs "27.1") (cl-lib "0.5"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -32,6 +37,7 @@
 (require 'url)
 (require 'url-http)
 (require 'auth-source)
+(require 'cl-lib)
 
 (declare-function org-link-set-parameters "org")
 (declare-function org-link-store-props "org")
@@ -99,16 +105,11 @@ in your `auth-sources' file."
   )
 
 (defun linear--get-or-create-buf ()
-  "Get the linear buffer if it exists, or create it."
-  (let ((buffer (or
-                 (get-buffer "*linear*")
-                 (progn
-                   (let ((buffer (generate-new-buffer "*linear*")))
-                     (with-current-buffer buffer
-                       (linear-mode)
-                       )
-                     buffer)))))
-    buffer))
+  "Get the Linear buffer if it exists, or create it."
+  (or (get-buffer "*linear*")
+      (with-current-buffer (generate-new-buffer "*linear*")
+        (linear-mode)
+        (current-buffer))))
 
 (defun linear-refresh ()
   "Refresh the Linear buffer."
@@ -164,24 +165,22 @@ in your `auth-sources' file."
   (car (cdr response)))
 
 (defun linear--populate-buffer (response)
-  "Takes a Linear RESPONSE and writes to the buffer."
+  "Write Linear RESPONSE data to the buffer."
   (setq linear--last-response response)
   (with-current-buffer (linear--get-or-create-buf)
-    (setq buffer-read-only nil)
-    (erase-buffer)
-    (seq-do (lambda (item)
-              (let* ((title (plist-get item :title))
-                     (identifier (plist-get item :identifier))
-                     (state (plist-get item :state))
-                     (state-name (plist-get state :name))
-                     (orig-position (point))
-                     )
-                (insert (format "* [%s] (%s) %s" (decode-coding-string identifier 'utf-8) (decode-coding-string state-name 'utf-8) (decode-coding-string title 'utf-8)))
-                (put-text-property orig-position (point) 'linear-item item)
-                (newline)))
-            (linear--resp-get-nodes response))
-    (setq buffer-read-only t)
-    ))
+    (let ((inhibit-read-only t))
+      (erase-buffer)
+      (cl-loop for item in (linear--resp-get-nodes response)
+               for title = (plist-get item :title)
+               for identifier = (plist-get item :identifier)
+               for state = (plist-get item :state)
+               for state-name = (plist-get state :name)
+               for start = (point)
+               do (insert (format "* [%s] (%s) %s\n"
+                                (decode-coding-string identifier 'utf-8)
+                                (decode-coding-string state-name 'utf-8)
+                                (decode-coding-string title 'utf-8)))
+               do (put-text-property start (1- (point)) 'linear-item item)))))
 
 (defun linear-kill-region ()
   "If point is on a linear item, copy the URL."
@@ -207,18 +206,15 @@ in your `auth-sources' file."
   (get-text-property (point) 'linear-item))
 
 (defun linear--populate-buffer-err (response)
-  "Takes a Linear error RESPONSE and writes to the buffer."
+  "Write Linear error RESPONSE to the buffer."
   (setq linear--last-response response)
   (with-current-buffer (linear--get-or-create-buf)
-    (setq buffer-read-only nil)
-    (erase-buffer)
-    (seq-do (lambda (item)
-              (let* ((err-message (plist-get item 'message)))
-                (insert (format "[Error from Linear API] %s" (decode-coding-string err-message 'utf-8)))
-                (newline)))
-            (linear--resp-get-errs response))
-    (setq buffer-read-only t)
-    ))
+    (let ((inhibit-read-only t))
+      (erase-buffer)
+      (cl-loop for item in (linear--resp-get-errs response)
+               for err-message = (plist-get item 'message)
+               do (insert (format "[Error from Linear API] %s\n"
+                                (decode-coding-string err-message 'utf-8)))))))
 
 (defun linear--switch-to-buf ()
   "Switch to the linear buffer."
