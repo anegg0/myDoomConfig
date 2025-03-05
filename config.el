@@ -285,6 +285,11 @@
            (file+head "articles/${slug}.org" "#+title: ${title}\n#+filetags: :article:\n")
            :immediate-finish t
            :unnarrowed t)
+          ("l" "linear_issue" plain "%?"
+           :if-new
+           (file+head "linear/${slug}.org" "#+title: ${title}\n")
+           :immediate-finish t
+           :unnarrowed t)
           ("d" "dictionary" plain "%?"
            :if-new
            (file+head "dictionary/${slug}.org" "#+title: ${title}\n#+filetags: :dictionary:\n")
@@ -340,20 +345,45 @@
 (setq org-todo-keywords                 ;
       '((sequence "TODO(t)" "NEXT(n)" "HOLD(h)" "|" "DONE(d)" "|" "Cancelled(c)")))
 
-(setq org-capture-templates
-      `(("i" "Inbox" entry  (file "gtd/inbox.org")
-         ,(concat "* TODO %?\n"
-                  "/Entered on/ %U"))
-        ("s" "Slipbox" entry  (file "braindump/org/inbox.org")
-         "* %?\n")
-        ("l" "Linear Task" entry
-         (file+headline "~/Library/CloudStorage/Dropbox/orgmode/linear.org" "Linear Tasks")
-         "* TODO %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n%i\n"
-         :immediate-finish t
-         :after-finalize (lambda ()
-                          (create-linear-issue
-                           (org-get-heading t t t t)
-                           (org-get-entry))))))
+;; (setq org-capture-templates
+;;       `(("i" "Inbox" entry  (file "gtd/inbox.org")
+;;          ,(concat "* TODO %?\n"
+;;                   "/Entered on/ %U"))
+;;         ("s" "Slipbox" entry  (file "braindump/org/inbox.org")
+;;          "* %?\n")
+;;         ("l" "Linear Task" entry
+;;          (file "main/linear.org" "Linear Tasks")
+;;          "* TODO %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n%i\n"
+;;          :immediate-finish t
+;;          :after-finalize (lambda ()
+;;                            (create-linear-issue
+;;                             (org-get-heading t t t t)
+;;                             (org-get-entry))))))
+;; (defun create-linear-issue (title description)
+;;   (let ((url "https://api.linear.app/graphql")
+;;         (headers `(("Content-Type" . "application/json")
+;;                    ("Authorization" . ,(concat "Bearer " LINEAR_API_KEY))))
+;;         (query "mutation CreateIssue($title: String!, $description: String!) {
+;;                   issueCreate(input: {title: $title, description: $description}) {
+;;                     success
+;;                     issue {
+;;                       id
+;;                       url
+;;                     }
+;;                   }
+;;                 }"))
+;;     (request
+;;       url
+;;       :type "POST"
+;;       :headers headers
+;;       :data (json-encode `(("query" . ,query)
+;;                            ("variables" . (("title" . ,title)
+;;                                            ("description" . ,description)))))
+;;       :parser 'json-read
+;;       :success (cl-function
+;;                 (lambda (&key data &allow-other-keys)
+;;                   (message "Issue created successfully"))))))
+
 (require 'find-lisp)
 (defun jethro/org-capture-inbox ()
   (interactive)
@@ -395,30 +425,6 @@
 	          (if begin
 	              (substring contents end-of-begin end)
 	            (format "%s" file))))))
-(defun create-linear-issue (title description)
-  (let ((url "https://api.linear.app/graphql")
-        (headers `(("Content-Type" . "application/json")
-                   ("Authorization" . ,(concat "Bearer " LINEAR_API_KEY))))
-        (query "mutation CreateIssue($title: String!, $description: String!) {
-                  issueCreate(input: {title: $title, description: $description}) {
-                    success
-                    issue {
-                      id
-                      url
-                    }
-                  }
-                }"))
-    (request
-      url
-      :type "POST"
-      :headers headers
-      :data (json-encode `(("query" . ,query)
-                           ("variables" . (("title" . ,title)
-                                           ("description" . ,description)))))
-      :parser 'json-read
-      :success (cl-function
-                (lambda (&key data &allow-other-keys)
-                  (message "Issue created successfully"))))))
 
 
 ;; Associate .mdx and with markdown-mode
