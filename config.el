@@ -218,6 +218,11 @@
       :desc "avy-move-line"
       "a" #'avy-move-line)
 
+;; Opeon an Aider session
+(map! :leader
+      :desc "aider-run-aider"
+      "0" #'aider-run-aider)
+
 ;; better markdown hightlighting
 (custom-set-faces!
   '(markdown-header-delimiter-face :foreground "#616161" :height 0.9)
@@ -231,7 +236,7 @@
 (global-visual-line-mode +1)
 
 ;; treesit-auto
-(global-treesit-auto-mode)
+(global-tree-sitter-mode)
 
 ;; Org roam
 (use-package! org-roam
@@ -283,11 +288,11 @@
            (file+head "articles/${slug}.org" "#+title: ${title}\n#+filetags: :article:\n")
            :immediate-finish t
            :unnarrowed t)
-          ("l" "linear_issue" plain "%?"
-           :if-new
-           (file+head "linear/${slug}.org" "#+title: ${title}\n")
-           :immediate-finish t
-           :unnarrowed t)
+          ;; ("l" "linear_issue" plain "%?"
+          ;;  :if-new
+          ;;  (file+head "linear/${slug}.org" "#+title: ${title}\n")
+          ;;  :immediate-finish t
+          ;;  :unnarrowed t)
           ("d" "dictionary" plain "%?"
            :if-new
            (file+head "dictionary/${slug}.org" "#+title: ${title}\n#+filetags: :dictionary:\n")
@@ -343,44 +348,6 @@
 (setq org-todo-keywords                 ;
       '((sequence "TODO(t)" "NEXT(n)" "HOLD(h)" "|" "DONE(d)" "|" "Cancelled(c)")))
 
-;; (setq org-capture-templates
-;;       `(("i" "Inbox" entry  (file "gtd/inbox.org")
-;;          ,(concat "* TODO %?\n"
-;;                   "/Entered on/ %U"))
-;;         ("s" "Slipbox" entry  (file "braindump/org/inbox.org")
-;;          "* %?\n")
-;;         ("l" "Linear Task" entry
-;;          (file "main/linear.org" "Linear Tasks")
-;;          "* TODO %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n%i\n"
-;;          :immediate-finish t
-;;          :after-finalize (lambda ()
-;;                            (create-linear-issue
-;;                             (org-get-heading t t t t)
-;;                             (org-get-entry))))))
-;; (defun create-linear-issue (title description)
-;;   (let ((url "https://api.linear.app/graphql")
-;;         (headers `(("Content-Type" . "application/json")
-;;                    ("Authorization" . ,(concat "Bearer " LINEAR_API_KEY))))
-;;         (query "mutation CreateIssue($title: String!, $description: String!) {
-;;                   issueCreate(input: {title: $title, description: $description}) {
-;;                     success
-;;                     issue {
-;;                       id
-;;                       url
-;;                     }
-;;                   }
-;;                 }"))
-;;     (request
-;;       url
-;;       :type "POST"
-;;       :headers headers
-;;       :data (json-encode `(("query" . ,query)
-;;                            ("variables" . (("title" . ,title)
-;;                                            ("description" . ,description)))))
-;;       :parser 'json-read
-;;       :success (cl-function
-;;                 (lambda (&key data &allow-other-keys)
-;;                   (message "Issue created successfully"))))))
 
 (require 'find-lisp)
 (defun jethro/org-capture-inbox ()
@@ -521,8 +488,6 @@
 
 ;; enable emacs everywhere in markdown mode with copilot
 ;; (remove-hook 'emacs-everywhere-init-hooks #'emacs-everywhere-major-mode-org-or-markdown) ; or #'org-mode if that's what's present
-;; (add-hook 'emacs-everywhere-init-hooks #'gfm-mode)
-;; (add-hook 'emacs-everywhere-init-hooks #'copilot-mode)
 
 ;; added windows resize key-bindings
 (defhydra hydra/evil-window-resize (:color red)
@@ -628,6 +593,14 @@
 (add-to-list 'auto-mode-alist '("\\.mdx\\'" . gfm-mode))
 ;; Ensure that `svg` files are open in `rjsx-mode` in doom emacs
 (add-to-list 'auto-mode-alist '("\\.svg\\'" . rjsx-mode))
+(add-to-list 'auto-mode-alist '("\\.org\\'" . copilot-mode))
+(add-to-list 'auto-mode-alist '("\\.mdx\\'" . copilot-mode))
+(add-to-list 'auto-mode-alist '("\\.md\\'" . copilot-mode))
+
+(add-hook 'emacs-everywhere-init-hooks #'gfm-mode)
+(add-hook 'emacs-everywhere-init-hooks #'copilot-mode)
+
+
 ;; accept completion from copilot and fallback to company
 (after! copilot
   (add-hook! (prog-mode markdown-mode gfm-mode org-mode) #'copilot-mode)
@@ -702,7 +675,6 @@
 ;; lsp-rust-analyzer-store-path, edit with the active path if rustic complains about rust-analyzer
 (setq lsp-rust-analyzer-store-path "/Users/allup/.cargo/bin/rust-analyzer")
 
-
 (after! persp-mode
   (defun display-workspaces-in-minibuffer ()
     (with-current-buffer " *Minibuf-0*"
@@ -767,5 +739,3 @@
 ;; file-one-up macro
 (defalias 'file-one-up
   (kmacro "SPC o -"))
-(add-load-path! "~/.config/emacs/site-lisp")
-(require 'linear)

@@ -1,0 +1,9 @@
+
+;; gptel
+;; (use-package! gptel
+;;   :config
+;;   (after! gptel
+;;     (setq gptel-openai-api-key (getenv "OPENAI_API_KEY"))
+;;     (setq gptel-default-mode 'org-mode)
+;;     (setq gptel-model "gpt-4o")))
+;; OPTIONAL configuration
