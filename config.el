@@ -516,11 +516,11 @@
               (aider-minor-mode 1))))
 
 (setq
- gptel-model 'llama3.2
+ gptel-model 'llama3.2:latest
  gptel-backend (gptel-make-ollama "Ollama"
                  :host "localhost:11434"
                  :stream t
-                 :models '("llama3.2")))
+                 :models '("llama3.2:latest")))
 
 ;;Assuming the buffer finishes successfully, close after 1 second.
 (defun bury-compile-buffer-if-successful (buffer string)
