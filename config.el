@@ -203,20 +203,25 @@
 (map! :leader
       :desc "switch-to-other-frame"
       "7" #'switch-to-buffer-other-frame)
-;; move-one-dir-up
+;; add-to-aider macro
 (map! :leader
-      :desc "move-one-dir-up"
-      "8" #'move-one-dir-up)
+      :desc "add-to-aider"
+      "8" #'add-to-aider)
 
 ;; Display notmuch-hello
 (map! :leader
-      :desc "notmuch-hello"
-      "9" #'notmuch-hello)
+      :desc "file-one-up"
+      "9" #'file-one-up)
 
 ;; Display notmuch-hello
 (map! :leader
       :desc "avy-move-line"
       "a" #'avy-move-line)
+
+;; Opeon an Aider session
+(map! :leader
+      :desc "aider-run-aider"
+      "0" #'aider-run-aider)
 
 ;; better markdown hightlighting
 (custom-set-faces!
@@ -231,9 +236,7 @@
 (global-visual-line-mode +1)
 
 ;; treesit-auto
-(use-package! treesit-auto
-  :config
-  (global-treesit-auto-mode))
+(global-tree-sitter-mode)
 
 ;; Org roam
 (use-package! org-roam
@@ -285,6 +288,11 @@
            (file+head "articles/${slug}.org" "#+title: ${title}\n#+filetags: :article:\n")
            :immediate-finish t
            :unnarrowed t)
+          ;; ("l" "linear_issue" plain "%?"
+          ;;  :if-new
+          ;;  (file+head "linear/${slug}.org" "#+title: ${title}\n")
+          ;;  :immediate-finish t
+          ;;  :unnarrowed t)
           ("d" "dictionary" plain "%?"
            :if-new
            (file+head "dictionary/${slug}.org" "#+title: ${title}\n#+filetags: :dictionary:\n")
@@ -340,12 +348,6 @@
 (setq org-todo-keywords                 ;
       '((sequence "TODO(t)" "NEXT(n)" "HOLD(h)" "|" "DONE(d)" "|" "Cancelled(c)")))
 
-(setq org-capture-templates
-      `(("i" "Inbox" entry  (file "gtd/inbox.org")
-         ,(concat "* TODO %?\n"
-                  "/Entered on/ %U"))
-        ("s" "Slipbox" entry  (file "braindump/org/inbox.org")
-         "* %?\n")))
 
 (require 'find-lisp)
 (defun jethro/org-capture-inbox ()
@@ -388,6 +390,7 @@
 	          (if begin
 	              (substring contents end-of-begin end)
 	            (format "%s" file))))))
+
 
 ;; Associate .mdx and with markdown-mode
 (add-to-list 'auto-mode-alist '("\\.mdx\\'" . gfm-mode))
@@ -484,21 +487,16 @@
 
 
 ;; enable emacs everywhere in markdown mode with copilot
-(remove-hook 'emacs-everywhere-init-hooks #'emacs-everywhere-major-mode-org-or-markdown) ; or #'org-mode if that's what's present
-(add-hook 'emacs-everywhere-init-hooks #'gfm-mode)
-(add-hook 'emacs-everywhere-init-hooks #'copilot-mode)
+;; (remove-hook 'emacs-everywhere-init-hooks #'emacs-everywhere-major-mode-org-or-markdown) ; or #'org-mode if that's what's present
 
 ;; added windows resize key-bindings
-(use-package! hydra
-  :defer
-  :config
-  (defhydra hydra/evil-window-resize (:color red)
-    "Resize window"
-    ("h" evil-window-decrease-width "decrease width")
-    ("j" evil-window-decrease-height "decrease height")
-    ("k" evil-window-increase-height "increase height")
-    ("l" evil-window-increase-width "increase width")
-    ("q" nil "quit")))
+(defhydra hydra/evil-window-resize (:color red)
+  "Resize window"
+  ("h" evil-window-decrease-width "decrease width")
+  ("j" evil-window-decrease-height "decrease height")
+  ("k" evil-window-increase-height "increase height")
+  ("l" evil-window-increase-width "increase width")
+  ("q" nil "quit"))
 (map! :leader
       :prefix ("w" . "window")
       :n "r" #'hydra/evil-window-resize/body)
@@ -518,11 +516,11 @@
               (aider-minor-mode 1))))
 
 (setq
- gptel-model 'llama3.2
+ gptel-model 'llama3.2:latest
  gptel-backend (gptel-make-ollama "Ollama"
                  :host "localhost:11434"
                  :stream t
-                 :models '("llama3.2")))
+                 :models '("llama3.2:latest")))
 
 ;;Assuming the buffer finishes successfully, close after 1 second.
 (defun bury-compile-buffer-if-successful (buffer string)
@@ -595,17 +593,22 @@
 (add-to-list 'auto-mode-alist '("\\.mdx\\'" . gfm-mode))
 ;; Ensure that `svg` files are open in `rjsx-mode` in doom emacs
 (add-to-list 'auto-mode-alist '("\\.svg\\'" . rjsx-mode))
+(add-to-list 'auto-mode-alist '("\\.org\\'" . copilot-mode))
+(add-to-list 'auto-mode-alist '("\\.mdx\\'" . copilot-mode))
+(add-to-list 'auto-mode-alist '("\\.md\\'" . copilot-mode))
+
+(add-hook 'emacs-everywhere-init-hooks #'gfm-mode)
+(add-hook 'emacs-everywhere-init-hooks #'copilot-mode)
+
+
 ;; accept completion from copilot and fallback to company
-(use-package! copilot
-  :hook (prog-mode . copilot-mode)
-  :hook (markdown-mode . copilot-mode)
-  :hook (gfm-mode . copilot-mode)
-  :hook (org-mode . copilot-mode)
-  :bind (:map copilot-completion-map
-              ("TAB" . 'copilot-accept-completion)
-              ("C-<tab>" . 'copilot-accept-completion-by-word)
-              ("C-p" . 'copilot-previous-completion)
-              ("C-n" . 'copilot-next-completion)))
+(after! copilot
+  (add-hook! (prog-mode markdown-mode gfm-mode org-mode) #'copilot-mode)
+  (map! :map copilot-completion-map
+        "TAB"     #'copilot-accept-completion
+        "C-<tab>" #'copilot-accept-completion-by-word
+        "C-p"     #'copilot-previous-completion
+        "C-n"     #'copilot-next-completion))
 ;; :config
 ;; Disable company when copilot is active
 ;; (add-hook 'copilot-mode-hook (lambda ()
@@ -619,16 +622,12 @@
 ;; debub adapter protocol
 (require 'dap-lldb)
 (require 'dap-cpptools)
-(use-package dap-mode
-  :ensure
-  :config
+(after! dap-mode
   (dap-ui-mode)
   (dap-ui-controls-mode 1)
-
   (require 'dap-lldb)
   (require 'dap-cpptools)
   (require 'dap-gdb-lldb)
-  ;; installs .extension/vscode
   (dap-gdb-lldb-setup)
   (dap-cpptools-setup)
   (dap-register-debug-template "Rust::CppTools Run Configuration"
@@ -676,7 +675,6 @@
 ;; lsp-rust-analyzer-store-path, edit with the active path if rustic complains about rust-analyzer
 (setq lsp-rust-analyzer-store-path "/Users/allup/.cargo/bin/rust-analyzer")
 
-
 (after! persp-mode
   (defun display-workspaces-in-minibuffer ()
     (with-current-buffer " *Minibuf-0*"
@@ -691,19 +689,15 @@
 (defun my/projectile-invalidate-cache-on-switch ()
   "Invalidate projectile cache when switching projects."
   (projectile-invalidate-cache nil))
-
 (add-hook 'projectile-after-switch-project-hook #'my/projectile-invalidate-cache-on-switch)
 
 
-(use-package yasnippet
-  :config
+(after! yasnippet
   (yas-reload-all)
-  (add-to-list 'yas-snippet-dirs "~/.config/emacs/snippets")
-  (yas-global-mode 1))
+  (add-to-list 'yas-snippet-dirs "~/.config/emacs/snippets"))
 
 ;; Enable image viewing
-(use-package image
-  :config
+(after! image
   (setq image-use-external-converter t)
   (add-to-list 'image-types 'svg)  ; Enable SVG support
   (add-to-list 'image-types 'jpeg))  ; Enable jpeg support
@@ -714,8 +708,34 @@
   (setq org-image-actual-width nil)        ; Use image size specifications in org files
   (add-hook 'org-mode-hook #'org-display-inline-images)) ; Auto-display images in org buffers
 
-(use-package solaire-mode
-  :demand t
-  :config
+(after! solaire-mode
   (solaire-global-mode +1))
 
+(setq projectile-indexing-method 'hybrid)
+
+(setq
+ indent-bars-color '(highlight :face-bg t :blend 0)
+ indent-bars-pattern " . . . . ." ; play with the number of dots for your usual font size
+ indent-bars-width-frac 0.25
+ indent-bars-pad-frac 0.1)
+
+;; allow for the use of the clipboard
+(defun copy-from-osx ()
+  (shell-command-to-string "pbpaste"))
+
+(defun paste-to-osx (text &optional push)
+  (let ((process-connection-type nil))
+    (let ((proc (start-process "pbcopy" "*Messages*" "pbcopy")))
+      (process-send-string proc text)
+      (process-send-eof proc))))
+
+(setq interprogram-cut-function 'paste-to-osx)
+(setq interprogram-paste-function 'copy-from-osx)
+
+;; add-to-aider macro
+(defalias 'add-to-aider
+  (kmacro "<return> SPC A a c SPC o -"))
+
+;; file-one-up macro
+(defalias 'file-one-up
+  (kmacro "SPC o -"))

@@ -87,3 +87,4 @@
 (package! solaire-mode)
 (package! pdf-tools)
 (package! org-download)
+(package! url)
