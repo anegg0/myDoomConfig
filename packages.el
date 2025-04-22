@@ -88,3 +88,4 @@
 (package! pdf-tools)
 (package! org-download)
 (package! url)
+(package! aidermacs)

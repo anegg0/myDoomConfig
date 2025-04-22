@@ -40,6 +40,8 @@
 
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
+;; load env vars > EXPERIMENT!
+(doom-load-envvars-file "~/.config/emacs/.local/env")
 (setq org-directory "~/Library/CloudStorage/Dropbox/orgmode")
 
 (setq user-full-name "Gael Blanchemain"
@@ -205,8 +207,8 @@
       "7" #'switch-to-buffer-other-frame)
 ;; add-to-aider macro
 (map! :leader
-      :desc "add-to-aider"
-      "8" #'add-to-aider)
+      :desc "aidermacs-add-file"
+      "8" #'aidermacs-add-file)
 
 ;; Display notmuch-hello
 (map! :leader
@@ -220,8 +222,8 @@
 
 ;; Opeon an Aider session
 (map! :leader
-      :desc "aider-run-aider"
-      "0" #'aider-run-aider)
+      :desc "aidermacs-run"
+      "0" #'aidermacs-run)
 
 ;; better markdown hightlighting
 (custom-set-faces!
@@ -506,12 +508,10 @@
 (use-package aidermacs
   :bind (("C-c a" . aidermacs-transient-menu))
   :config
-                                        ; Set API_KEY in .bashrc, that will automatically picked up by aider or in elisp
-  (setenv "ANTHROPIC_API_KEY" anthropic-api-key)
-                                        ; defun my-get-openrouter-api-key yourself elsewhere for security reasons
-  ;; (setenv "OPENROUTER_API_KEY" (my-get-openrouter-api-key))
+  ;; The API key is already loaded from the environment variables
+  ;; in the doom-load-envvars-file call above
   :custom
-                                        ; See the Configuration section below
+  ;; See the Configuration section below
   (aidermacs-use-architect-mode t)
   (aidermacs-default-model "sonnet"))
 ;; basic aider config
@@ -686,21 +686,33 @@
 ;; lsp-rust-analyzer-store-path, edit with the active path if rustic complains about rust-analyzer
 (setq lsp-rust-analyzer-store-path "/Users/allup/.cargo/bin/rust-analyzer")
 
-(after! persp-mode
-  (defun display-workspaces-in-minibuffer ()
-    (with-current-buffer " *Minibuf-0*"
-      (erase-buffer)
-      (insert (+workspace--tabline))))
-  (run-with-idle-timer 1 t #'display-workspaces-in-minibuffer)
-  (+workspace/display))
-;; load env vars > EXPERIMENT!
-(doom-load-envvars-file "~/.config/emacs/.local/env")
+;; Add window number selection keybindings
+;; (use-package! winum
+;;   :config
+;;   (winum-mode)
+;;   (map! "s-1" #'winum-select-window-1
+;;         "s-2" #'winum-select-window-2
+;;         "s-3" #'winum-select-window-3
+;;         "s-4" #'winum-select-window-4
+;;         "s-5" #'winum-select-window-5
+;;         "s-6" #'winum-select-window-6
+;;         "s-7" #'winum-select-window-7
+;;         "s-8" #'winum-select-window-8
+;;         "s-9" #'winum-select-window-9))
 
-;; Invalidate projectile cache when switching projects
-(defun my/projectile-invalidate-cache-on-switch ()
-  "Invalidate projectile cache when switching projects."
-  (projectile-invalidate-cache nil))
-(add-hook 'projectile-after-switch-project-hook #'my/projectile-invalidate-cache-on-switch)
+;; (after! persp-mode
+;;   (defun display-workspaces-in-minibuffer ()
+;;     (with-current-buffer " *Minibuf-0*"
+;;       (erase-buffer)
+;;       (insert (+workspace--tabline))))
+;;   (run-with-idle-timer 1 t #'display-workspaces-in-minibuffer)
+;;   (+workspace/display))
+
+;; ;; Invalidate projectile cache when switching projects
+;; (defun my/projectile-invalidate-cache-on-switch ()
+;;   "Invalidate projectile cache when switching projects."
+;;   (projectile-invalidate-cache nil))
+;; (add-hook 'projectile-after-switch-project-hook #'my/projectile-invalidate-cache-on-switch)
 
 
 (after! yasnippet
