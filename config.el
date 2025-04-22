@@ -176,8 +176,8 @@
 
 ;; Sync tremacs with current project
 (map! :leader
-      :desc "treemacs-add-and-display-current-project"
-      "z" #'treemacs-add-and-display-current-project)
+      :desc "treemacs-add-and-display-current-project-exclusively"
+      "z" #'treemacs-add-and-display-current-project-exclusively)
 
 ;; copy to register 1
 (map! :leader
@@ -503,10 +503,21 @@
 
 (setq auth-sources '("~/.authinfo" "~/.authinfo.gpg" "~/.netrc"))
 
-;; basic aider config
-(use-package aider
+(use-package aidermacs
+  :bind (("C-c a" . aidermacs-transient-menu))
   :config
-  (setq aider-args '("--model" "anthropic/claude-3-5-sonnet-20241022")))
+                                        ; Set API_KEY in .bashrc, that will automatically picked up by aider or in elisp
+  (setenv "ANTHROPIC_API_KEY" anthropic-api-key)
+                                        ; defun my-get-openrouter-api-key yourself elsewhere for security reasons
+  ;; (setenv "OPENROUTER_API_KEY" (my-get-openrouter-api-key))
+  :custom
+                                        ; See the Configuration section below
+  (aidermacs-use-architect-mode t)
+  (aidermacs-default-model "sonnet"))
+;; basic aider config
+;; (use-package aider
+;;   :config
+;;   (setq aider-args '("--model" "anthropic/claude-3-5-sonnet-20241022")))
 ;; (setenv "ANTHROPIC_API_KEY" anthropic-api-key)
 ;; enable aider minor mode in aider files
 (add-hook 'find-file-hook
