@@ -505,7 +505,7 @@
   ;; in the doom-load-envvars-file call above
   :custom
   ;; See the Configuration section below
-  (aidermacs-use-architect-mode t)
+  ;; (aidermacs-use-architect-mode t)
   (aidermacs-default-model "sonnet"))
 ;; basic aider config
 ;; (use-package aider
@@ -513,6 +513,8 @@
 ;;   (setq aider-args '("--model" "anthropic/claude-3-5-sonnet-20241022")))
 ;; (setenv "ANTHROPIC_API_KEY" anthropic-api-key)
 ;; enable aider minor mode in aider files
+;;;; Use vterm backend (default is comint)
+(setq aidermacs-backend 'vterm)
 (add-hook 'find-file-hook
           (lambda ()
             (when (and (buffer-file-name)
@@ -762,10 +764,58 @@
 (defalias 'file-one-up
   (kmacro "SPC o -"))
 
-(use-package linear
-  :config
-  ;; ;; Set API key (if not set through customize)
-  (setq linear-api-use-auth-source t)
+;; (use-package linear
+;;   :config
+;;   ;; ;; Set API key (if not set through customize)
+;;   (setq linear-api-use-auth-source t)
 
-  ;; Enable debug mode to see detailed logs
-  (setq linear-debug t))
+;;   ;; Enable debug mode to see detailed logs
+;;   (setq linear-debug t))
+;; ;; First, load the updated linear.el file
+;; (use-package linear
+;;   :config
+;;   ;; Enable debugging
+;;   (setq linear-debug t)
+
+;; Linear.app integration configuration
+
+;; Load the package
+(use-package linear
+  :commands (linear-list-issues linear-new-issue)
+  :config
+  ;; Set API key from environment variable
+  (when-let ((env-key (getenv "LINEAR_API_KEY")))
+    (setq linear-api-key env-key)
+    (message "Loaded Linear API key from environment"))
+
+  ;; Alternative: Get API key from auth-source
+  (when (and (not linear-api-key) (require 'auth-source nil t))
+    (let ((auth-info (auth-source-search :host "api.linear.app" :require '(:secret) :max 1)))
+      (when auth-info
+        (let ((secret (plist-get (car auth-info) :secret)))
+          (when secret
+            (setq linear-api-key (if (functionp secret) (funcall secret) secret))
+            (message "Loaded Linear API key from auth-source"))))))
+
+  ;; Optional: Set default team ID if you have one
+  ;; (setq linear-default-team-id "TEAM-ID-HERE")
+
+  ;; Enable debug logging (set to nil to disable)
+  (setq linear-debug t)
+
+  ;; Optional: Verify API connection when Emacs starts
+  ;; (linear-test-connection)
+
+  ;; Optional: Add keybindings
+  :bind (:map global-map
+              ("C-c l l" . linear-list-issues)
+              ("C-c l n" . linear-new-issue)))
+
+;; Optional: Integration with Doom Emacs keybindings
+(after! linear
+  (map! :leader
+        (:prefix ("L" . "Linear")
+         :desc "List issues" "l" #'linear-list-issues
+         :desc "New issue" "n" #'linear-new-issue
+         :desc "Test connection" "t" #'linear-test-connection
+         :desc "Toggle debug" "d" #'linear-toggle-debug)))
