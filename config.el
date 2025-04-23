@@ -764,8 +764,8 @@
 
 (use-package linear
   :config
-  ;; Set API key (if not set through customize)
-  (setq linear-api-key "LINEAR_API_KEY")
+  ;; ;; Set API key (if not set through customize)
+  (setq linear-api-use-auth-source t)
 
   ;; Enable debug mode to see detailed logs
   (setq linear-debug t))
