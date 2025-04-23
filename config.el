@@ -762,23 +762,10 @@
 (defalias 'file-one-up
   (kmacro "SPC o -"))
 
-(use-package! linear
+(use-package linear
   :config
-  ;; Option 1: Set the API key directly (for testing)
-  ;; (setq linear-api-key "your-api-key-here")
-  (setq check-linear-api-key "LINEAR_API_KEY")
+  ;; Set API key (if not set through customize)
+  (setq linear-api-key "LINEAR_API_KEY")
 
-  ;; Option 2: Use auth-source (more secure)
-  ;; (setq linear-api-use-auth-source t)
-
-  ;; Enable debugging
-  (setq url-debug t)
-
-  ;; Define a function to check if the API key is loaded
-  (defun check-linear-api-key ()
-    (interactive)
-    (message "Linear API key: %s"
-             (if linear-api-key
-                 (concat (substring linear-api-key 0 5) "..."
-                         (substring linear-api-key -5))
-               "Not set"))))
+  ;; Enable debug mode to see detailed logs
+  (setq linear-debug t))
