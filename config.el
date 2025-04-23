@@ -234,7 +234,7 @@
   '(markdown-header-face-4 :height 1.15 :foreground "#BF616A" :weight bold :inherit markdown-header-face)
   '(markdown-header-face-5 :height 1.1 :foreground "#b48ead" :weight bold :inherit markdown-header-face)
   '(markdown-header-face-6 :height 1.05 :foreground "#5e81ac" :weight semi-bold :inherit markdown-header-face))
-(add-hook! (gfm-mode markdown-mode) #'visual-line-mode #'turn-off-auto-fill)
+(add-hook! (markdown-mode markdown-mode) #'visual-line-mode #'turn-off-auto-fill)
 (global-visual-line-mode +1)
 
 ;; treesit-auto
@@ -392,13 +392,6 @@
 	          (if begin
 	              (substring contents end-of-begin end)
 	            (format "%s" file))))))
-
-
-;; Associate .mdx and with markdown-mode
-(add-to-list 'auto-mode-alist '("\\.mdx\\'" . gfm-mode))
-
-;; Associate .svg and with xml-mode
-(add-to-list 'auto-mode-alist '("\\.svg\\'" . xml-mode))
 
 (use-package! epa-file
   :config
@@ -597,24 +590,31 @@
 (blink-cursor-mode 1)
 
 
-;; Ensure that `md` files are open in `gfm-mode` in doom emacs
-(add-to-list 'auto-mode-alist '("\\.md\\'" . gfm-mode))
+;; Ensure that `md` files are open in `markdown-mode` in doom emacs
+;; (add-to-list 'auto-mode-alist '("\\.md\\'" . markdown-mode))
 
-;; Ensure that `mdx` files are open in `rjsx-mode` in doom emacs
-(add-to-list 'auto-mode-alist '("\\.mdx\\'" . gfm-mode))
+;; Configure markdown-mode for mdx files
+(after! markdown-mode
+  ;; Ensure that `mdx` files are open in `gfm-mode` in doom emacs
+  (add-to-list 'auto-mode-alist '("\\.mdx\\'" . gfm-mode))
+  
+  ;; Add a hook to force gfm-mode for mdx files if needed
+  (add-hook 'find-file-hook
+            (lambda ()
+              (when (and buffer-file-name
+                         (string-match-p "\\.mdx\\'" buffer-file-name)
+                         (not (eq major-mode 'gfm-mode)))
+                (gfm-mode)))))
 ;; Ensure that `svg` files are open in `rjsx-mode` in doom emacs
-(add-to-list 'auto-mode-alist '("\\.svg\\'" . rjsx-mode))
-(add-to-list 'auto-mode-alist '("\\.org\\'" . copilot-mode))
-(add-to-list 'auto-mode-alist '("\\.mdx\\'" . copilot-mode))
-(add-to-list 'auto-mode-alist '("\\.md\\'" . copilot-mode))
+(add-to-list 'auto-mode-alist '("\\.svg\\'" . xml-mode))
 
-(add-hook 'emacs-everywhere-init-hooks #'gfm-mode)
-(add-hook 'emacs-everywhere-init-hooks #'copilot-mode)
+;; (add-hook 'emacs-everywhere-init-hooks #'markdown-mode)
+;; (add-hook 'emacs-everywhere-init-hooks #'copilot-mode)
 
 
 ;; accept completion from copilot and fallback to company
 (after! copilot
-  (add-hook! (prog-mode markdown-mode gfm-mode org-mode) #'copilot-mode)
+  (add-hook! (prog-mode markdown-mode markdown-mode org-mode) #'copilot-mode)
   (map! :map copilot-completion-map
         "TAB"     #'copilot-accept-completion
         "C-<tab>" #'copilot-accept-completion-by-word
@@ -686,33 +686,32 @@
 ;; lsp-rust-analyzer-store-path, edit with the active path if rustic complains about rust-analyzer
 (setq lsp-rust-analyzer-store-path "/Users/allup/.cargo/bin/rust-analyzer")
 
-;; Add window number selection keybindings
-;; (use-package! winum
-;;   :config
-;;   (winum-mode)
-;;   (map! "s-1" #'winum-select-window-1
-;;         "s-2" #'winum-select-window-2
-;;         "s-3" #'winum-select-window-3
-;;         "s-4" #'winum-select-window-4
-;;         "s-5" #'winum-select-window-5
-;;         "s-6" #'winum-select-window-6
-;;         "s-7" #'winum-select-window-7
-;;         "s-8" #'winum-select-window-8
-;;         "s-9" #'winum-select-window-9))
+(after! persp-mode
+  (defun display-workspaces-in-minibuffer ()
+    (with-current-buffer " *Minibuf-0*"
+      (erase-buffer)
+      (insert (+workspace--tabline))))
+  (run-with-idle-timer 1 t #'display-workspaces-in-minibuffer)
+  (+workspace/display))
 
-;; (after! persp-mode
-;;   (defun display-workspaces-in-minibuffer ()
-;;     (with-current-buffer " *Minibuf-0*"
-;;       (erase-buffer)
-;;       (insert (+workspace--tabline))))
-;;   (run-with-idle-timer 1 t #'display-workspaces-in-minibuffer)
-;;   (+workspace/display))
+;; Invalidate projectile cache only when switching Git branches
+(defun my/projectile-invalidate-cache-on-branch-change ()
+  "Invalidate projectile cache when switching Git branches."
+  (let ((current-branch (magit-get-current-branch))
+        (branch-file (expand-file-name ".projectile-branch" (projectile-project-root))))
+    (when (and current-branch (file-exists-p (projectile-project-root)))
+      (if (file-exists-p branch-file)
+          (with-temp-buffer
+            (insert-file-contents branch-file)
+            (let ((stored-branch (string-trim (buffer-string))))
+              (unless (string= stored-branch current-branch)
+                (projectile-invalidate-cache nil)
+                (with-temp-file branch-file
+                  (insert current-branch)))))
+        (with-temp-file branch-file
+          (insert current-branch))))))
 
-;; ;; Invalidate projectile cache when switching projects
-;; (defun my/projectile-invalidate-cache-on-switch ()
-;;   "Invalidate projectile cache when switching projects."
-;;   (projectile-invalidate-cache nil))
-;; (add-hook 'projectile-after-switch-project-hook #'my/projectile-invalidate-cache-on-switch)
+(add-hook 'projectile-after-switch-project-hook #'my/projectile-invalidate-cache-on-branch-change)
 
 
 (after! yasnippet
