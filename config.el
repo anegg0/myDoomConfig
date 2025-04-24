@@ -534,6 +534,11 @@ URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
       linear-org-team-id-property "LINEAR_TEAM"
       linear-org-modified-property "LINEAR_MODIFIED"
       linear-org-url-property "LINEAR_URL")
+;; Define the logging function that the integration needs
+(defun linear--log (format-string &rest args)
+  "Log message with FORMAT-STRING and ARGS if debug is enabled."
+  (when linear-debug
+    (apply #'message (concat "[Linear] " format-string) args)))
 
 (defun linear-org-api-query-assigned-issues ()
   "Query Linear API for assigned issues."
@@ -1030,7 +1035,6 @@ Returns marker position of the heading or nil if not found."
       (insert (+workspace--tabline))))
   (run-with-idle-timer 1 t #'display-workspaces-in-minibuffer)
   (+workspace/display))
-
 ;; Linear.app integration
 (use-package linear
   :commands (linear-list-issues linear-new-issue)
