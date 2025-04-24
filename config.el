@@ -819,3 +819,7 @@
          :desc "New issue" "n" #'linear-new-issue
          :desc "Test connection" "t" #'linear-test-connection
          :desc "Toggle debug" "d" #'linear-toggle-debug)))
+
+(setq initial-frame-alist
+      (append initial-frame-alist
+              '((top . 1) (left . 1) (width . 230) (height . 180))))
