@@ -395,9 +395,42 @@ URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
          :target (file+head "%<%Y-%m-%d>.org"
                             "#+title: %<%Y-%m-%d>\n"))))
 
-;; Org TODO keywords
-(setq org-todo-keywords
-      '((sequence "TODO(t)" "NEXT(n)" "HOLD(h)" "|" "DONE(d)" "|" "Cancelled(c)")))
+;; This should replace the current org-todo-keywords setting in your config.el
+
+;; Configure Org mode and ensure settings take effect
+(after! org
+  ;; Base settings
+  (setq org-directory "~/Library/CloudStorage/Dropbox/orgmode"
+        load-prefer-newer t
+        search-highlight t
+        search-whitespace-regexp ".*?"
+        org-ellipsis " ▼ "
+        org-adapt-indentation nil
+        org-habit-show-habits-only-for-today t)
+
+  ;; Custom TODO keywords
+  (setq org-todo-keywords
+        '((sequence "TODO(t)" "NEXT(n)" "HOLD(h)" "|" "DONE(d)" "CANCELLED(c)")))
+
+  ;; Optional: Add custom faces for your TODO states
+  (setq org-todo-keyword-faces
+        '(("TODO" . (:foreground "red" :weight bold))
+          ("NEXT" . (:foreground "blue" :weight bold))
+          ("HOLD" . (:foreground "orange" :weight bold))
+          ("DONE" . (:foreground "green" :weight bold))
+          ("CANCELLED" . (:foreground "gray" :weight bold))))
+
+  ;; Configure org-mode for inline images
+  (setq org-startup-with-inline-images t)  ; Show inline images when opening org files
+  (setq org-image-actual-width nil)        ; Use image size specifications in org files
+  (add-hook 'org-mode-hook #'org-display-inline-images)) ; Auto-display images in org buffers
+
+;; Make sure Org-roam uses the same TODO keywords
+(after! org-roam
+  ;; All your existing org-roam settings...
+
+  ;; Add this line to ensure org-roam uses your custom TODO states
+  (setq org-roam-todo-keywords org-todo-keywords))
 
 ;; Deft for quick note access
 (use-package deft
@@ -680,6 +713,7 @@ URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
   (run-with-idle-timer 1 t #'display-workspaces-in-minibuffer)
   (+workspace/display))
 
+(require 'linear-org)
 ;; Linear.app integration
 (use-package linear
   :commands (linear-list-issues linear-new-issue)
