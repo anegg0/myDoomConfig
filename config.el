@@ -505,6 +505,324 @@ URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
   (interactive)
   (org-capture nil "s"))
 
+;; Linear and Org-mode integration
+;; Add this to your config.el file
+
+;; Define the org file where Linear tasks will be stored
+(setq linear-org-file (expand-file-name "main/linear.org" org-directory))
+
+;; Mapping between Linear states and org TODO keywords
+(setq linear-org-state-mapping
+      '(("Todo" . "TODO")
+        ("In Progress" . "NEXT")
+        ("In Review" . "NEXT")
+        ("Backlog" . "HOLD")
+        ("Blocked" . "HOLD")
+        ("Done" . "DONE")
+        ("Canceled" . "Cancelled")))
+
+;; Mapping between Linear priority values and org priorities
+(setq linear-org-priority-mapping
+      '((0 . nil)   ; No priority
+        (1 . "A")   ; Urgent
+        (2 . "B")   ; High
+        (3 . "C")   ; Medium
+        (4 . "D"))) ; Low
+
+;; Property names for storing Linear metadata
+(setq linear-org-issue-id-property "LINEAR_ID"
+      linear-org-team-id-property "LINEAR_TEAM"
+      linear-org-modified-property "LINEAR_MODIFIED"
+      linear-org-url-property "LINEAR_URL")
+
+(defun linear-org-api-query-assigned-issues ()
+  "Query Linear API for assigned issues."
+  (linear--log "Fetching assigned issues for org sync")
+  (let* ((query "query {
+                  viewer {
+                    assignedIssues {
+                      nodes {
+                        id
+                        identifier
+                        title
+                        description
+                        state {
+                          id
+                          name
+                          type
+                        }
+                        team {
+                          id
+                          name
+                        }
+                        priority
+                        url
+                        updatedAt
+                      }
+                    }
+                  }
+                }")
+         (response (linear--graphql-request query)))
+    (when response
+      (cdr (assoc 'nodes (assoc 'assignedIssues (assoc 'viewer (assoc 'data response))))))))
+
+(defun linear-org-linear-to-org-state (linear-state)
+  "Convert LINEAR-STATE to org TODO state."
+  (or (cdr (assoc linear-state linear-org-state-mapping)) "TODO"))
+
+(defun linear-org-org-to-linear-state (org-state)
+  "Convert ORG-STATE to Linear state."
+  (car (rassoc org-state linear-org-state-mapping)))
+
+(defun linear-org-linear-to-org-priority (priority)
+  "Convert LINEAR numeric PRIORITY to org priority."
+  (cdr (assoc priority linear-org-priority-mapping)))
+
+(defun linear-org-ensure-linear-file ()
+  "Ensure the Linear org file exists with proper structure."
+  (unless (file-exists-p linear-org-file)
+    (with-temp-file linear-org-file
+      (insert "#+TITLE: Linear Tasks\n")
+      (insert "#+FILETAGS: :linear:\n")
+      (insert "#+TODO: TODO NEXT HOLD | DONE Cancelled\n\n"))))
+
+(defun linear-org-find-issue-heading (issue-id)
+  "Find the org heading for the specified ISSUE-ID.
+Returns marker position of the heading or nil if not found."
+  (with-current-buffer (find-file-noselect linear-org-file)
+    (org-with-wide-buffer
+     (goto-char (point-min))
+     (when (re-search-forward (format ":%s: *%s" linear-org-issue-id-property issue-id) nil t)
+       (org-back-to-heading t)
+       (point-marker)))))
+
+(defun linear-org-format-issue-heading (issue)
+  "Format the heading for ISSUE."
+  (let* ((identifier (cdr (assoc 'identifier issue)))
+         (title (cdr (assoc 'title issue)))
+         (state-name (cdr (assoc 'name (assoc 'state issue))))
+         (org-state (linear-org-linear-to-org-state state-name))
+         (priority (cdr (assoc 'priority issue)))
+         (org-priority (linear-org-linear-to-org-priority priority)))
+
+    (concat
+     (if org-priority
+         (format "* %s [#%s] %s: %s" org-state org-priority identifier title)
+       (format "* %s %s: %s" org-state identifier title)))))
+
+(defun linear-org-format-issue-properties (issue)
+  "Format the properties for ISSUE."
+  (let* ((id (cdr (assoc 'id issue)))
+         (team-id (cdr (assoc 'id (assoc 'team issue))))
+         (team-name (cdr (assoc 'name (assoc 'team issue))))
+         (url (cdr (assoc 'url issue)))
+         (updated-at (cdr (assoc 'updatedAt issue))))
+
+    (concat
+     ":PROPERTIES:\n"
+     (format ":%s: %s\n" linear-org-issue-id-property id)
+     (format ":%s: %s\n" linear-org-team-id-property team-id)
+     (format ":%s: %s\n" "LINEAR_TEAM_NAME" team-name)
+     (format ":%s: %s\n" linear-org-url-property url)
+     (format ":%s: %s\n" linear-org-modified-property updated-at)
+     ":END:\n")))
+
+(defun linear-org-sync-issue (issue)
+  "Synchronize a single ISSUE from Linear to org."
+  (let* ((id (cdr (assoc 'id issue)))
+         (title (cdr (assoc 'title issue)))
+         (description (or (cdr (assoc 'description issue)) ""))
+         (existing (linear-org-find-issue-heading id)))
+
+    (with-current-buffer (find-file-noselect linear-org-file)
+      (org-with-wide-buffer
+       (if existing
+           ;; Update existing entry
+           (progn
+             (goto-char existing)
+             (delete-region (point) (line-end-position))
+             (insert (linear-org-format-issue-heading issue))
+
+             ;; Update properties
+             (org-end-of-meta-data)
+             (let ((properties-end (point)))
+               (org-back-to-heading t)
+               (re-search-forward ":PROPERTIES:" properties-end t)
+               (beginning-of-line)
+               (delete-region (point)
+                              (save-excursion
+                                (re-search-forward ":END:" nil t)
+                                (line-end-position)))
+               (insert (linear-org-format-issue-properties issue)))
+
+             ;; Update content if necessary
+             (org-end-of-meta-data t)
+             (when (org-at-heading-p)
+               ;; No content yet, add the description
+               (insert "\n" description)))
+
+         ;; Create new entry
+         (goto-char (point-max))
+         (unless (bolp) (insert "\n"))
+         (insert (linear-org-format-issue-heading issue) "\n")
+         (insert (linear-org-format-issue-properties issue))
+         (when (and description (not (string-empty-p description)))
+           (insert "\n" description))))
+      (save-buffer))))
+
+(defun linear-org-sync-from-linear ()
+  "Synchronize issues from Linear to org file."
+  (interactive)
+  (linear-org-ensure-linear-file)
+  (let ((issues (linear-org-api-query-assigned-issues)))
+    (if issues
+        (progn
+          (message "Syncing %d issues from Linear to org..." (length issues))
+          (dolist (issue issues)
+            (linear-org-sync-issue issue))
+          (message "Linear-org sync completed"))
+      (message "No issues found or failed to retrieve issues"))))
+
+(defun linear-org-extract-issue-id ()
+  "Extract Linear issue ID from the current org entry."
+  (org-entry-get (point) linear-org-issue-id-property))
+
+(defun linear-org-extract-team-id ()
+  "Extract Linear team ID from the current org entry."
+  (org-entry-get (point) linear-org-team-id-property))
+
+(defun linear-org-update-linear-issue (id team-id title state description)
+  "Update a Linear issue with ID, TEAM-ID, TITLE, STATE, and DESCRIPTION."
+  (linear--log "Updating Linear issue %s" id)
+  (let* ((query "mutation UpdateIssue($id: String!, $input: IssueUpdateInput!) {
+                  issueUpdate(id: $id, input: $input) {
+                    success
+                    issue {
+                      id
+                      identifier
+                      title
+                      updatedAt
+                    }
+                  }
+                }")
+         (state-id (when state
+                     (let* ((states-query "query GetStates($teamId: String!) {
+                                            team(id: $teamId) {
+                                              states {
+                                                nodes {
+                                                  id
+                                                  name
+                                                }
+                                              }
+                                            }
+                                          }")
+                            (variables `(("teamId" . ,team-id)))
+                            (response (linear--graphql-request states-query variables))
+                            (states (when response
+                                      (cdr (assoc 'nodes (assoc 'states (assoc 'team (assoc 'data response))))))))
+                       (when states
+                         (cdr (assoc 'id
+                                     (seq-find (lambda (s)
+                                                 (string= (cdr (assoc 'name s)) state))
+                                               states)))))))
+
+         (input `(("title" . ,title)
+                  ,@(when description
+                      `(("description" . ,description)))
+                  ,@(when state-id
+                      `(("stateId" . ,state-id)))))
+
+         (variables `(("id" . ,id)
+                      ("input" . ,input)))
+
+         (response (linear--graphql-request query variables)))
+
+    (if (and response (assoc 'data response))
+        (progn
+          (message "Updated Linear issue: %s"
+                   (cdr (assoc 'identifier
+                               (assoc 'issue
+                                      (assoc 'issueUpdate
+                                             (assoc 'data response))))))
+          t)
+      (message "Failed to update Linear issue")
+      nil)))
+
+(defun linear-org-sync-to-linear ()
+  "Sync the current org entry to Linear."
+  (interactive)
+  (save-excursion
+    (org-back-to-heading t)
+    (let* ((issue-id (linear-org-extract-issue-id))
+           (team-id (linear-org-extract-team-id)))
+
+      (if (and issue-id team-id)
+          (let* ((title (org-get-heading t t t t))
+                 ;; Extract the identifier prefix if present
+                 (title (if (string-match "\\([A-Z]+-[0-9]+\\): \\(.*\\)" title)
+                            (match-string 2 title)
+                          title))
+                 (todo-state (org-get-todo-state))
+                 (linear-state (linear-org-org-to-linear-state todo-state))
+                 ;; Get description from content
+                 (description (save-excursion
+                                (org-end-of-meta-data t)
+                                (when (org-at-heading-p)
+                                  "")
+                                (let ((start (point)))
+                                  (if (org-goto-sibling)
+                                      (buffer-substring-no-properties start (line-beginning-position))
+                                    (buffer-substring-no-properties start (point-max)))))))
+
+            (if (linear-org-update-linear-issue issue-id team-id title linear-state description)
+                (progn
+                  (message "Synchronized org entry to Linear")
+                  (org-entry-put (point) linear-org-modified-property
+                                 (format-time-string "%Y-%m-%dT%H:%M:%SZ" (current-time))))
+              (message "Failed to sync to Linear")))
+
+        (message "Current entry is not a Linear task")))))
+
+(defun linear-org-open-issue ()
+  "Open the current Linear issue in browser."
+  (interactive)
+  (let ((url (org-entry-get (point) linear-org-url-property)))
+    (if url
+        (browse-url url)
+      (message "No Linear URL found for this entry"))))
+
+;; Hook to sync changes to Linear when todo state changes
+(defun linear-org-after-todo-state-change ()
+  "Hook function to sync todo state changes to Linear."
+  (when (and (buffer-file-name)
+             (string= (expand-file-name (buffer-file-name)) (expand-file-name linear-org-file))
+             (org-entry-get (point) linear-org-issue-id-property))
+    (linear-org-sync-to-linear)))
+
+;; Add hook for todo state changes
+(add-hook 'org-after-todo-state-change-hook 'linear-org-after-todo-state-change)
+
+;; Add to org-capture-templates if needed
+(after! org
+  (add-to-list 'org-capture-templates
+               '("L" "Linear Task" entry
+                 (file linear-org-file)
+                 "* TODO %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n%i\n")))
+
+;; Define keybindings
+(after! linear
+  (map! :map org-mode-map
+        :localleader
+        (:prefix ("L" . "Linear")
+         :desc "Sync from Linear" "s" #'linear-org-sync-from-linear
+         :desc "Sync to Linear" "p" #'linear-org-sync-to-linear
+         :desc "Open in browser" "o" #'linear-org-open-issue))
+
+  (map! :leader
+        (:prefix ("L" . "Linear")
+         :desc "Sync from Linear" "s" #'linear-org-sync-from-linear
+         :desc "List issues" "l" #'linear-list-issues
+         :desc "New issue" "n" #'linear-new-issue)))
 ;; GPG/Pinentry
 (use-package! epa-file
   :config
