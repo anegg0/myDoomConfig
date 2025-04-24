@@ -751,6 +751,7 @@ Returns marker position of the heading or nil if not found."
       (save-buffer))))
 
 ;; Main sync functions
+;; Update the linear-org-sync-from-linear function to properly handle vector data
 (defun linear-org-sync-from-linear ()
   "Synchronize issues from Linear to org file."
   (interactive)
@@ -759,6 +760,10 @@ Returns marker position of the heading or nil if not found."
     (if issues
         (progn
           (message "Syncing %d issues from Linear to org..." (length issues))
+          ;; Convert vector to list if needed - this is the key fix
+          (when (vectorp issues)
+            (setq issues (append issues nil)))
+          ;; Now process the issues
           (dolist (issue issues)
             (linear-org-sync-issue issue))
           (message "Linear-org sync completed"))
