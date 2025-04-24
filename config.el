@@ -395,8 +395,6 @@ URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
          :target (file+head "%<%Y-%m-%d>.org"
                             "#+title: %<%Y-%m-%d>\n"))))
 
-;; This should replace the current org-todo-keywords setting in your config.el
-
 ;; Configure Org mode and ensure settings take effect
 (after! org
   ;; Base settings
@@ -505,10 +503,87 @@ URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
   (interactive)
   (org-capture nil "s"))
 
-;; Linear and Org-mode integration
-;; Add this to your config.el file
+;; Linear.app integration
+;; ===============================================================
 
-;; Define the org file where Linear tasks will be stored
+;; Linear settings
+(defcustom linear-api-key nil
+  "API key for Linear.app."
+  :type 'string
+  :group 'linear)
+
+(defcustom linear-graphql-url "https://api.linear.app/graphql"
+  "GraphQL endpoint URL for Linear API."
+  :type 'string
+  :group 'linear)
+
+(defcustom linear-default-team-id nil
+  "Default team ID to use for creating issues."
+  :type 'string
+  :group 'linear)
+
+(defcustom linear-debug nil
+  "Enable debug logging for Linear requests."
+  :type 'boolean
+  :group 'linear)
+
+;; Define the logging function that's used by other Linear functions
+(defun linear--log (format-string &rest args)
+  "Log message with FORMAT-STRING and ARGS if debug is enabled."
+  (when linear-debug
+    (apply #'message (concat "[Linear] " format-string) args)))
+
+;; Define the headers function needed for API requests
+(defun linear--headers ()
+  "Return headers for Linear API requests."
+  (unless linear-api-key
+    (error "Linear API key not set. Use M-x customize-variable RET linear-api-key"))
+
+  ;; For personal API keys, the format is: "Authorization: <API_KEY>"
+  ;; No "Bearer" prefix for personal API keys
+  `(("Content-Type" . "application/json")
+    ("Authorization" . ,linear-api-key)))
+
+;; GraphQL request function from linear.el
+(defun linear--graphql-request (query &optional variables)
+  "Make a GraphQL request to Linear API with QUERY and optional VARIABLES."
+  (linear--log "Making GraphQL request with query: %s" query)
+  (when variables
+    (linear--log "Variables: %s" (prin1-to-string variables)))
+
+  (let ((response nil)
+        (error-response nil)
+        (request-data (json-encode `(("query" . ,query)
+                                     ,@(when variables `(("variables" . ,variables)))))))
+    (linear--log "Request payload: %s" request-data)
+
+    (request
+      linear-graphql-url
+      :type "POST"
+      :headers (linear--headers)
+      :data request-data
+      :parser 'json-read
+      :sync t
+      :success (cl-function
+                (lambda (&key data &allow-other-keys)
+                  (linear--log "Response received: %s" (prin1-to-string data))
+                  (setq response data)))
+      :error (cl-function
+              (lambda (&key error-thrown response data &allow-other-keys)
+                (setq error-response error-thrown)
+                (linear--log "Error: %s" error-thrown)
+                (when response
+                  (linear--log "Response status: %s" (request-response-status-code response)))
+                (when data
+                  (linear--log "Error response: %s" (prin1-to-string data))))))
+
+    (if error-response
+        (progn
+          (message "Linear API error: %s" error-response)
+          nil)
+      response)))
+
+;; Set the location for Linear org file
 (setq linear-org-file (expand-file-name "main/linear.org" org-directory))
 
 ;; Mapping between Linear states and org TODO keywords
@@ -534,12 +609,8 @@ URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
       linear-org-team-id-property "LINEAR_TEAM"
       linear-org-modified-property "LINEAR_MODIFIED"
       linear-org-url-property "LINEAR_URL")
-;; Define the logging function that the integration needs
-(defun linear--log (format-string &rest args)
-  "Log message with FORMAT-STRING and ARGS if debug is enabled."
-  (when linear-debug
-    (apply #'message (concat "[Linear] " format-string) args)))
 
+;; Function to query Linear API for assigned issues
 (defun linear-org-api-query-assigned-issues ()
   "Query Linear API for assigned issues."
   (linear--log "Fetching assigned issues for org sync")
@@ -571,6 +642,7 @@ URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
     (when response
       (cdr (assoc 'nodes (assoc 'assignedIssues (assoc 'viewer (assoc 'data response))))))))
 
+;; State conversion functions
 (defun linear-org-linear-to-org-state (linear-state)
   "Convert LINEAR-STATE to org TODO state."
   (or (cdr (assoc linear-state linear-org-state-mapping)) "TODO"))
@@ -583,6 +655,7 @@ URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
   "Convert LINEAR numeric PRIORITY to org priority."
   (cdr (assoc priority linear-org-priority-mapping)))
 
+;; File management
 (defun linear-org-ensure-linear-file ()
   "Ensure the Linear org file exists with proper structure."
   (unless (file-exists-p linear-org-file)
@@ -601,6 +674,7 @@ Returns marker position of the heading or nil if not found."
        (org-back-to-heading t)
        (point-marker)))))
 
+;; Formatting functions
 (defun linear-org-format-issue-heading (issue)
   "Format the heading for ISSUE."
   (let* ((identifier (cdr (assoc 'identifier issue)))
@@ -632,6 +706,7 @@ Returns marker position of the heading or nil if not found."
      (format ":%s: %s\n" linear-org-modified-property updated-at)
      ":END:\n")))
 
+;; Synchronization functions
 (defun linear-org-sync-issue (issue)
   "Synchronize a single ISSUE from Linear to org."
   (let* ((id (cdr (assoc 'id issue)))
@@ -675,6 +750,7 @@ Returns marker position of the heading or nil if not found."
            (insert "\n" description))))
       (save-buffer))))
 
+;; Main sync functions
 (defun linear-org-sync-from-linear ()
   "Synchronize issues from Linear to org file."
   (interactive)
@@ -828,6 +904,7 @@ Returns marker position of the heading or nil if not found."
          :desc "Sync from Linear" "s" #'linear-org-sync-from-linear
          :desc "List issues" "l" #'linear-list-issues
          :desc "New issue" "n" #'linear-new-issue)))
+
 ;; GPG/Pinentry
 (use-package! epa-file
   :config
@@ -1035,6 +1112,7 @@ Returns marker position of the heading or nil if not found."
       (insert (+workspace--tabline))))
   (run-with-idle-timer 1 t #'display-workspaces-in-minibuffer)
   (+workspace/display))
+
 ;; Linear.app integration
 (use-package linear
   :commands (linear-list-issues linear-new-issue)
@@ -1054,7 +1132,7 @@ Returns marker position of the heading or nil if not found."
             (message "Loaded Linear API key from auth-source"))))))
 
   ;; Enable debug logging (set to nil to disable)
-  (setq linear-debug t)
+  ;; (setq linear-debug t)
 
   ;; Optional: Add keybindings
   :bind (:map global-map
