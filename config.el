@@ -589,12 +589,13 @@ URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
 ;; Mapping between Linear states and org TODO keywords
 (setq linear-org-state-mapping
       '(("Todo" . "TODO")
-        ("In Progress" . "NEXT")
-        ("In Review" . "NEXT")
-        ("Backlog" . "HOLD")
-        ("Blocked" . "HOLD")
+        ("In Progress" . "IN-PROGRESS")
+        ("In Review" . "IN-REVIEW")
+        ("Backlog" . "BACKLOG")
+        ("Blocked" . "BLOCKED")
         ("Done" . "DONE")
-        ("Canceled" . "Cancelled")))
+        ("Canceled" . "CANCELED")
+        ("Duplicate" . "DUPLICATE")))
 
 ;; Mapping between Linear priority values and org priorities
 (setq linear-org-priority-mapping
