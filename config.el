@@ -1031,7 +1031,6 @@ Returns marker position of the heading or nil if not found."
   (run-with-idle-timer 1 t #'display-workspaces-in-minibuffer)
   (+workspace/display))
 
-(require 'linear-org)
 ;; Linear.app integration
 (use-package linear
   :commands (linear-list-issues linear-new-issue)
