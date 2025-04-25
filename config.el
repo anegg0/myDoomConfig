@@ -408,15 +408,18 @@ URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
 
   ;; Custom TODO keywords
   (setq org-todo-keywords
-        '((sequence "TODO(t)" "NEXT(n)" "HOLD(h)" "|" "DONE(d)" "CANCELLED(c)")))
+        '((sequence "TODO(t)" "IN-PROGRESS(i)" "IN-REVIEW(r)" "|" "BACKLOG(b)" "BLOCKED(l)" "DONE(d)" "CANCELED(c)" "DUPLICATE(p)")))
 
   ;; Optional: Add custom faces for your TODO states
   (setq org-todo-keyword-faces
         '(("TODO" . (:foreground "red" :weight bold))
-          ("NEXT" . (:foreground "blue" :weight bold))
-          ("HOLD" . (:foreground "orange" :weight bold))
+          ("IN-PROGRESS" . (:foreground "blue" :weight bold))
+          ("IN-REVIEW" . (:foreground "orange" :weight bold))
+          ("BACKLOG" . (:foreground "green" :weight bold))
+          ("BLOCKED" . (:foreground "green" :weight bold))
           ("DONE" . (:foreground "green" :weight bold))
-          ("CANCELLED" . (:foreground "gray" :weight bold))))
+          ("CANCELLED" . (:foreground "gray" :weight bold))
+          ("DUPLICATE" . (:foreground "gray" :weight bold))))
 
   ;; Configure org-mode for inline images
   (setq org-startup-with-inline-images t)  ; Show inline images when opening org files
@@ -616,29 +619,29 @@ URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
   "Query Linear API for assigned issues."
   (linear--log "Fetching assigned issues for org sync")
   (let* ((query "query {
-                  viewer {
-                    assignedIssues {
-                      nodes {
-                        id
-                        identifier
-                        title
-                        description
-                        state {
-                          id
-                          name
-                          type
-                        }
-                        team {
-                          id
-                          name
-                        }
-                        priority
-                        url
-                        updatedAt
-                      }
-                    }
-                  }
-                }")
+                                     viewer {
+                                     assignedIssues {
+                                     nodes {
+                                     id
+                                     identifier
+                                     title
+                                     description
+                                     state {
+                                     id
+                                     name
+                                     type
+                                     }
+                                     team {
+                                     id
+                                     name
+                                     }
+                                     priority
+                                     url
+                                     updatedAt
+                                     }
+                                     }
+                                     }
+                                     }")
          (response (linear--graphql-request query)))
     (when response
       (cdr (assoc 'nodes (assoc 'assignedIssues (assoc 'viewer (assoc 'data response))))))))
@@ -667,7 +670,7 @@ URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
 
 (defun linear-org-find-issue-heading (issue-id)
   "Find the org heading for the specified ISSUE-ID.
-Returns marker position of the heading or nil if not found."
+                                     Returns marker position of the heading or nil if not found."
   (with-current-buffer (find-file-noselect linear-org-file)
     (org-with-wide-buffer
      (goto-char (point-min))
@@ -782,27 +785,27 @@ Returns marker position of the heading or nil if not found."
   "Update a Linear issue with ID, TEAM-ID, TITLE, STATE, and DESCRIPTION."
   (linear--log "Updating Linear issue %s" id)
   (let* ((query "mutation UpdateIssue($id: String!, $input: IssueUpdateInput!) {
-                  issueUpdate(id: $id, input: $input) {
-                    success
-                    issue {
-                      id
-                      identifier
-                      title
-                      updatedAt
-                    }
-                  }
-                }")
+                                     issueUpdate(id: $id, input: $input) {
+                                     success
+                                     issue {
+                                     id
+                                     identifier
+                                     title
+                                     updatedAt
+                                     }
+                                     }
+                                     }")
          (state-id (when state
                      (let* ((states-query "query GetStates($teamId: String!) {
-                                            team(id: $teamId) {
-                                              states {
-                                                nodes {
-                                                  id
-                                                  name
-                                                }
-                                              }
-                                            }
-                                          }")
+                                     team(id: $teamId) {
+                                     states {
+                                     nodes {
+                                     id
+                                     name
+                                     }
+                                     }
+                                     }
+                                     }")
                             (variables `(("teamId" . ,team-id)))
                             (response (linear--graphql-request states-query variables))
                             (states (when response
@@ -1172,3 +1175,8 @@ Returns marker position of the heading or nil if not found."
 (setq initial-frame-alist
       (append initial-frame-alist
               '((top . 1) (left . 1) (width . 230) (height . 180))))
+
+(defun treemacs-add-project-on-workspace-switch (&rest _)
+  "Add and display current project in Treemacs when switching workspaces."
+  (when (fboundp 'treemacs-add-and-display-current-project-exclusively)
+    (treemacs-add-and-display-current-project-exclusively)))
