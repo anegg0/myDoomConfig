@@ -614,34 +614,54 @@ URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
       linear-org-modified-property "LINEAR_MODIFIED"
       linear-org-url-property "LINEAR_URL")
 
+;; Modified Function: Ensure the Linear org file exists with proper structure and top-level heading
+(defun linear-org-ensure-linear-file ()
+  "Ensure the Linear org file exists with proper structure including a top-level OCL heading."
+  (unless (file-exists-p linear-org-file)
+    (with-temp-file linear-org-file
+      (insert "#+TITLE: Linear Tasks\n")
+      (insert "#+FILETAGS: :linear:\n")
+      (insert "#+TODO: TODO IN-PROGRESS IN-REVIEW BACKLOG BLOCKED | DONE CANCELED DUPLICATE\n\n")
+      (insert "* OCL\n"))) ; Add top-level heading
+
+  ;; If file exists but doesn't have the OCL heading, add it
+  (with-current-buffer (find-file-noselect linear-org-file)
+    (org-with-wide-buffer
+     (goto-char (point-min))
+     (unless (re-search-forward "^\\* OCL$" nil t)
+       (goto-char (point-max))
+       (unless (bolp) (insert "\n"))
+       (insert "* OCL\n")
+       (save-buffer)))))
+
 ;; Function to query Linear API for assigned issues
 (defun linear-org-api-query-assigned-issues ()
   "Query Linear API for assigned issues."
   (linear--log "Fetching assigned issues for org sync")
   (let* ((query "query {
-                                     viewer {
-                                     assignedIssues {
-                                     nodes {
-                                     id
-                                     identifier
-                                     title
-                                     description
-                                     state {
-                                     id
-                                     name
-                                     type
-                                     }
-                                     team {
-                                     id
-                                     name
-                                     }
-                                     priority
-                                     url
-                                     updatedAt
-                                     }
-                                     }
-                                     }
-                                     }")
+                  viewer {
+                    assignedIssues {
+                      nodes {
+                        id
+                        identifier
+                        title
+                        description
+                        state {
+                          id
+                          name
+                          type
+                        }
+                        team {
+                          id
+                          name
+                        }
+                        priority
+                        url
+                        updatedAt
+                      }
+                    }
+                  }
+                }")
          (response (linear--graphql-request query)))
     (when response
       (cdr (assoc 'nodes (assoc 'assignedIssues (assoc 'viewer (assoc 'data response))))))))
@@ -659,18 +679,10 @@ URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
   "Convert LINEAR numeric PRIORITY to org priority."
   (cdr (assoc priority linear-org-priority-mapping)))
 
-;; File management
-(defun linear-org-ensure-linear-file ()
-  "Ensure the Linear org file exists with proper structure."
-  (unless (file-exists-p linear-org-file)
-    (with-temp-file linear-org-file
-      (insert "#+TITLE: Linear Tasks\n")
-      (insert "#+FILETAGS: :linear:\n")
-      (insert "#+TODO: TODO NEXT HOLD | DONE Cancelled\n\n"))))
-
+;; Find issue heading in the org file
 (defun linear-org-find-issue-heading (issue-id)
   "Find the org heading for the specified ISSUE-ID.
-                                     Returns marker position of the heading or nil if not found."
+Returns marker position of the heading or nil if not found."
   (with-current-buffer (find-file-noselect linear-org-file)
     (org-with-wide-buffer
      (goto-char (point-min))
@@ -678,9 +690,9 @@ URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
        (org-back-to-heading t)
        (point-marker)))))
 
-;; Formatting functions
+;; Modified Function: Format issue headings with ** instead of *
 (defun linear-org-format-issue-heading (issue)
-  "Format the heading for ISSUE."
+  "Format the heading for ISSUE as a second-level heading."
   (let* ((identifier (cdr (assoc 'identifier issue)))
          (title (cdr (assoc 'title issue)))
          (state-name (cdr (assoc 'name (assoc 'state issue))))
@@ -690,9 +702,10 @@ URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
 
     (concat
      (if org-priority
-         (format "* %s [#%s] %s: %s" org-state org-priority identifier title)
-       (format "* %s %s: %s" org-state identifier title)))))
+         (format "** %s [#%s] %s: %s" org-state org-priority identifier title)
+       (format "** %s %s: %s" org-state identifier title)))))
 
+;; Formatting properties
 (defun linear-org-format-issue-properties (issue)
   "Format the properties for ISSUE."
   (let* ((id (cdr (assoc 'id issue)))
@@ -710,9 +723,9 @@ URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
      (format ":%s: %s\n" linear-org-modified-property updated-at)
      ":END:\n")))
 
-;; Synchronization functions
+;; Modified Function: Add issues under OCL heading
 (defun linear-org-sync-issue (issue)
-  "Synchronize a single ISSUE from Linear to org."
+  "Synchronize a single ISSUE from Linear to org under the OCL heading."
   (let* ((id (cdr (assoc 'id issue)))
          (title (cdr (assoc 'title issue)))
          (description (or (cdr (assoc 'description issue)) ""))
@@ -725,7 +738,7 @@ URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
            (progn
              (goto-char existing)
              (delete-region (point) (line-end-position))
-             (insert (linear-org-format-issue-heading issue))
+             (insert (substring (linear-org-format-issue-heading issue) 2)) ; Remove the "**" prefix since we're already at the heading
 
              ;; Update properties
              (org-end-of-meta-data)
@@ -745,17 +758,32 @@ URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
                ;; No content yet, add the description
                (insert "\n" description)))
 
-         ;; Create new entry
-         (goto-char (point-max))
-         (unless (bolp) (insert "\n"))
-         (insert (linear-org-format-issue-heading issue) "\n")
-         (insert (linear-org-format-issue-properties issue))
-         (when (and description (not (string-empty-p description)))
-           (insert "\n" description))))
+         ;; Create new entry - find OCL heading first
+         (goto-char (point-min))
+         (if (re-search-forward "^\\* OCL$" nil t)
+             (progn
+               ;; Go to the end of the OCL section or end of buffer
+               (let ((ocl-end (save-excursion
+                                (if (re-search-forward "^\\* " nil t)
+                                    (progn (backward-char) (point))
+                                  (point-max)))))
+                 (goto-char ocl-end)
+                 (unless (bolp) (insert "\n"))
+                 (insert (linear-org-format-issue-heading issue) "\n")
+                 (insert (linear-org-format-issue-properties issue))
+                 (when (and description (not (string-empty-p description)))
+                   (insert "\n" description))))
+           ;; If OCL heading doesn't exist, create it
+           (goto-char (point-max))
+           (unless (bolp) (insert "\n"))
+           (insert "* OCL\n")
+           (insert (linear-org-format-issue-heading issue) "\n")
+           (insert (linear-org-format-issue-properties issue))
+           (when (and description (not (string-empty-p description)))
+             (insert "\n" description)))))
       (save-buffer))))
 
-;; Main sync functions
-;; Update the linear-org-sync-from-linear function to properly handle vector data
+;; Main sync function modified to handle vector to list conversion
 (defun linear-org-sync-from-linear ()
   "Synchronize issues from Linear to org file."
   (interactive)
@@ -764,7 +792,7 @@ URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
     (if issues
         (progn
           (message "Syncing %d issues from Linear to org..." (length issues))
-          ;; Convert vector to list if needed - this is the key fix
+          ;; Convert vector to list if needed
           (when (vectorp issues)
             (setq issues (append issues nil)))
           ;; Now process the issues
@@ -773,6 +801,7 @@ URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
           (message "Linear-org sync completed"))
       (message "No issues found or failed to retrieve issues"))))
 
+;; Extract issue information functions
 (defun linear-org-extract-issue-id ()
   "Extract Linear issue ID from the current org entry."
   (org-entry-get (point) linear-org-issue-id-property))
@@ -781,31 +810,32 @@ URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
   "Extract Linear team ID from the current org entry."
   (org-entry-get (point) linear-org-team-id-property))
 
+;; Update Linear issue from org entry
 (defun linear-org-update-linear-issue (id team-id title state description)
   "Update a Linear issue with ID, TEAM-ID, TITLE, STATE, and DESCRIPTION."
   (linear--log "Updating Linear issue %s" id)
   (let* ((query "mutation UpdateIssue($id: String!, $input: IssueUpdateInput!) {
-                                     issueUpdate(id: $id, input: $input) {
-                                     success
-                                     issue {
-                                     id
-                                     identifier
-                                     title
-                                     updatedAt
-                                     }
-                                     }
-                                     }")
+                  issueUpdate(id: $id, input: $input) {
+                    success
+                    issue {
+                      id
+                      identifier
+                      title
+                      updatedAt
+                    }
+                  }
+                }")
          (state-id (when state
                      (let* ((states-query "query GetStates($teamId: String!) {
-                                     team(id: $teamId) {
-                                     states {
-                                     nodes {
-                                     id
-                                     name
-                                     }
-                                     }
-                                     }
-                                     }")
+                                            team(id: $teamId) {
+                                              states {
+                                                nodes {
+                                                  id
+                                                  name
+                                                }
+                                              }
+                                            }
+                                          }")
                             (variables `(("teamId" . ,team-id)))
                             (response (linear--graphql-request states-query variables))
                             (states (when response
@@ -838,6 +868,7 @@ URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
       (message "Failed to update Linear issue")
       nil)))
 
+;; Sync org entry to Linear
 (defun linear-org-sync-to-linear ()
   "Sync the current org entry to Linear."
   (interactive)
@@ -873,6 +904,7 @@ URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
 
         (message "Current entry is not a Linear task")))))
 
+;; Open Linear issue in browser
 (defun linear-org-open-issue ()
   "Open the current Linear issue in browser."
   (interactive)
@@ -880,6 +912,82 @@ URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
     (if url
         (browse-url url)
       (message "No Linear URL found for this entry"))))
+
+;; Capture a new Linear issue and place it under OCL heading
+(defun linear-org-capture-to-linear ()
+  "Capture a new Linear issue from an org entry and place it under OCL heading."
+  (interactive)
+  (save-excursion
+    (org-back-to-heading t)
+    (let* ((title (org-get-heading t t t t))
+           (todo-state (org-get-todo-state))
+           (linear-state (linear-org-org-to-linear-state todo-state))
+           ;; Get description from content
+           (description (save-excursion
+                          (org-end-of-meta-data t)
+                          (when (org-at-heading-p)
+                            "")
+                          (let ((start (point)))
+                            (if (org-goto-sibling)
+                                (buffer-substring-no-properties start (line-beginning-position))
+                              (buffer-substring-no-properties start (point-max))))))
+
+           ;; Ask for the team
+           (teams (linear-get-teams))
+           (team-options (mapcar (lambda (team)
+                                   (cons (cdr (assoc 'name team))
+                                         team))
+                                 teams))
+           (selected-team-name (completing-read "Team: " team-options nil t))
+           (selected-team (cdr (assoc selected-team-name team-options)))
+           (team-id (cdr (assoc 'id selected-team)))
+
+           ;; Create the issue in Linear
+           (query "mutation CreateIssue($input: IssueCreateInput!) {
+                    issueCreate(input: $input) {
+                      success
+                      issue {
+                        id
+                        identifier
+                        title
+                        url
+                        updatedAt
+                      }
+                    }
+                  }")
+
+           (input `(("title" . ,title)
+                    ("description" . ,description)
+                    ("teamId" . ,team-id)))
+
+           (variables `(("input" . ,input)))
+           (response (linear--graphql-request query variables)))
+
+      (if (and response (assoc 'data response))
+          (let* ((issue-data (assoc 'issue (assoc 'issueCreate (assoc 'data response))))
+                 (id (cdr (assoc 'id issue-data)))
+                 (identifier (cdr (assoc 'identifier issue-data)))
+                 (url (cdr (assoc 'url issue-data)))
+                 (updated-at (cdr (assoc 'updatedAt issue-data))))
+
+            ;; Set properties on the org entry
+            (org-entry-put (point) linear-org-issue-id-property id)
+            (org-entry-put (point) linear-org-team-id-property team-id)
+            (org-entry-put (point) "LINEAR_TEAM_NAME" (cdr (assoc 'name selected-team)))
+            (org-entry-put (point) linear-org-url-property url)
+            (org-entry-put (point) linear-org-modified-property updated-at)
+
+            ;; Update the heading to include the identifier
+            (let ((new-heading (if (string-match "^\\* \\(TODO\\|IN-PROGRESS\\|IN-REVIEW\\|BACKLOG\\|BLOCKED\\|DONE\\|CANCELED\\|DUPLICATE\\) " title)
+                                   (replace-match (format "** %s %s: " (match-string 1 title) identifier) t t title)
+                                 (format "** TODO %s: %s" identifier title))))
+              (delete-region (line-beginning-position) (line-end-position))
+              (insert new-heading))
+
+            (message "Created Linear issue: %s" identifier)
+            (save-buffer))
+
+        (message "Failed to create Linear issue")))))
 
 ;; Hook to sync changes to Linear when todo state changes
 (defun linear-org-after-todo-state-change ()
@@ -892,12 +1000,20 @@ URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
 ;; Add hook for todo state changes
 (add-hook 'org-after-todo-state-change-hook 'linear-org-after-todo-state-change)
 
-;; Add to org-capture-templates if needed
+;; Update org-capture-templates for Linear tasks to handle second-level heading
 (after! org
   (add-to-list 'org-capture-templates
                '("L" "Linear Task" entry
-                 (file linear-org-file)
-                 "* TODO %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n%i\n")))
+                 (file+headline linear-org-file "OCL")
+                 "** TODO %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n%i\n"
+                 :immediate-finish nil
+                 :jump-to-captured t
+                 :after-finalize (lambda ()
+                                   (with-current-buffer (find-buffer-visiting linear-org-file)
+                                     (save-excursion
+                                       (goto-char (point-max))
+                                       (org-back-to-heading t)
+                                       (call-interactively 'linear-org-capture-to-linear)))))))
 
 ;; Define keybindings
 (after! linear
