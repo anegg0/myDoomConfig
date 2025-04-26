@@ -1210,6 +1210,26 @@ Returns marker position of the heading or nil if not found."
 ;; Project management
 (setq projectile-indexing-method 'hybrid)
 
+;; Add this to your config.el file
+
+;; Function to invalidate projectile cache after git checkout
+(defun my/projectile-invalidate-cache-on-git-checkout ()
+  "Invalidate projectile cache when changing git branches."
+  (let ((project-root (projectile-project-root)))
+    (when project-root
+      (message "Git branch changed - invalidating projectile cache for %s" project-root)
+      (projectile-invalidate-cache nil))))
+
+;; Hook into magit-checkout
+(after! magit
+  (advice-add 'magit-checkout :after #'my/projectile-invalidate-cache-on-git-checkout)
+  (advice-add 'magit-branch-and-checkout :after #'my/projectile-invalidate-cache-on-git-checkout))
+
+;; Also hook into any other ways you might checkout branches
+(after! projectile
+  ;; Ensure we refresh cache after any git operations that might change branch
+  (advice-add 'projectile-vc-branch-default :after #'my/projectile-invalidate-cache-on-git-checkout))
+
 ;; Workspaces display in minibuffer
 (after! persp-mode
   (defun display-workspaces-in-minibuffer ()
