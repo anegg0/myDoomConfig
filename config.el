@@ -172,7 +172,7 @@
 ;; Frame and buffer navigation
 (map! :leader
       :desc "switch-to-other-frame"
-      "7" #'switch-to-buffer-other-frame)
+      "7" #'other-frame)
 
 ;; Aider integration
 (map! :leader
@@ -1210,25 +1210,6 @@ Returns marker position of the heading or nil if not found."
 ;; Project management
 (setq projectile-indexing-method 'hybrid)
 
-;; Invalidate projectile cache only when switching Git branches
-(defun my/projectile-invalidate-cache-on-branch-change ()
-  "Invalidate projectile cache when switching Git branches."
-  (let ((current-branch (magit-get-current-branch))
-        (branch-file (expand-file-name ".projectile-branch" (projectile-project-root))))
-    (when (and current-branch (file-exists-p (projectile-project-root)))
-      (if (file-exists-p branch-file)
-          (with-temp-buffer
-            (insert-file-contents branch-file)
-            (let ((stored-branch (string-trim (buffer-string))))
-              (unless (string= stored-branch current-branch)
-                (projectile-invalidate-cache nil)
-                (with-temp-file branch-file
-                  (insert current-branch)))))
-        (with-temp-file branch-file
-          (insert current-branch))))))
-
-(add-hook 'projectile-after-switch-project-hook #'my/projectile-invalidate-cache-on-branch-change)
-
 ;; Workspaces display in minibuffer
 (after! persp-mode
   (defun display-workspaces-in-minibuffer ()
@@ -1292,7 +1273,19 @@ Returns marker position of the heading or nil if not found."
       (append initial-frame-alist
               '((top . 1) (left . 1) (width . 230) (height . 180))))
 
-(defun treemacs-add-project-on-workspace-switch (&rest _)
-  "Add and display current project in Treemacs when switching workspaces."
-  (when (fboundp 'treemacs-add-and-display-current-project-exclusively)
-    (treemacs-add-and-display-current-project-exclusively)))
+;; Emacs Everywhere Configuration
+(after! emacs-everywhere
+  ;; Set the default major mode to markdown-mode
+  (setq emacs-everywhere-major-mode-function #'markdown-mode)
+
+  ;; Optionally add hooks for specific adjustments when Emacs Everywhere activates
+  (add-hook 'emacs-everywhere-init-hooks
+            (lambda ()
+              ;; Enable visual-line-mode for better text wrapping
+              (visual-line-mode)
+              ;; Disable line numbers for cleaner interface
+              (display-line-numbers-mode -1)
+              ;; Optionally center the buffer contents
+              (centered-cursor-mode)
+              ;; Optionally enable spell-checking
+              (flyspell-mode))))
