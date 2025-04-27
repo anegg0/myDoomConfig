@@ -1056,7 +1056,7 @@ Returns marker position of the heading or nil if not found."
   :bind (("C-c a" . aidermacs-transient-menu))
   :config
   :custom
-  (aidermacs-default-model "sonnet"))
+  (aidermacs-default-model "opus"))
 
 (setq aidermacs-backend 'vterm)
 (add-hook 'find-file-hook
@@ -1248,6 +1248,41 @@ Returns marker position of the heading or nil if not found."
     (setq linear-api-key env-key)
     (message "Loaded Linear API key from environment"))
 
+  ;; Add this to your config.el file
+
+  (defun my/cycle-workspace-windows (&optional reverse)
+    "Cycle through windows in the current workspace.
+When REVERSE is non-nil, cycle in reverse order."
+    (interactive "P")
+    (let* ((windows (window-list))
+           (num-windows (length windows))
+           (current (selected-window))
+           (pos (cl-position current windows))
+           (next-pos (if reverse
+                         (if (= pos 0)
+                             (1- num-windows)
+                           (1- pos))
+                       (if (= pos (1- num-windows))
+                           0
+                         (1+ pos))))
+           (next-window (nth next-pos windows)))
+      (when next-window
+        (select-window next-window))))
+
+  (defun my/cycle-workspace-windows-reverse ()
+    "Cycle through windows in the current workspace in reverse order."
+    (interactive)
+    (my/cycle-workspace-windows t))
+
+  ;; Key bindings - choose what works best for you
+  (map! :leader
+        :desc "Cycle windows forward"
+        "w c" #'my/cycle-workspace-windows)
+
+  (map! :leader
+        :desc "Cycle windows backward"
+        "w C" #'my/cycle-workspace-windows-reverse)
+
   ;; Alternative: Get API key from auth-source
   (when (and (not linear-api-key) (require 'auth-source nil t))
     (let ((auth-info (auth-source-search :host "api.linear.app" :require '(:secret) :max 1)))
@@ -1309,3 +1344,4 @@ Returns marker position of the heading or nil if not found."
               (centered-cursor-mode)
               ;; Optionally enable spell-checking
               (flyspell-mode))))
+
