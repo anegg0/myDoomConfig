@@ -191,6 +191,11 @@
       :desc "aidermacs-run"
       "0" #'aidermacs-run)
 
+(map! :leader
+      :desc "other-window"
+      "]" #'other-window)
+
+
 ;; Window resizing with hydra
 (defhydra hydra/evil-window-resize (:color red)
   "Resize window"
@@ -284,7 +289,7 @@
 ;; Terminal text handling
 (defun my-remove-cr (&optional begin end)
   "Remove line prefixes ending with carriage-return.
-BEGIN END specifies region, otherwise works on entire buffer."
+      BEGIN END specifies region, otherwise works on entire buffer."
   (save-excursion
     (goto-char (or begin (point-min)))
     (while (re-search-forward "^.*\033\\[2K\033\\[1G" end t)
@@ -293,7 +298,7 @@ BEGIN END specifies region, otherwise works on entire buffer."
 ;; Utility functions for copy/paste with registers
 (defun xah-copy-to-register-1 ()
   "Copy current line or selection to register 1.
-URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
+  URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
   (interactive)
   (let (xp1 xp2)
     (if (region-active-p)
@@ -304,7 +309,7 @@ URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
 
 (defun xah-paste-from-register-1 ()
   "Paste text from register 1.
-URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
+  URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
   (interactive)
   (when (region-active-p)
     (delete-region (region-beginning) (region-end)))
@@ -478,9 +483,9 @@ URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
                        '(("r" "reference" plain "%?" :if-new
                           (file+head "reference/${citekey}.org"
                                      ":PROPERTIES:
-                                     :ROAM_REFS: [cite:@${citekey}]
-                                     :END:
-                                     #+title: ${title}\n")
+  :ROAM_REFS: [cite:@${citekey}]
+  :END:
+  #+title: ${title}\n")
                           :immediate-finish t
                           :unnarrowed t))
                        :info (list :citekey (car keys-entries))
@@ -639,29 +644,29 @@ URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
   "Query Linear API for assigned issues."
   (linear--log "Fetching assigned issues for org sync")
   (let* ((query "query {
-                  viewer {
-                    assignedIssues {
-                      nodes {
-                        id
-                        identifier
-                        title
-                        description
-                        state {
-                          id
-                          name
-                          type
-                        }
-                        team {
-                          id
-                          name
-                        }
-                        priority
-                        url
-                        updatedAt
-                      }
-                    }
-                  }
-                }")
+  viewer {
+  assignedIssues {
+  nodes {
+  id
+  identifier
+  title
+  description
+  state {
+  id
+  name
+  type
+  }
+  team {
+  id
+  name
+  }
+  priority
+  url
+  updatedAt
+  }
+  }
+  }
+  }")
          (response (linear--graphql-request query)))
     (when response
       (cdr (assoc 'nodes (assoc 'assignedIssues (assoc 'viewer (assoc 'data response))))))))
@@ -682,7 +687,7 @@ URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'"
 ;; Find issue heading in the org file
 (defun linear-org-find-issue-heading (issue-id)
   "Find the org heading for the specified ISSUE-ID.
-Returns marker position of the heading or nil if not found."
+  Returns marker position of the heading or nil if not found."
   (with-current-buffer (find-file-noselect linear-org-file)
     (org-with-wide-buffer
      (goto-char (point-min))
@@ -815,27 +820,27 @@ Returns marker position of the heading or nil if not found."
   "Update a Linear issue with ID, TEAM-ID, TITLE, STATE, and DESCRIPTION."
   (linear--log "Updating Linear issue %s" id)
   (let* ((query "mutation UpdateIssue($id: String!, $input: IssueUpdateInput!) {
-                  issueUpdate(id: $id, input: $input) {
-                    success
-                    issue {
-                      id
-                      identifier
-                      title
-                      updatedAt
-                    }
-                  }
-                }")
+  issueUpdate(id: $id, input: $input) {
+  success
+  issue {
+  id
+  identifier
+  title
+  updatedAt
+  }
+  }
+  }")
          (state-id (when state
                      (let* ((states-query "query GetStates($teamId: String!) {
-                                            team(id: $teamId) {
-                                              states {
-                                                nodes {
-                                                  id
-                                                  name
-                                                }
-                                              }
-                                            }
-                                          }")
+  team(id: $teamId) {
+  states {
+  nodes {
+  id
+  name
+  }
+  }
+  }
+  }")
                             (variables `(("teamId" . ,team-id)))
                             (response (linear--graphql-request states-query variables))
                             (states (when response
@@ -944,17 +949,17 @@ Returns marker position of the heading or nil if not found."
 
            ;; Create the issue in Linear
            (query "mutation CreateIssue($input: IssueCreateInput!) {
-                    issueCreate(input: $input) {
-                      success
-                      issue {
-                        id
-                        identifier
-                        title
-                        url
-                        updatedAt
-                      }
-                    }
-                  }")
+  issueCreate(input: $input) {
+  success
+  issue {
+  id
+  identifier
+  title
+  url
+  updatedAt
+  }
+  }
+  }")
 
            (input `(("title" . ,title)
                     ("description" . ,description)
@@ -1056,7 +1061,7 @@ Returns marker position of the heading or nil if not found."
   :bind (("C-c a" . aidermacs-transient-menu))
   :config
   :custom
-  (aidermacs-default-model "opus"))
+  (aidermacs-default-model "sonnet"))
 
 (setq aidermacs-backend 'vterm)
 (add-hook 'find-file-hook
@@ -1225,6 +1230,38 @@ Returns marker position of the heading or nil if not found."
   (advice-add 'magit-checkout :after #'my/projectile-invalidate-cache-on-git-checkout)
   (advice-add 'magit-branch-and-checkout :after #'my/projectile-invalidate-cache-on-git-checkout))
 
+;; Add this to your config.el file to enable Copilot in Magit commit buffers
+
+;; Make sure copilot is loaded
+(after! copilot
+  ;; Enable copilot in git-commit-mode (used by Magit for commit messages)
+  (add-hook! 'git-commit-mode-hook #'copilot-mode)
+
+  ;; Ensure it's also enabled in the specific Magit commit message buffer
+  (add-hook! 'with-editor-mode-hook
+    (defun my/maybe-enable-copilot-for-commit ()
+      "Enable copilot-mode when in a Magit commit buffer."
+      (when (equal (buffer-name) "COMMIT_EDITMSG")
+        (copilot-mode 1))))
+
+  ;; Alternative approach using magit hooks directly
+  (add-hook! 'magit-commit-setup-hook
+    (defun my/enable-copilot-in-commit ()
+      "Enable copilot-mode in the commit message buffer."
+      (copilot-mode 1)))
+
+  ;; Make sure Copilot doesn't interfere with Magit's own keybindings
+  (map! :map git-commit-mode-map
+        "TAB" nil  ; Don't let Copilot take over TAB in commit messages
+        "C-<tab>" #'copilot-accept-completion
+        "C-TAB" #'copilot-accept-completion))
+
+;; Display a message confirming that copilot is enabled in commit buffers
+(add-hook! 'git-commit-setup-hook
+  (defun my/confirm-copilot-in-commit ()
+    "Display a message confirming copilot is active."
+    (message "Copilot is now active in this commit message buffer")))
+
 ;; Also hook into any other ways you might checkout branches
 (after! projectile
   ;; Ensure we refresh cache after any git operations that might change branch
@@ -1252,7 +1289,7 @@ Returns marker position of the heading or nil if not found."
 
   (defun my/cycle-workspace-windows (&optional reverse)
     "Cycle through windows in the current workspace.
-When REVERSE is non-nil, cycle in reverse order."
+  When REVERSE is non-nil, cycle in reverse order."
     (interactive "P")
     (let* ((windows (window-list))
            (num-windows (length windows))
