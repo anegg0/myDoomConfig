@@ -18,6 +18,7 @@
 (dolist (dir '("main" "daily" "reference" "articles"))
   (make-directory (expand-file-name dir org-directory) t))
 
+
 ;; Define org-agenda-files early in the configuration
 (setq org-agenda-files (list
                         (expand-file-name "main" org-directory)
@@ -426,12 +427,6 @@
   (setq org-todo-keywords
         '((sequence "TODO(t)" "IN-PROGRESS(i)" "IN-REVIEW(r)" "|" "BACKLOG(b)" "BLOCKED(l)" "DONE(d)" "CANCELED(c)" "DUPLICATE(p)")))
 
-  ;; Ensure org agenda files are properly set
-  (setq org-agenda-files (list
-                          (expand-file-name "main" org-directory)
-                          (expand-file-name "daily" org-directory)
-                          (expand-file-name "reference" org-directory)
-                          (expand-file-name "articles" org-directory)))
 
   ;; Make agenda always include todo items
   (setq org-agenda-todo-list-sublevels t)
