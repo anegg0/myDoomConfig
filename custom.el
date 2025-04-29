@@ -3,12 +3,8 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(ignored-local-variable-values '((flycheck-disabled-checkers proselint textlint)))
- '(org-agenda-files '("~/.config/doom/config.el"))
- '(package-selected-packages
-   '(aider aidermacs auctex-lua company-auctex dap-mode dired-open-with elmacro
-     emacsql ghub lsp-grammarly magit org-download osx-dictionary sqlite3
-     svg-tag-mode treemacs-projectile treesit-auto)))
+ '(org-agenda-files
+   '("~/Library/CloudStorage/Dropbox/orgmode/main/gb_m_organizer.org")))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
