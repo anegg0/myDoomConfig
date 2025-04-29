@@ -1413,3 +1413,20 @@ Error: %s" error-thrown)
                 (centered-cursor-mode)
                 ;; Optionally enable spell-checking
                 (flyspell-mode))))
+
+  (after! org
+    ;; Clear any existing agenda files first
+    (setq org-agenda-files nil)
+
+    ;; Then set them explicitly, ensuring the directories exist
+    (setq org-agenda-files
+          (cl-remove-if-not
+           #'file-exists-p
+           (list
+            (expand-file-name "main" org-directory)
+            (expand-file-name "daily" org-directory)
+            (expand-file-name "reference" org-directory)
+            (expand-file-name "articles" org-directory))))
+
+    ;; Force reload agenda files
+    (org-agenda-file-to-front nil))
