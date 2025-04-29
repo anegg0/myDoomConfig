@@ -693,9 +693,6 @@
   ;; Set directories
   (setq org-directory "/Users/allup/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder")
 
-  ;; Load the org-mode specific configuration
-  (load! "orgmode-config")
-
 ;;; =========================================================================
 ;;; APPEARANCE
 ;;; =========================================================================
