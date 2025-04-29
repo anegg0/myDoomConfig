@@ -643,6 +643,11 @@
 (defun linear-org-api-query-assigned-issues ()
   "Query Linear API for assigned issues."
   (linear--log "Fetching assigned issues for org sync")
+  (unless linear-api-key
+    (if (getenv "LINEAR_API_KEY")
+        (setq linear-api-key (getenv "LINEAR_API_KEY"))
+      (error "Linear API key not set. Set linear-api-key variable or LINEAR_API_KEY environment variable")))
+  
   (let* ((query "query {
   viewer {
   assignedIssues {
