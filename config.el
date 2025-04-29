@@ -12,7 +12,7 @@
 (doom-load-envvars-file "~/.config/emacs/.local/env")
 
 ;; Set directories
-(setq org-directory "~/Library/CloudStorage/Dropbox/orgmode")
+(setq org-directory "/Users/allup/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder")
 
 ;;; =========================================================================
 ;;; APPEARANCE
@@ -340,7 +340,7 @@
         :desc "org-roam-dailies-goto-today" "t" #'org-roam-dailies-goto-today
         :desc "jethro/org-capture-slipbox" "<tab>" #'jethro/org-capture-slipbox
         :desc "org-roam-capture" "c" #'org-roam-capture)
-  (setq org-roam-directory (file-truename "~/Library/CloudStorage/Dropbox/orgmode")
+  (setq org-roam-directory (file-truename "/Users/allup/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder")
         org-roam-database-connector 'sqlite-builtin
         org-roam-db-gc-threshold most-positive-fixnum
         org-id-link-to-org-use-id t)
@@ -403,7 +403,7 @@
 ;; Configure Org mode and ensure settings take effect
 (after! org
   ;; Base settings
-  (setq org-directory "~/Library/CloudStorage/Dropbox/orgmode"
+  (setq org-directory "/Users/allup/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder"
         load-prefer-newer t
         search-highlight t
         search-whitespace-regexp ".*?"
@@ -467,7 +467,7 @@
 (use-package citar
   :no-require
   :custom
-  (org-cite-global-bibliography '("~/Library/CloudStorage/Dropbox/orgmode/master.json"))
+  (org-cite-global-bibliography '("/Users/allup/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder"))
   (org-cite-insert-processor 'citar)
   (org-cite-follow-processor 'citar)
   (org-cite-activate-processor 'citar)
