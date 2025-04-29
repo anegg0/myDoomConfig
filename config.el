@@ -15,7 +15,7 @@
 (setq org-directory "/Users/allup/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder")
 
 ;; Load the org-mode specific configuration
-(load! "~/.config/doom/orgmode-config")
+(load! "/Users/allup/.config/doom/orgmode-config.el")
 
 ;;; =========================================================================
 ;;; APPEARANCE
