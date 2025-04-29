@@ -17,16 +17,34 @@
 (dolist (dir '("main" "daily" "reference" "articles"))
   (make-directory (expand-file-name dir org-directory) t))
 
-;; Define org-agenda-files
-(setq org-agenda-files nil) ;; Reset agenda files to avoid conflicts
+;; Clear any existing org-agenda-files setting
+(setq org-agenda-files nil)
+
+;; Prevent custom.el from saving wrong agenda files
+(defun my/fix-org-agenda-files-in-custom (&rest _)
+  "Prevent custom.el from saving the wrong org-agenda-files."
+  (when (boundp 'org-agenda-files)
+    (put 'org-agenda-files 'standard-value
+         `((quote ,(mapcar (lambda (dir)
+                             (expand-file-name dir org-directory))
+                           '("main" "daily" "reference" "articles")))))))
+
+;; Add our advice to custom-save-all
+(advice-add 'custom-save-all :before #'my/fix-org-agenda-files-in-custom)
+
+;; Define function to set agenda files only if directories exist
+(defun my/set-org-agenda-files ()
+  "Set org-agenda-files to directories that actually exist."
+  (let ((dirs (mapcar (lambda (dir)
+                        (expand-file-name dir org-directory))
+                      '("main" "daily" "reference" "articles"))))
+    (setq org-agenda-files
+          (cl-remove-if-not #'file-exists-p dirs))))
 
 ;; Set org-agenda-files after org has loaded
 (after! org
-  (setq org-agenda-files (list
-                          (expand-file-name "main" org-directory)
-                          (expand-file-name "daily" org-directory)
-                          (expand-file-name "reference" org-directory)
-                          (expand-file-name "articles" org-directory)))
+  ;; Set agenda files now
+  (my/set-org-agenda-files)
 
   ;; Force reload agenda files
   (org-agenda-file-to-front nil)
@@ -56,14 +74,6 @@
   (setq org-startup-with-inline-images t)  ; Show inline images when opening org files
   (setq org-image-actual-width nil)        ; Use image size specifications in org files
   (add-hook 'org-mode-hook #'org-display-inline-images)) ; Auto-display images in org buffers
-
-;; Prevent Doom from overriding org-agenda-files
-(defadvice! my/fix-org-agenda-files (&rest _)
-  :before #'custom-save-all
-  (when (boundp 'org-agenda-files)
-    (let ((agenda-files org-agenda-files))
-      (custom-set-variables
-       `(org-agenda-files ',agenda-files)))))
 
 ;;; =========================================================================
 ;;; ORG-ROAM CONFIGURATION
