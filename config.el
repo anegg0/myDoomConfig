@@ -511,6 +511,24 @@
   (interactive)
   (org-capture nil "s"))
 
+;; Define org-agenda-files to include the right directories
+(after! org
+  ;; Include all org files from main directories for agenda
+  (setq org-agenda-files (list
+                          (expand-file-name "main" org-directory)
+                          (expand-file-name "daily" org-directory)
+                          (expand-file-name "reference" org-directory)
+                          (expand-file-name "articles" org-directory)))
+
+  ;; Make sure todo keywords are consistent
+  (setq org-todo-keywords
+        '((sequence "TODO(t)" "IN-PROGRESS(i)" "IN-REVIEW(r)" "|" "BACKLOG(b)" "BLOCKED(l)" "DONE(d)" "CANCELED(c)" "DUPLICATE(p)")))
+
+  ;; Enable refile targets to include agenda files
+  (setq org-refile-targets '((org-agenda-files :maxlevel . 3)))
+
+  ;; Other org settings can remain the same
+  )
 ;; Linear.app integration
 ;; ===============================================================
 
