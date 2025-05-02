@@ -90,4 +90,4 @@
 (package! url)
 (package! aidermacs)
 (package! linear
-  :recipe (:host github :repo "anegg0/linearel" :files ("*.el")))
+  :recipe (:host github :repo "anegg0/linear-emacs" :files ("*.el")))
