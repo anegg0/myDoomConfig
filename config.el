@@ -1092,6 +1092,12 @@
             (when (and (buffer-file-name)
                        (string-match-p "aider" (buffer-file-name)))
               (aider-minor-mode 1))))
+(setq aidermacs-auto-mode-files
+      '(".aider.prompt.org"
+        ".aider.chat.md"
+        ".aider.chat.history.md"
+        ".aider.input.history"
+        "my-custom-aider-file.org"))  ; Add your own files
 
 ;; GPTel (Ollama) configuration
 (setq
