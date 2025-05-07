@@ -282,9 +282,9 @@
 ;; Evil in minibuffer
 (setq evil-want-minibuffer t)
 
-;; Disable dired-omit-mode
+;; Enable dired-omit-mode
 (after! dired
-  (setq dired-omit-mode nil))
+  (setq dired-omit-mode t))
 
 ;; Terminal text handling
 (defun my-remove-cr (&optional begin end)
@@ -1084,7 +1084,7 @@
   :bind (("C-c a" . aidermacs-transient-menu))
   :config
   :custom
-  (aidermacs-default-model "sonnet"))
+  (aidermacs-default-model "claude-3-7-sonnet-20250219"))
 
 (setq aidermacs-backend 'vterm)
 (add-hook 'find-file-hook
@@ -1092,6 +1092,7 @@
             (when (and (buffer-file-name)
                        (string-match-p "aider" (buffer-file-name)))
               (aider-minor-mode 1))))
+
 (setq aidermacs-auto-mode-files
       '(".aider.prompt.org"
         ".aider.chat.md"
@@ -1397,7 +1398,7 @@
 ;; Emacs Everywhere Configuration
 (after! emacs-everywhere
   ;; Set the default major mode to markdown-mode
-  (setq emacs-everywhere-major-mode-function #'markdown-mode)
+  (setq emacs-everywhere-major-mode-function 'markdown-mode)
 
   ;; Optionally add hooks for specific adjustments when Emacs Everywhere activates
   (add-hook 'emacs-everywhere-init-hooks
@@ -1408,6 +1409,5 @@
               (display-line-numbers-mode -1)
               ;; Optionally center the buffer contents
               (centered-cursor-mode)
-              ;; Optionally enable spell-checking
-              (flyspell-mode))))
-
+              ;; Optionally enable copilot-mode
+              (copilot-mode))))
