@@ -516,33 +516,6 @@
 (when (daemonp)
   (exec-path-from-shell-initialize))
 
-;; Rust development configuration
-(require 'dap-lldb)
-(require 'dap-cpptools)
-(after! dap-mode
-  (dap-ui-mode)
-  (dap-ui-controls-mode 1)
-  (require 'dap-lldb)
-  (require 'dap-cpptools)
-  (require 'dap-gdb-lldb)
-  (dap-gdb-lldb-setup)
-  (dap-cpptools-setup)
-  (dap-register-debug-template "Rust::CppTools Run Configuration"
-                               (list :type "cppdbg"
-                                     :request "launch"
-                                     :name "Rust::debug"
-                                     :MIMode "gdb"
-                                     :miDebuggerPath "rust-gdb"
-                                     :environment []
-                                     :program "${workspaceFolder}/target/debug/${workspaceRootFolderName}"
-                                     :cwd "${workspaceFolder}"
-                                     :console "external"
-                                     :dap-compilation "cargo build"
-                                     :dap-compilation-dir "${workspaceFolder}")))
-
-(after! 'dap-mode
-  (setq dap-default-terminal-kind "integrated") ;; Terminal programs open in Emacs buffer
-  (dap-auto-configure-mode +1))
 
 (add-hook 'rust-mode-hook 'lsp-deferred)
 (add-to-list 'warning-suppress-log-types '(lsp-mode))
@@ -554,13 +527,6 @@
 ;; Project management
 (setq projectile-indexing-method 'hybrid)
 
-;; Function to invalidate projectile cache after git checkout
-(defun my/projectile-invalidate-cache-on-git-checkout ()
-  "Invalidate projectile cache when changing git branches."
-  (let ((project-root (projectile-project-root)))
-    (when project-root
-      (message "Git branch changed - invalidating projectile cache for %s" project-root)
-      (projectile-invalidate-cache nil))))
 
 ;; Hook into magit-checkout
 (after! magit
