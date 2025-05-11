@@ -91,3 +91,4 @@
 (package! aidermacs)
 (package! linear
   :recipe (:host github :repo "anegg0/linear-emacs" :files ("*.el")))
+(package! org-trello)
