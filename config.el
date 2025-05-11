@@ -146,7 +146,7 @@
 ;; Yank from kill ring
 (map! :leader
       :desc "yank-from-kill-ring"
-      "y" #'yank-from-kill-ring)
+      "Y" #'yank-from-kill-ring)
 
 ;; Treemacs project
 (map! :leader
@@ -195,6 +195,10 @@
 (map! :leader
       :desc "other-window"
       "]" #'other-window)
+
+(map! :leader
+      :prefix ("r" . "org-roam")
+      :n "F" #'my/org-roam-node-find-by-tag)
 
 
 ;; Window resizing with hydra
@@ -422,6 +426,8 @@
                  :host "localhost:11434"
                  :stream t
                  :models '("llama3.2:latest")))
+(after!
+  (gptel-mode 'org-mode))
 
 ;; Treemacs configuration
 (after! treemacs
