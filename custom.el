@@ -3,7 +3,10 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(org-agenda-files '("~/.config/doom/config.el"))
+ '(ignored-local-variable-values '((flycheck-disabled-checkers proselint textlint)))
+ '(org-agenda-files
+   '("~/Library/CloudStorage/Dropbox/orgmode/main/linear.org"
+     "/Users/allup/Library/CloudStorage/Dropbox/orgmode/main/gb_m_organizer.org"))
  '(package-selected-packages '(org-trello)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
