@@ -10,9 +10,17 @@
 
 ;; Load environment variables
 (doom-load-envvars-file "~/.config/emacs/.local/env")
-
 ;; Set directories
-(setq org-directory "~/Library/CloudStorage/Dropbox/orgmode/")
+(setq org-directory "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/"
+      org-agenda-files '("~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/main/gb_m_organizer.org" "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/main/linear.org"))
+(setq org-startup-folded 'content)
+
+(after! org-mode
+  (org-agenda-file-to-front "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/main/gb_m_organizer.org" "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/main/linear.org")
+  (setq org-todo-keywords
+        '(sequence "TODO(t)" "DONE(d)" "BLOCKED(b)" "CANCELLED(c)" "IN-REVIEW(i)" "|" "IN-PROGRESS(p)")
+        )
+  )
 
 
 ;;; =========================================================================
@@ -630,7 +638,7 @@
         :desc "org-roam-dailies-goto-today" "t" #'org-roam-dailies-goto-today
         :desc "jethro/org-capture-slipbox" "<tab>" #'jethro/org-capture-slipbox
         :desc "org-roam-capture" "c" #'org-roam-capture)
-  (setq org-roam-directory (file-truename "~/Library/CloudStorage/Dropbox/orgmode/")
+  (setq org-roam-directory (file-truename "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/")
         org-roam-database-connector 'sqlite-builtin
         org-roam-db-gc-threshold most-positive-fixnum
         org-id-link-to-org-use-id t)
@@ -723,7 +731,7 @@
 (use-package citar
   :no-require
   :custom
-  (org-cite-global-bibliography '("~/Library/CloudStorage/Dropbox/orgmode/"))
+  (org-cite-global-bibliography '("~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/"))
   (org-cite-insert-processor 'citar)
   (org-cite-follow-processor 'citar)
   (org-cite-activate-processor 'citar)
