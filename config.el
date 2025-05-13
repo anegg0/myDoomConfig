@@ -18,7 +18,7 @@
 (after! org-mode
   (org-agenda-file-to-front "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/main/gb_m_organizer.org" "~/Documents/linear.org")
   (setq org-todo-keywords
-        '(sequence "TODO(t)" "DONE(d)" "BLOCKED(b)" "CANCELLED(c)" "IN-REVIEW(i)" "|" "IN-PROGRESS(p)")
+        '(sequence "TODO(t)" "DONE(d)" "BLOCKED(b)" "CANCELLED(c)" "IN-REVIEW(i)" "|" "IN-PROGRESS(p)" "BACKLOG(l)")
         )
   )
 
