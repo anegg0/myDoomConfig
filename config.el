@@ -363,18 +363,6 @@
               ("C-c l l" . linear-list-issues)
               ("C-c l n" . linear-new-issue)))
 
-;; Define keybindings
-(after! linear
-  (map! :map org-mode-map
-        :localleader
-        (:prefix ("L" . "Linear")
-         :desc "Sync from Linear" "s" #'linear-org-sync-from-linear
-         :desc "Sync to Linear" "p" #'linear-org-sync-to-linear
-         :desc "Open in browser" "o" #'linear-org-open-issue
-         :desc "List issues" "l" #'linear-list-issues
-         :desc "New issue" "n" #'linear-new-issue
-         :desc "Test connection" "t" #'linear-test-connection
-         :desc "Toggle debug" "d" #'linear-toggle-debug)))
 
 ;; Optional: Integration with Doom Emacs keybindings
 (after! linear
@@ -482,7 +470,7 @@
   :config
   (svg-tag-mode +1))
 
-;; Image support
+; Image support
 (after! image
   (setq image-use-external-converter t)
   (add-to-list 'image-types 'svg)  ; Enable SVG support
@@ -714,13 +702,6 @@
   (let ((tag (read-string "Enter tag: ")))
     (org-roam-node-find nil nil (lambda (node) (my/org-roam-node-has-tag node tag)))))
 
-(defun jethro/org-capture-inbox ()
-  (interactive)
-  (org-capture nil "i"))
-
-(defun jethro/org-capture-slipbox ()
-  (interactive)
-  (org-capture nil "s"))
 
 ;;; =========================================================================
 ;;; CITAR AND BIBLIOGRAPHY MANAGEMENT
