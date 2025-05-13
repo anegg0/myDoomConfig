@@ -12,11 +12,11 @@
 (doom-load-envvars-file "~/.config/emacs/.local/env")
 ;; Set directories
 (setq org-directory "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/"
-      org-agenda-files '("~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/main/gb_m_organizer.org" "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/main/linear.org"))
+      org-agenda-files '("~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/main/gb_m_organizer.org" "~/Documents/linear.org"))
 (setq org-startup-folded 'content)
 
 (after! org-mode
-  (org-agenda-file-to-front "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/main/gb_m_organizer.org" "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/main/linear.org")
+  (org-agenda-file-to-front "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/main/gb_m_organizer.org" "~/Documents/linear.org")
   (setq org-todo-keywords
         '(sequence "TODO(t)" "DONE(d)" "BLOCKED(b)" "CANCELLED(c)" "IN-REVIEW(i)" "|" "IN-PROGRESS(p)")
         )

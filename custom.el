@@ -5,8 +5,8 @@
  ;; If there is more than one, they won't work right.
  '(ignored-local-variable-values '((flycheck-disabled-checkers proselint textlint)))
  '(org-agenda-files
-   '("~/Library/CloudStorage/Dropbox/orgmode/main/linear.org"
-     "/Users/allup/Library/CloudStorage/Dropbox/orgmode/main/gb_m_organizer.org"))
+   '("/Users/allup/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/main/gb_m_organizer.org"
+     "/Users/allup/Documents/linear.org" "/Users/allup/.config/doom/config.el"))
  '(package-selected-packages '(org-trello)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
