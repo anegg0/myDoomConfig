@@ -209,19 +209,6 @@
       :n "F" #'my/org-roam-node-find-by-tag)
 
 
-;; Window resizing with hydra
-(defhydra hydra/evil-window-resize (:color red)
-  "Resize window"
-  ("h" evil-window-decrease-width "decrease width")
-  ("j" evil-window-decrease-height "decrease height")
-  ("k" evil-window-increase-height "increase height")
-  ("l" evil-window-increase-width "increase width")
-  ("q" nil "quit"))
-
-(map! :leader
-      :prefix ("w" . "window")
-      :n "r" #'hydra/evil-window-resize/body)
-
 ;;; =========================================================================
 ;;; EDITOR SETTINGS
 ;;; =========================================================================
@@ -470,7 +457,7 @@
   :config
   (svg-tag-mode +1))
 
-; Image support
+                                        ; Image support
 (after! image
   (setq image-use-external-converter t)
   (add-to-list 'image-types 'svg)  ; Enable SVG support
