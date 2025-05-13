@@ -6,7 +6,7 @@
  '(ignored-local-variable-values '((flycheck-disabled-checkers proselint textlint)))
  '(org-agenda-files
    '("/Users/allup/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/main/gb_m_organizer.org"
-     "/Users/allup/Documents/linear.org" "/Users/allup/.config/doom/config.el"))
+     "/Users/allup/Documents/linear.org" ))
  '(package-selected-packages '(org-trello)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
