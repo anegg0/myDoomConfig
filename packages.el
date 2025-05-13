@@ -87,5 +87,5 @@
 (package! org-download)
 (package! url)
 (package! aidermacs)
-(package! linear
+(package! linear-emacs
   :recipe (:host github :repo "anegg0/linear-emacs" :files ("*.el")))
