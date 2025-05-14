@@ -353,24 +353,20 @@
 ;; Linear.app integration
 (use-package linear
   :commands (linear-list-issues linear-new-issue)
-  :bind (:map global-map
-              ("C-c l l" . linear-list-issues)
-              ("C-c l n" . linear-new-issue))
   :config
   ;; Set API key from environment variable
   (when-let ((env-key (getenv "LINEAR_API_KEY")))
     (setq linear-api-key env-key)
-    (message "Loaded Linear API key from environment")))
+    (message "Loaded Linear API key from environment"))
 
-
-;; Alternative: Get API key from auth-source
-(when (and (not linear-api-key) (require 'auth-source nil t))
-  (let ((auth-info (auth-source-search :host "api.linear.app" :require '(:secret) :max 1)))
-    (when auth-info
-      (let ((secret (plist-get (car auth-info) :secret)))
-        (when secret
-          (setq linear-api-key (if (functionp secret) (funcall secret) secret)))))))
-;; Org and Org-roam
+  ;; Alternative: Get API key from auth-source
+  (when (and (not linear-api-key) (require 'auth-source nil t))
+    (let ((auth-info (auth-source-search :host "api.linear.app" :require '(:secret) :max 1)))
+      (when auth-info
+        (let ((secret (plist-get (car auth-info) :secret)))
+          (when secret
+            (setq linear-api-key (if (functionp secret) (funcall secret) secret))))))))
+                                        ; Org and Org-roam
 (use-package! org-roam
   :init
   (map! :leader
