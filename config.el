@@ -204,6 +204,20 @@
       :desc "other-window"
       "]" #'other-window)
 
+
+(map! :leader
+      :prefix ("r" . "org-roam")
+      :n "F" #'my/org-roam-node-find-by-tag)
+
+;; Window resizing with hydra
+(defhydra hydra/evil-window-resize (:color red)
+  "Resize window"
+  ("h" evil-window-decrease-width "decrease width")
+  ("j" evil-window-decrease-height "decrease height")
+  ("k" evil-window-increase-height "increase height")
+  ("l" evil-window-increase-width "increase width")
+  ("q" nil "quit"))
+
 (map! :leader
       :prefix ("r" . "org-roam")
       :n "F" #'my/org-roam-node-find-by-tag)
@@ -329,6 +343,9 @@
 ;; Linear.app integration
 (use-package linear
   :commands (linear-list-issues linear-new-issue)
+;; Linear.app integration
+(use-package linear
+  :commands (linear-list-issues linear-new-issue)
   :config
   ;; Set API key from environment variable
   (when-let ((env-key (getenv "LINEAR_API_KEY")))
@@ -349,153 +366,735 @@
   :bind (:map global-map
               ("C-c l l" . linear-list-issues)
               ("C-c l n" . linear-new-issue)))
+;; Org and Org-roam
+(use-package! org-roam
+  :init
+  (map! :leader
+        :prefix "r"
+        :desc "org-roam" "l" #'org-roam-buffer-toggle
+        :desc "org-roam-node-insert" "i" #'org-roam-node-insert
+        :desc "org-roam-node-find" "f" #'org-roam-node-find
+        :desc "org-roam-ref-find" "r" #'org-roam-ref-find
+        :desc "org-roam-show-graph" "g" #'org-roam-show-graph
+        :desc "org-roam-dailies-capture-today" "T" #'org-roam-dailies-capture-today
+        :desc "org-roam-dailies-goto-today" "t" #'org-roam-dailies-goto-today
+        :desc "jethro/org-capture-slipbox" "<tab>" #'jethro/org-capture-slipbox
+        :desc "org-roam-capture" "c" #'org-roam-capture)
+  (setq org-roam-directory (file-truename "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/")
+        org-roam-database-connector 'sqlite-builtin
+        org-roam-db-gc-threshold most-positive-fixnum
+        org-id-link-to-org-use-id t)
+  :config
+  (org-roam-db-autosync-mode +1)
+  (set-popup-rules!
+    `((,(regexp-quote org-roam-buffer) ; persistent org-roam buffer
+       :side right :width .33 :height .5 :ttl nil :modeline nil :quit nil :slot 1)
+      ("^\\*org-roam: " ; node dedicated org-roam buffer
+       :side right :width .33 :height .5 :ttl nil :modeline nil :quit nil :slot 2)))
+  (add-hook 'org-roam-mode-hook #'turn-on-visual-line-mode)
+  (setq org-roam-capture-templates
+        '(
+          ("m" "main" plain
+           "%?"
+           :if-new (file+head "main/${slug}.org"
+                              "#+title: ${title}\n#+TAGS: :\n")
+           :immediate-finish t
+           :unnarrowed t)
+          ("c" "catb" plain
+           "%?"
+           :if-new (file+head "main/gb_b_catb_${slug}.org"
+                              "#+title: ${title}\n#+TAGS: :\n")
+           :immediate-finish t
+           :unnarrowed t)
+          ("r" "reference" plain "%?"
+           :if-new
+           (file+head "reference/${slug}.org" "#+title: ${title}\n")
+           :immediate-finish t
+           :unnarrowed t)
+          ("a" "article" plain "%?"
+           :if-new
+           (file+head "articles/${slug}.org" "#+title: ${title}\n#+filetags: :article:\n")
+           :immediate-finish t
+           :unnarrowed t)
+          ("d" "dictionary" plain "%?"
+           :if-new
+           (file+head "dictionary/${slug}.org" "#+title: ${title}\n#+filetags: :dictionary:\n")
+           :immediate-finish t
+           :unnarrowed t)))
+  (cl-defmethod org-roam-node-type ((node org-roam-node))
+    "Return the TYPE of NODE."
+    (condition-case nil
+        (file-name-nondirectory
+         (directory-file-name
+          (file-name-directory
+           (file-relative-name (org-roam-node-file node) org-roam-directory))))
+      (error "")))
+  (setq org-roam-node-display-template
+        (concat "${type:15} ${title:*} " (propertize "${tags:10}" 'face 'org-tag))))
 
-;; Function to update linear.org with data from Linear API
-(defun update-linear-org ()
-  "Update linear.org with current data from Linear API."
+;; Org-roam dailies
+(setq org-roam-dailies-directory "daily/")
+(setq org-roam-dailies-capture-templates
+      '(("d" "default" entry
+         "* %?"
+         :target (file+head "%<%Y-%m-%d>.org"
+                            "#+title: %<%Y-%m-%d>\n"))))
+
+;; Configure Org mode and ensure settings take effect
+(after! org
+  ;; Base settings
+  (setq org-directory "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/"
+        load-prefer-newer t
+        search-highlight t
+        search-whitespace-regexp ".*?"
+        org-ellipsis " ▼ "
+        org-adapt-indentation nil
+        org-habit-show-habits-only-for-today t)
+
+  ;; Custom TODO keywords
+  (setq org-todo-keywords
+        '((sequence "TODO(t)" "IN-PROGRESS(i)" "IN-REVIEW(r)" "|" "BACKLOG(b)" "BLOCKED(l)" "DONE(d)" "CANCELED(c)" "DUPLICATE(p)")))
+
+  ;; Optional: Add custom faces for your TODO states
+  (setq org-todo-keyword-faces
+        '(("TODO" . (:foreground "red" :weight bold))
+          ("IN-PROGRESS" . (:foreground "blue" :weight bold))
+          ("IN-REVIEW" . (:foreground "orange" :weight bold))
+          ("BACKLOG" . (:foreground "green" :weight bold))
+          ("BLOCKED" . (:foreground "green" :weight bold))
+          ("DONE" . (:foreground "green" :weight bold))
+          ("CANCELLED" . (:foreground "gray" :weight bold))
+          ("DUPLICATE" . (:foreground "gray" :weight bold))))
+
+  ;; Configure org-mode for inline images
+  (setq org-startup-with-inline-images t)  ; Show inline images when opening org files
+  (setq org-image-actual-width nil)        ; Use image size specifications in org files
+  (add-hook 'org-mode-hook #'org-display-inline-images)) ; Auto-display images in org buffers
+
+;; Make sure Org-roam uses the same TODO keywords
+(after! org-roam
+  ;; All your existing org-roam settings...
+
+  ;; Add this line to ensure org-roam uses your custom TODO states
+  (setq org-roam-todo-keywords org-todo-keywords))
+
+;; Deft for quick note access
+(use-package deft
+  :commands (deft)
+  :config
+  (setq deft-directory org-directory))
+(setq deft-recursive t)
+(setq deft-strip-summary-regexp
+      (concat "\\("
+	      "^:.+:.*\n" ; any line with a :SOMETHING:
+	      "\\|^#\\+.*\n" ; anyline starting with a #+
+	      "\\|^\\*.+.*\n" ; anyline where an asterisk starts the line
+	      "\\)"))
+(advice-add 'deft-parse-title :override
+            (lambda (file contents)
+              (if deft-use-filename-as-title
+	          (deft-base-filename file)
+	        (let* ((case-fold-search 't)
+	               (begin (string-match "title: " contents))
+	               (end-of-begin (match-end 0))
+	               (end (string-match "\n" contents begin)))
+	          (if begin
+	              (substring contents end-of-begin end)
+	            (format "%s" file))))))
+
+;; Citar for bibliography management
+(require 'citar)
+(use-package citar
+  :no-require
+  :custom
+  (org-cite-global-bibliography '("~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode//master.json"))
+  (org-cite-insert-processor 'citar)
+  (org-cite-follow-processor 'citar)
+  (org-cite-activate-processor 'citar)
+  (citar-bibliography org-cite-global-bibliography)
+  :bind
+  (:map org-mode-map :package org ("C-c b" . #'org-cite-insert)))
+
+(defun jethro/org-roam-node-from-cite (keys-entries)
+  (interactive (list (citar-select-ref :multiple nil :rebuild-cache t)))
+  (let ((title (citar--format-entry-no-widths (cdr keys-entries)
+                                              "${author editor} :: ${title}")))
+    (org-roam-capture- :templates
+                       '(("r" "reference" plain "%?" :if-new
+                          (file+head "reference/${citekey}.org"
+                                     ":PROPERTIES:
+  :ROAM_REFS: [cite:@${citekey}]
+  :END:
+  #+title: ${title}\n")
+                          :immediate-finish t
+                          :unnarrowed t))
+                       :info (list :citekey (car keys-entries))
+                       :node (org-roam-node-create :title title)
+                       :props '(:finalize find-file))))
+
+;; Org-roam utility functions
+(defun my/org-roam-node-has-tag (node tag)
+  "Filter function to check if the given NODE has the specified TAG."
+  (member tag (org-roam-node-tags node)))
+
+(defun my/org-roam-node-find-by-tag ()
+  "Find and open an Org-roam node based on a specified tag."
   (interactive)
-  (if (linear-test-connection)
-      (progn
-        (message "Connected to Linear API. Fetching data...")
-        (let ((issues (linear-get-issues))
-              (teams (linear-get-teams))
-              (updated-content ""))
+  (let ((tag (read-string "Enter tag: ")))
+    (org-roam-node-find nil nil (lambda (node) (my/org-roam-node-has-tag node tag)))))
 
-          ;; Create the basic structure
-          (setq updated-content (concat
-                                 "#+TITLE: Linear Tasks\n"
-                                 "#+AUTHOR: Gael Blanchemain\n"
-                                 (format "#+DATE: [%s]\n" (format-time-string "%Y-%m-%d"))
-                                 "#+STARTUP: overview\n"
-                                 "#+OPTIONS: toc:2\n\n"
-                                 "* Linear Tasks\n"))
+(defun jethro/org-capture-inbox ()
+  (interactive)
+  (org-capture nil "i"))
 
-          ;; Add Configuration section
-          (setq updated-content (concat updated-content
-                                        "** Configuration\n"
-                                        ":PROPERTIES:\n"
-                                        ":VISIBILITY: folded\n"
-                                        ":END:\n\n"
-                                        "Linear API is configured in your Emacs setup. You can use the following commands:\n"
-                                        "- ~linear-list-issues~ - List all your assigned issues\n"
-                                        "- ~linear-new-issue~ - Create a new issue\n"
-                                        "- ~linear-test-connection~ - Test the connection to Linear API\n"
-                                        "- ~linear-toggle-debug~ - Toggle debug mode for troubleshooting\n\n"))
+(defun jethro/org-capture-slipbox ()
+  (interactive)
+  (org-capture nil "s"))
 
-          ;; Add Assigned Issues section
-          (setq updated-content (concat updated-content
-                                        "** My Assigned Issues\n"
-                                        ":PROPERTIES:\n"
-                                        ":CATEGORY: Linear\n"
-                                        ":END:\n\n"))
+;; Define org-agenda-files to include the right directories
+(after! org
+  ;; Include all org files from main directories for agenda
+  (setq org-agenda-files (list
+                          (expand-file-name "main" org-directory)
+                          (expand-file-name "daily" org-directory)
+                          (expand-file-name "reference" org-directory)
+                          (expand-file-name "articles" org-directory)))
 
-          ;; Add actual issues if available
-          (if issues
-              (progn
-                (when (vectorp issues)
-                  (setq issues (append issues nil)))
-                (dolist (issue issues)
-                  (let ((id (cdr (assoc 'id issue)))
-                        (identifier (cdr (assoc 'identifier issue)))
-                        (title (cdr (assoc 'title issue)))
-                        (state (cdr (assoc 'name (assoc 'state issue)))))
-                    (setq updated-content
-                          (concat updated-content
-                                  (format "*** %s %s\n"
-                                          (if (string= state "Done") "DONE" "TODO")
-                                          title)
-                                  ":PROPERTIES:\n"
-                                  (format ":LINEAR_ID: %s\n" identifier)
-                                  (format ":LINEAR_STATE: %s\n" state)
-                                  ":END:\n\n"
-                                  (format "[[https://linear.app/issue/%s][%s]] - %s\n\n"
-                                          identifier identifier title))))))
-            ;; No issues found
-            (setq updated-content
-                  (concat updated-content
-                          "*** TODO No assigned issues found\n"
-                          ":PROPERTIES:\n"
-                          ":LINEAR_ID: none\n"
-                          ":END:\n\n"
-                          "No issues are currently assigned to you in Linear.\n\n")))
+  ;; Make sure todo keywords are consistent
+  (setq org-todo-keywords
+        '((sequence "TODO(t)" "IN-PROGRESS(i)" "IN-REVIEW(r)" "|" "BACKLOG(b)" "BLOCKED(l)" "DONE(d)" "CANCELED(c)" "DUPLICATE(p)")))
 
-          ;; Add Teams section
-          (setq updated-content (concat updated-content
-                                        "** Open Issues By Team\n"
-                                        ":PROPERTIES:\n"
-                                        ":CATEGORY: Linear\n"
-                                        ":VISIBILITY: folded\n"
-                                        ":END:\n\n"))
+  ;; Enable refile targets to include agenda files
+  (setq org-refile-targets '((org-agenda-files :maxlevel . 3)))
 
-          ;; Add actual teams if available
-          (if teams
-              (progn
-                (when (vectorp teams)
-                  (setq teams (append teams nil)))
-                (dolist (team teams)
-                  (let ((team-id (cdr (assoc 'id team)))
-                        (team-name (cdr (assoc 'name team))))
-                    (setq updated-content
-                          (concat updated-content
-                                  (format "*** %s\n" team-name)
-                                  ":PROPERTIES:\n"
-                                  (format ":LINEAR_TEAM_ID: %s\n" team-id)
-                                  ":END:\n\n"
-                                  (format "Team ID: %s\n\n" team-id))))))
-            ;; No teams found
-            (setq updated-content
-                  (concat updated-content
-                          "*** No teams found\n\n"
-                          "No teams are available in your Linear workspace.\n\n")))
+  ;; Other org settings can remain the same
+  )
+;; Linear.app integration
+;; ===============================================================
 
-          ;; Add Templates section
-          (setq updated-content (concat updated-content
-                                        "** Templates\n"
-                                        ":PROPERTIES:\n"
-                                        ":CATEGORY: Linear\n"
-                                        ":VISIBILITY: folded\n"
-                                        ":END:\n\n"
-                                        "*** Bug Report Template\n"
-                                        ":PROPERTIES:\n"
-                                        ":LINEAR_TEMPLATE: bug\n"
-                                        ":END:\n\n"
-                                        "**Title**: Bug: [Short description]\n\n"
-                                        "**Description**:\n"
-                                        "- **Expected behavior**: [What should happen]\n"
-                                        "- **Actual behavior**: [What actually happens]\n"
-                                        "- **Steps to reproduce**:\n"
-                                        "  1. [First step]\n"
-                                        "  2. [Second step]\n"
-                                        "  3. [More steps as needed]\n"
-                                        "- **Environment**: [Relevant environment details]\n"
-                                        "- **Screenshots/Videos**: [If applicable]\n\n"
-                                        "*** Feature Request Template\n"
-                                        ":PROPERTIES:\n"
-                                        ":LINEAR_TEMPLATE: feature\n"
-                                        ":END:\n\n"
-                                        "**Title**: Feature: [Short description]\n\n"
-                                        "**Description**:\n"
-                                        "- **Problem statement**: [What problem does this feature solve?]\n"
-                                        "- **Proposed solution**: [How should this feature work?]\n"
-                                        "- **Alternatives considered**: [Other solutions considered]\n"
-                                        "- **Additional context**: [Any other relevant information]\n\n"))
+;; Linear settings
+(defcustom linear-api-key nil
+  "API key for Linear.app."
+  :type 'string
+  :group 'linear)
 
-          ;; Add Archive section
-          (setq updated-content (concat updated-content
-                                        "** Archive\n"
-                                        ":PROPERTIES:\n"
-                                        ":CATEGORY: Linear\n"
-                                        ":VISIBILITY: folded\n"
-                                        ":ARCHIVE: t\n"
-                                        ":END:\n\n"
-                                        "Archive for completed Linear tasks.\n"))
+(defcustom linear-graphql-url "https://api.linear.app/graphql"
+  "GraphQL endpoint URL for Linear API."
+  :type 'string
+  :group 'linear)
 
-          ;; Write the updated content to linear.org
-          (with-temp-file "/Users/allup/Documents/linear.org"
-            (insert updated-content))
+(defcustom linear-default-team-id nil
+  "Default team ID to use for creating issues."
+  :type 'string
+  :group 'linear)
 
-          (message "linear.org has been updated with current Linear data.")))
-    (message "Failed to connect to Linear API. Check your API key and network connection.")))
+(defcustom linear-debug nil
+  "Enable debug logging for Linear requests."
+  :type 'boolean
+  :group 'linear)
+
+;; Define the logging function that's used by other Linear functions
+(defun linear--log (format-string &rest args)
+  "Log message with FORMAT-STRING and ARGS if debug is enabled."
+  (when linear-debug
+    (apply #'message (concat "[Linear] " format-string) args)))
+
+;; Define the headers function needed for API requests
+(defun linear--headers ()
+  "Return headers for Linear API requests."
+  (unless linear-api-key
+    (error "Linear API key not set. Use M-x customize-variable RET linear-api-key"))
+
+  ;; For personal API keys, the format is: "Authorization: <API_KEY>"
+  ;; No "Bearer" prefix for personal API keys
+  `(("Content-Type" . "application/json")
+    ("Authorization" . ,linear-api-key)))
+
+;; GraphQL request function from linear.el
+(defun linear--graphql-request (query &optional variables)
+  "Make a GraphQL request to Linear API with QUERY and optional VARIABLES."
+  (linear--log "Making GraphQL request with query: %s" query)
+  (when variables
+    (linear--log "Variables: %s" (prin1-to-string variables)))
+
+  (let ((response nil)
+        (error-response nil)
+        (request-data (json-encode `(("query" . ,query)
+                                     ,@(when variables `(("variables" . ,variables)))))))
+    (linear--log "Request payload: %s" request-data)
+
+    (request
+      linear-graphql-url
+      :type "POST"
+      :headers (linear--headers)
+      :data request-data
+      :parser 'json-read
+      :sync t
+      :success (cl-function
+                (lambda (&key data &allow-other-keys)
+                  (linear--log "Response received: %s" (prin1-to-string data))
+                  (setq response data)))
+      :error (cl-function
+              (lambda (&key error-thrown response data &allow-other-keys)
+                (setq error-response error-thrown)
+                (linear--log "Error: %s" error-thrown)
+                (when response
+                  (linear--log "Response status: %s" (request-response-status-code response)))
+                (when data
+                  (linear--log "Error response: %s" (prin1-to-string data))))))
+
+    (if error-response
+        (progn
+          (message "Linear API error: %s" error-response)
+          nil)
+      response)))
+
+;; Set the location for Linear org file
+(setq linear-org-file (expand-file-name "~/Documents/linear.org" org-directory))
+
+;; Mapping between Linear states and org TODO keywords
+(setq linear-org-state-mapping
+      '(("Todo" . "TODO")
+        ("In Progress" . "IN-PROGRESS")
+        ("In Review" . "IN-REVIEW")
+        ("Backlog" . "BACKLOG")
+        ("Blocked" . "BLOCKED")
+        ("Done" . "DONE")
+        ("Canceled" . "CANCELED")
+        ("Duplicate" . "DUPLICATE")))
+
+;; Mapping between Linear priority values and org priorities
+(setq linear-org-priority-mapping
+      '((0 . nil)   ; No priority
+        (1 . "A")   ; Urgent
+        (2 . "B")   ; High
+        (3 . "C")   ; Medium
+        (4 . "D"))) ; Low
+
+;; Property names for storing Linear metadata
+(setq linear-org-issue-id-property "LINEAR_ID"
+      linear-org-team-id-property "LINEAR_TEAM"
+      linear-org-modified-property "LINEAR_MODIFIED"
+      linear-org-url-property "LINEAR_URL")
+
+;; Modified Function: Ensure the Linear org file exists with proper structure and top-level heading
+(defun linear-org-ensure-linear-file ()
+  "Ensure the Linear org file exists with proper structure including a top-level OCL heading."
+  (unless (file-exists-p linear-org-file)
+    (with-temp-file linear-org-file
+      (insert "#+TITLE: Linear Tasks\n")
+      (insert "#+FILETAGS: :linear:\n")
+      (insert "#+TODO: TODO IN-PROGRESS IN-REVIEW BACKLOG BLOCKED | DONE CANCELED DUPLICATE\n\n")
+      (insert "* OCL\n"))) ; Add top-level heading
+
+  ;; If file exists but doesn't have the OCL heading, add it
+  (with-current-buffer (find-file-noselect linear-org-file)
+    (org-with-wide-buffer
+     (goto-char (point-min))
+     (unless (re-search-forward "^\\* OCL$" nil t)
+       (goto-char (point-max))
+       (unless (bolp) (insert "\n"))
+       (insert "* OCL\n")
+       (save-buffer)))))
+
+;; Function to query Linear API for assigned issues
+(defun linear-org-api-query-assigned-issues ()
+  "Query Linear API for assigned issues."
+  (linear--log "Fetching assigned issues for org sync")
+  (unless linear-api-key
+    (if (getenv "LINEAR_API_KEY")
+        (setq linear-api-key (getenv "LINEAR_API_KEY"))
+      (error "Linear API key not set. Set linear-api-key variable or LINEAR_API_KEY environment variable")))
+  
+  (let* ((query "query {
+  viewer {
+  assignedIssues {
+  nodes {
+  id
+  identifier
+  title
+  description
+  state {
+  id
+  name
+  type
+  }
+  team {
+  id
+  name
+  }
+  priority
+  url
+  updatedAt
+  }
+  }
+  }
+  }")
+         (response (linear--graphql-request query)))
+    (when response
+      (cdr (assoc 'nodes (assoc 'assignedIssues (assoc 'viewer (assoc 'data response))))))))
+
+;; State conversion functions
+(defun linear-org-linear-to-org-state (linear-state)
+  "Convert LINEAR-STATE to org TODO state."
+  (or (cdr (assoc linear-state linear-org-state-mapping)) "TODO"))
+
+(defun linear-org-org-to-linear-state (org-state)
+  "Convert ORG-STATE to Linear state."
+  (car (rassoc org-state linear-org-state-mapping)))
+
+(defun linear-org-linear-to-org-priority (priority)
+  "Convert LINEAR numeric PRIORITY to org priority."
+  (cdr (assoc priority linear-org-priority-mapping)))
+
+;; Find issue heading in the org file
+(defun linear-org-find-issue-heading (issue-id)
+  "Find the org heading for the specified ISSUE-ID.
+  Returns marker position of the heading or nil if not found."
+  (with-current-buffer (find-file-noselect linear-org-file)
+    (org-with-wide-buffer
+     (goto-char (point-min))
+     (when (re-search-forward (format ":%s: *%s" linear-org-issue-id-property issue-id) nil t)
+       (org-back-to-heading t)
+       (point-marker)))))
+
+;; Modified Function: Format issue headings with ** instead of *
+(defun linear-org-format-issue-heading (issue)
+  "Format the heading for ISSUE as a second-level heading."
+  (let* ((identifier (cdr (assoc 'identifier issue)))
+         (title (cdr (assoc 'title issue)))
+         (state-name (cdr (assoc 'name (assoc 'state issue))))
+         (org-state (linear-org-linear-to-org-state state-name))
+         (priority (cdr (assoc 'priority issue)))
+         (org-priority (linear-org-linear-to-org-priority priority)))
+
+    (concat
+     (if org-priority
+         (format "** %s [#%s] %s: %s" org-state org-priority identifier title)
+       (format "** %s %s: %s" org-state identifier title)))))
+
+;; Formatting properties
+(defun linear-org-format-issue-properties (issue)
+  "Format the properties for ISSUE."
+  (let* ((id (cdr (assoc 'id issue)))
+         (team-id (cdr (assoc 'id (assoc 'team issue))))
+         (team-name (cdr (assoc 'name (assoc 'team issue))))
+         (url (cdr (assoc 'url issue)))
+         (updated-at (cdr (assoc 'updatedAt issue))))
+
+    (concat
+     ":PROPERTIES:\n"
+     (format ":%s: %s\n" linear-org-issue-id-property id)
+     (format ":%s: %s\n" linear-org-team-id-property team-id)
+     (format ":%s: %s\n" "LINEAR_TEAM_NAME" team-name)
+     (format ":%s: %s\n" linear-org-url-property url)
+     (format ":%s: %s\n" linear-org-modified-property updated-at)
+     ":END:\n")))
+
+;; Modified Function: Add issues under OCL heading
+(defun linear-org-sync-issue (issue)
+  "Synchronize a single ISSUE from Linear to org under the OCL heading."
+  (let* ((id (cdr (assoc 'id issue)))
+         (title (cdr (assoc 'title issue)))
+         (description (or (cdr (assoc 'description issue)) ""))
+         (existing (linear-org-find-issue-heading id)))
+
+    (with-current-buffer (find-file-noselect linear-org-file)
+      (org-with-wide-buffer
+       (if existing
+           ;; Update existing entry
+           (progn
+             (goto-char existing)
+             (delete-region (point) (line-end-position))
+             (insert (substring (linear-org-format-issue-heading issue) 2)) ; Remove the "**" prefix since we're already at the heading
+
+             ;; Update properties
+             (org-end-of-meta-data)
+             (let ((properties-end (point)))
+               (org-back-to-heading t)
+               (re-search-forward ":PROPERTIES:" properties-end t)
+               (beginning-of-line)
+               (delete-region (point)
+                              (save-excursion
+                                (re-search-forward ":END:" nil t)
+                                (line-end-position)))
+               (insert (linear-org-format-issue-properties issue)))
+
+             ;; Update content if necessary
+             (org-end-of-meta-data t)
+             (when (org-at-heading-p)
+               ;; No content yet, add the description
+               (insert "\n" description)))
+
+         ;; Create new entry - find OCL heading first
+         (goto-char (point-min))
+         (if (re-search-forward "^\\* OCL$" nil t)
+             (progn
+               ;; Go to the end of the OCL section or end of buffer
+               (let ((ocl-end (save-excursion
+                                (if (re-search-forward "^\\* " nil t)
+                                    (progn (backward-char) (point))
+                                  (point-max)))))
+                 (goto-char ocl-end)
+                 (unless (bolp) (insert "\n"))
+                 (insert (linear-org-format-issue-heading issue) "\n")
+                 (insert (linear-org-format-issue-properties issue))
+                 (when (and description (not (string-empty-p description)))
+                   (insert "\n" description))))
+           ;; If OCL heading doesn't exist, create it
+           (goto-char (point-max))
+           (unless (bolp) (insert "\n"))
+           (insert "* OCL\n")
+           (insert (linear-org-format-issue-heading issue) "\n")
+           (insert (linear-org-format-issue-properties issue))
+           (when (and description (not (string-empty-p description)))
+             (insert "\n" description)))))
+      (save-buffer))))
+
+;; Main sync function modified to handle vector to list conversion
+(defun linear-org-sync-from-linear ()
+  "Synchronize issues from Linear to org file."
+  (interactive)
+  (linear-org-ensure-linear-file)
+  (let ((issues (linear-org-api-query-assigned-issues)))
+    (if issues
+        (progn
+          (message "Syncing %d issues from Linear to org..." (length issues))
+          ;; Convert vector to list if needed
+          (when (vectorp issues)
+            (setq issues (append issues nil)))
+          ;; Now process the issues
+          (dolist (issue issues)
+            (linear-org-sync-issue issue))
+          (message "Linear-org sync completed"))
+      (message "No issues found or failed to retrieve issues"))))
+
+;; Extract issue information functions
+(defun linear-org-extract-issue-id ()
+  "Extract Linear issue ID from the current org entry."
+  (org-entry-get (point) linear-org-issue-id-property))
+
+(defun linear-org-extract-team-id ()
+  "Extract Linear team ID from the current org entry."
+  (org-entry-get (point) linear-org-team-id-property))
+
+;; Update Linear issue from org entry
+(defun linear-org-update-linear-issue (id team-id title state description)
+  "Update a Linear issue with ID, TEAM-ID, TITLE, STATE, and DESCRIPTION."
+  (linear--log "Updating Linear issue %s" id)
+  (let* ((query "mutation UpdateIssue($id: String!, $input: IssueUpdateInput!) {
+  issueUpdate(id: $id, input: $input) {
+  success
+  issue {
+  id
+  identifier
+  title
+  updatedAt
+  }
+  }
+  }")
+         (state-id (when state
+                     (let* ((states-query "query GetStates($teamId: String!) {
+  team(id: $teamId) {
+  states {
+  nodes {
+  id
+  name
+  }
+  }
+  }
+  }")
+                            (variables `(("teamId" . ,team-id)))
+                            (response (linear--graphql-request states-query variables))
+                            (states (when response
+                                      (cdr (assoc 'nodes (assoc 'states (assoc 'team (assoc 'data response))))))))
+                       (when states
+                         (cdr (assoc 'id
+                                     (seq-find (lambda (s)
+                                                 (string= (cdr (assoc 'name s)) state))
+                                               states)))))))
+
+         (input `(("title" . ,title)
+                  ,@(when description
+                      `(("description" . ,description)))
+                  ,@(when state-id
+                      `(("stateId" . ,state-id)))))
+
+         (variables `(("id" . ,id)
+                      ("input" . ,input)))
+
+         (response (linear--graphql-request query variables)))
+
+    (if (and response (assoc 'data response))
+        (progn
+          (message "Updated Linear issue: %s"
+                   (cdr (assoc 'identifier
+                               (assoc 'issue
+                                      (assoc 'issueUpdate
+                                             (assoc 'data response))))))
+          t)
+      (message "Failed to update Linear issue")
+      nil)))
+
+;; Sync org entry to Linear
+(defun linear-org-sync-to-linear ()
+  "Sync the current org entry to Linear."
+  (interactive)
+  (save-excursion
+    (org-back-to-heading t)
+    (let* ((issue-id (linear-org-extract-issue-id))
+           (team-id (linear-org-extract-team-id)))
+
+      (if (and issue-id team-id)
+          (let* ((title (org-get-heading t t t t))
+                 ;; Extract the identifier prefix if present
+                 (title (if (string-match "\\([A-Z]+-[0-9]+\\): \\(.*\\)" title)
+                            (match-string 2 title)
+                          title))
+                 (todo-state (org-get-todo-state))
+                 (linear-state (linear-org-org-to-linear-state todo-state))
+                 ;; Get description from content
+                 (description (save-excursion
+                                (org-end-of-meta-data t)
+                                (when (org-at-heading-p)
+                                  "")
+                                (let ((start (point)))
+                                  (if (org-goto-sibling)
+                                      (buffer-substring-no-properties start (line-beginning-position))
+                                    (buffer-substring-no-properties start (point-max)))))))
+
+            (if (linear-org-update-linear-issue issue-id team-id title linear-state description)
+                (progn
+                  (message "Synchronized org entry to Linear")
+                  (org-entry-put (point) linear-org-modified-property
+                                 (format-time-string "%Y-%m-%dT%H:%M:%SZ" (current-time))))
+              (message "Failed to sync to Linear")))
+
+        (message "Current entry is not a Linear task")))))
+
+;; Open Linear issue in browser
+(defun linear-org-open-issue ()
+  "Open the current Linear issue in browser."
+  (interactive)
+  (let ((url (org-entry-get (point) linear-org-url-property)))
+    (if url
+        (browse-url url)
+      (message "No Linear URL found for this entry"))))
+
+;; Capture a new Linear issue and place it under OCL heading
+(defun linear-org-capture-to-linear ()
+  "Capture a new Linear issue from an org entry and place it under OCL heading."
+  (interactive)
+  (save-excursion
+    (org-back-to-heading t)
+    (let* ((title (org-get-heading t t t t))
+           (todo-state (org-get-todo-state))
+           (linear-state (linear-org-org-to-linear-state todo-state))
+           ;; Get description from content
+           (description (save-excursion
+                          (org-end-of-meta-data t)
+                          (when (org-at-heading-p)
+                            "")
+                          (let ((start (point)))
+                            (if (org-goto-sibling)
+                                (buffer-substring-no-properties start (line-beginning-position))
+                              (buffer-substring-no-properties start (point-max))))))
+
+           ;; Ask for the team
+           (teams (linear-get-teams))
+           (team-options (mapcar (lambda (team)
+                                   (cons (cdr (assoc 'name team))
+                                         team))
+                                 teams))
+           (selected-team-name (completing-read "Team: " team-options nil t))
+           (selected-team (cdr (assoc selected-team-name team-options)))
+           (team-id (cdr (assoc 'id selected-team)))
+
+           ;; Create the issue in Linear
+           (query "mutation CreateIssue($input: IssueCreateInput!) {
+  issueCreate(input: $input) {
+  success
+  issue {
+  id
+  identifier
+  title
+  url
+  updatedAt
+  }
+  }
+  }")
+
+           (input `(("title" . ,title)
+                    ("description" . ,description)
+                    ("teamId" . ,team-id)))
+
+           (variables `(("input" . ,input)))
+           (response (linear--graphql-request query variables)))
+
+      (if (and response (assoc 'data response))
+          (let* ((issue-data (assoc 'issue (assoc 'issueCreate (assoc 'data response))))
+                 (id (cdr (assoc 'id issue-data)))
+                 (identifier (cdr (assoc 'identifier issue-data)))
+                 (url (cdr (assoc 'url issue-data)))
+                 (updated-at (cdr (assoc 'updatedAt issue-data))))
+
+            ;; Set properties on the org entry
+            (org-entry-put (point) linear-org-issue-id-property id)
+            (org-entry-put (point) linear-org-team-id-property team-id)
+            (org-entry-put (point) "LINEAR_TEAM_NAME" (cdr (assoc 'name selected-team)))
+            (org-entry-put (point) linear-org-url-property url)
+            (org-entry-put (point) linear-org-modified-property updated-at)
+
+            ;; Update the heading to include the identifier
+            (let ((new-heading (if (string-match "^\\* \\(TODO\\|IN-PROGRESS\\|IN-REVIEW\\|BACKLOG\\|BLOCKED\\|DONE\\|CANCELED\\|DUPLICATE\\) " title)
+                                   (replace-match (format "** %s %s: " (match-string 1 title) identifier) t t title)
+                                 (format "** TODO %s: %s" identifier title))))
+              (delete-region (line-beginning-position) (line-end-position))
+              (insert new-heading))
+
+            (message "Created Linear issue: %s" identifier)
+            (save-buffer))
+
+        (message "Failed to create Linear issue")))))
+
+;; Hook to sync changes to Linear when todo state changes
+(defun linear-org-after-todo-state-change ()
+  "Hook function to sync todo state changes to Linear."
+  (when (and (buffer-file-name)
+             (string= (expand-file-name (buffer-file-name)) (expand-file-name linear-org-file))
+             (org-entry-get (point) linear-org-issue-id-property))
+    (linear-org-sync-to-linear)))
+
+;; Add hook for todo state changes
+(add-hook 'org-after-todo-state-change-hook 'linear-org-after-todo-state-change)
+
+;; Update org-capture-templates for Linear tasks to handle second-level heading
+(after! org
+  (add-to-list 'org-capture-templates
+               '("L" "Linear Task" entry
+                 (file+headline linear-org-file "OCL")
+                 "** TODO %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n%i\n"
+                 :immediate-finish nil
+                 :jump-to-captured t
+                 :after-finalize (lambda ()
+                                   (with-current-buffer (find-buffer-visiting linear-org-file)
+                                     (save-excursion
+                                       (goto-char (point-max))
+                                       (org-back-to-heading t)
+                                       (call-interactively 'linear-org-capture-to-linear)))))))
+
+;; Optional: Integration with Doom Emacs keybindings
+(after! linear
+  (map! :map org-mode-map
+        :localleader
+        (:prefix ("L" . "Linear")
+         :desc "Sync from Linear" "s" #'linear-org-sync-from-linear
+         :desc "Sync to Linear" "p" #'linear-org-sync-to-linear
+         :desc "Open in browser" "o" #'linear-org-open-issue
+         :desc "List issues" "l" #'linear-list-issues
+         :desc "New issue" "n" #'linear-new-issue
+         :desc "Test connection" "t" #'linear-test-connection
+         :desc "Toggle debug" "d" #'linear-toggle-debug)))
 
 ;; Optional: Integration with Doom Emacs keybindings
 (after! linear
@@ -506,6 +1105,10 @@
          :desc "Test connection" "t" #'linear-test-connection
          :desc "Toggle debug" "d" #'linear-toggle-debug
          :desc "Update linear.org" "u" #'update-linear-org)))
+
+         :desc "New issue" "n" #'linear-new-issue
+         :desc "Test connection" "t" #'linear-test-connection
+         :desc "Toggle debug" "d" #'linear-toggle-debug)))
 
 
 ;; GPG/Pinentry
