@@ -376,7 +376,7 @@
         :desc "org-roam-dailies-goto-today" "t" #'org-roam-dailies-goto-today
         :desc "jethro/org-capture-slipbox" "<tab>" #'jethro/org-capture-slipbox
         :desc "org-roam-capture" "c" #'org-roam-capture)
-  (setq org-roam-directory (file-truename "~/Library/CloudStorage/Dropbox/orgmode")
+  (setq org-roam-directory (file-truename "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/")
         org-roam-database-connector 'sqlite-builtin
         org-roam-db-gc-threshold most-positive-fixnum
         org-id-link-to-org-use-id t)
@@ -439,7 +439,7 @@
 ;; Configure Org mode and ensure settings take effect
 (after! org
   ;; Base settings
-  (setq org-directory "~/Library/CloudStorage/Dropbox/orgmode"
+  (setq org-directory "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/"
         load-prefer-newer t
         search-highlight t
         search-whitespace-regexp ".*?"
@@ -503,7 +503,7 @@
 (use-package citar
   :no-require
   :custom
-  (org-cite-global-bibliography '("~/Library/CloudStorage/Dropbox/orgmode/master.json"))
+  (org-cite-global-bibliography '("~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode//master.json"))
   (org-cite-insert-processor 'citar)
   (org-cite-follow-processor 'citar)
   (org-cite-activate-processor 'citar)
@@ -646,7 +646,7 @@
       response)))
 
 ;; Set the location for Linear org file
-(setq linear-org-file (expand-file-name "main/linear.org" org-directory))
+(setq linear-org-file (expand-file-name "~/Documents/linear.org" org-directory))
 
 ;; Mapping between Linear states and org TODO keywords
 (setq linear-org-state-mapping
