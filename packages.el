@@ -73,8 +73,6 @@
 (package! rainbow-mode)
 (package! apheleia)
 (package! dired-narrow)
-(package! mermaid-mode)
-(package! ob-mermaid)
 (package! centered-cursor-mode)
 (package! treesit-auto)
 (package! exec-path-from-shell)
@@ -90,4 +88,4 @@
 (package! url)
 (package! aidermacs)
 (package! linear
-  :recipe (:host github :repo "anegg0/linearel" :files ("*.el")))
+  :recipe (:host github :repo "anegg0/linear-emacs" :files ("*.el")))
