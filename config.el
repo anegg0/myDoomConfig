@@ -12,7 +12,16 @@
 (doom-load-envvars-file "~/.config/emacs/.local/env")
 
 ;; Set directories
-(setq org-directory "~/Library/CloudStorage/Dropbox/orgmode")
+(setq org-directory "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/"
+      org-agenda-files '("~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/main/gb_m_organizer.org" "~/Documents/linear.org"))
+(setq org-startup-folded 'content)
+
+(after! org-mode
+  (org-agenda-file-to-front "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/main/gb_m_organizer.org" "~/Documents/linear.org")
+  (setq org-todo-keywords
+        '(sequence "TODO(t)" "DONE(d)" "BLOCKED(b)" "CANCELLED(c)" "IN-REVIEW(i)" "|" "IN-PROGRESS(p)")
+        )
+  )
 
 ;;; =========================================================================
 ;;; APPEARANCE
@@ -196,6 +205,10 @@
       "]" #'other-window)
 
 
+(map! :leader
+      :prefix ("r" . "org-roam")
+      :n "F" #'my/org-roam-node-find-by-tag)
+
 ;; Window resizing with hydra
 (defhydra hydra/evil-window-resize (:color red)
   "Resize window"
@@ -326,6 +339,29 @@
 ;;; PACKAGE CONFIGURATIONS
 ;;; =========================================================================
 
+;; Linear.app integration
+(use-package linear
+  :commands (linear-list-issues linear-new-issue)
+  :config
+  ;; Set API key from environment variable
+  (when-let ((env-key (getenv "LINEAR_API_KEY")))
+    (setq linear-api-key env-key)
+    (message "Loaded Linear API key from environment"))
+
+
+  ;; Alternative: Get API key from auth-source
+  (when (and (not linear-api-key) (require 'auth-source nil t))
+    (let ((auth-info (auth-source-search :host "api.linear.app" :require '(:secret) :max 1)))
+      (when auth-info
+        (let ((secret (plist-get (car auth-info) :secret)))
+          (when secret
+            (setq linear-api-key (if (functionp secret) (funcall secret) secret))
+            (message "Loaded Linear API key from auth-source"))))))
+
+  ;; Optional: Add keybindings
+  :bind (:map global-map
+              ("C-c l l" . linear-list-issues)
+              ("C-c l n" . linear-new-issue)))
 ;; Org and Org-roam
 (use-package! org-roam
   :init
@@ -1050,13 +1086,21 @@
         (:prefix ("L" . "Linear")
          :desc "Sync from Linear" "s" #'linear-org-sync-from-linear
          :desc "Sync to Linear" "p" #'linear-org-sync-to-linear
-         :desc "Open in browser" "o" #'linear-org-open-issue))
+         :desc "Open in browser" "o" #'linear-org-open-issue
+         :desc "List issues" "l" #'linear-list-issues
+         :desc "New issue" "n" #'linear-new-issue
+         :desc "Test connection" "t" #'linear-test-connection
+         :desc "Toggle debug" "d" #'linear-toggle-debug)))
 
+;; Optional: Integration with Doom Emacs keybindings
+(after! linear
   (map! :leader
         (:prefix ("L" . "Linear")
-         :desc "Sync from Linear" "s" #'linear-org-sync-from-linear
          :desc "List issues" "l" #'linear-list-issues
-         :desc "New issue" "n" #'linear-new-issue)))
+         :desc "New issue" "n" #'linear-new-issue
+         :desc "Test connection" "t" #'linear-test-connection
+         :desc "Toggle debug" "d" #'linear-toggle-debug)))
+
 
 ;; GPG/Pinentry
 (use-package! epa-file
@@ -1100,6 +1144,8 @@
                  :host "localhost:11434"
                  :stream t
                  :models '("llama3.2:latest")))
+(after!
+  (gptel-mode 'org-mode))
 
 ;; Treemacs configuration
 (after! treemacs
@@ -1238,22 +1284,12 @@
 ;; Project management
 (setq projectile-indexing-method 'hybrid)
 
-;; Add this to your config.el file
-
-;; Function to invalidate projectile cache after git checkout
-(defun my/projectile-invalidate-cache-on-git-checkout ()
-  "Invalidate projectile cache when changing git branches."
-  (let ((project-root (projectile-project-root)))
-    (when project-root
-      (message "Git branch changed - invalidating projectile cache for %s" project-root)
-      (projectile-invalidate-cache nil))))
 
 ;; Hook into magit-checkout
 (after! magit
   (advice-add 'magit-checkout :after #'my/projectile-invalidate-cache-on-git-checkout)
   (advice-add 'magit-branch-and-checkout :after #'my/projectile-invalidate-cache-on-git-checkout))
 
-;; Add this to your config.el file to enable Copilot in Magit commit buffers
 
 ;; Make sure copilot is loaded
 (after! copilot
@@ -1299,76 +1335,6 @@
   (run-with-idle-timer 1 t #'display-workspaces-in-minibuffer)
   (+workspace/display))
 
-;; Linear.app integration
-(use-package linear
-  :commands (linear-list-issues linear-new-issue)
-  :config
-  ;; Set API key from environment variable
-  (when-let ((env-key (getenv "LINEAR_API_KEY")))
-    (setq linear-api-key env-key)
-    (message "Loaded Linear API key from environment"))
-
-  ;; Add this to your config.el file
-
-  (defun my/cycle-workspace-windows (&optional reverse)
-    "Cycle through windows in the current workspace.
-  When REVERSE is non-nil, cycle in reverse order."
-    (interactive "P")
-    (let* ((windows (window-list))
-           (num-windows (length windows))
-           (current (selected-window))
-           (pos (cl-position current windows))
-           (next-pos (if reverse
-                         (if (= pos 0)
-                             (1- num-windows)
-                           (1- pos))
-                       (if (= pos (1- num-windows))
-                           0
-                         (1+ pos))))
-           (next-window (nth next-pos windows)))
-      (when next-window
-        (select-window next-window))))
-
-  (defun my/cycle-workspace-windows-reverse ()
-    "Cycle through windows in the current workspace in reverse order."
-    (interactive)
-    (my/cycle-workspace-windows t))
-
-  ;; Key bindings - choose what works best for you
-  (map! :leader
-        :desc "Cycle windows forward"
-        "w c" #'my/cycle-workspace-windows)
-
-  (map! :leader
-        :desc "Cycle windows backward"
-        "w C" #'my/cycle-workspace-windows-reverse)
-
-  ;; Alternative: Get API key from auth-source
-  (when (and (not linear-api-key) (require 'auth-source nil t))
-    (let ((auth-info (auth-source-search :host "api.linear.app" :require '(:secret) :max 1)))
-      (when auth-info
-        (let ((secret (plist-get (car auth-info) :secret)))
-          (when secret
-            (setq linear-api-key (if (functionp secret) (funcall secret) secret))
-            (message "Loaded Linear API key from auth-source"))))))
-
-  ;; Enable debug logging (set to nil to disable)
-  ;; (setq linear-debug t)
-
-  ;; Optional: Add keybindings
-  :bind (:map global-map
-              ("C-c l l" . linear-list-issues)
-              ("C-c l n" . linear-new-issue)))
-
-;; Optional: Integration with Doom Emacs keybindings
-(after! linear
-  (map! :leader
-        (:prefix ("L" . "Linear")
-         :desc "List issues" "l" #'linear-list-issues
-         :desc "New issue" "n" #'linear-new-issue
-         :desc "Test connection" "t" #'linear-test-connection
-         :desc "Toggle debug" "d" #'linear-toggle-debug)))
-
 ;; Ditaa configuration
 (setq org-ditaa-jar-path "/opt/homebrew/bin/ditaa.jar")
 
@@ -1402,6 +1368,7 @@
               (display-line-numbers-mode -1)
               ;; Optionally center the buffer contents
               (centered-cursor-mode)
-              ;; Optionally enable spell-checking
-              (flyspell-mode))))
+              ;; Optionally enable copilot-mode
+              (copilot-mode))))
+
 
