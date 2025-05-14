@@ -17,8 +17,21 @@
 
 (after! org-mode
   (org-agenda-file-to-front "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/main/gb_m_organizer.org" "~/Documents/linear.org")
-  )
+  ;; Custom TODO keywords
+  (setq org-todo-keywords
+        '((sequence "TODO(t)" "IN-PROGRESS(i)" "IN-REVIEW(r)" "|" "BACKLOG(b)" "BLOCKED(l)" "DONE(d)" "CANCELED(c)" "DUPLICATE(p)")))
 
+  ;; Optional: Add custom faces for your TODO states
+  (setq org-todo-keyword-faces
+        '(("TODO" . (:foreground "red" :weight bold))
+          ("IN-PROGRESS" . (:foreground "blue" :weight bold))
+          ("IN-REVIEW" . (:foreground "orange" :weight bold))
+          ("BACKLOG" . (:foreground "orange" :weight bold))
+          ("BLOCKED" . (:foreground "green" :weight bold))
+          ("DONE" . (:foreground "green" :weight bold))
+          ("CANCELLED" . (:foreground "gray" :weight bold))
+          ("DUPLICATE" . (:foreground "black" :weight bold))))
+  )
 
 ;;; =========================================================================
 ;;; APPEARANCE
