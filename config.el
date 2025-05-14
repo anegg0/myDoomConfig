@@ -343,370 +343,364 @@
 ;; Linear.app integration
 (use-package linear
   :commands (linear-list-issues linear-new-issue)
-;; Linear.app integration
-(use-package linear
-  :commands (linear-list-issues linear-new-issue)
+  :bind (:map global-map
+              ("C-c l l" . linear-list-issues)
+              ("C-c l n" . linear-new-issue))
   :config
   ;; Set API key from environment variable
   (when-let ((env-key (getenv "LINEAR_API_KEY")))
     (setq linear-api-key env-key)
-    (message "Loaded Linear API key from environment"))
+    (message "Loaded Linear API key from environment")))
 
 
-  ;; Alternative: Get API key from auth-source
-  (when (and (not linear-api-key) (require 'auth-source nil t))
-    (let ((auth-info (auth-source-search :host "api.linear.app" :require '(:secret) :max 1)))
-      (when auth-info
-        (let ((secret (plist-get (car auth-info) :secret)))
-          (when secret
-            (setq linear-api-key (if (functionp secret) (funcall secret) secret))
-            (message "Loaded Linear API key from auth-source"))))))
+;; Alternative: Get API key from auth-source
+(when (and (not linear-api-key) (require 'auth-source nil t))
+  (let ((auth-info (auth-source-search :host "api.linear.app" :require '(:secret) :max 1)))
+    (when auth-info
+      (let ((secret (plist-get (car auth-info) :secret)))
+        (when secret
+          (setq linear-api-key (if (functionp secret) (funcall secret) secret)))))))
+        ;; Org and Org-roam
+        (use-package! org-roam
+          :init
+          (map! :leader
+                :prefix "r"
+                :desc "org-roam" "l" #'org-roam-buffer-toggle
+                :desc "org-roam-node-insert" "i" #'org-roam-node-insert
+                :desc "org-roam-node-find" "f" #'org-roam-node-find
+                :desc "org-roam-ref-find" "r" #'org-roam-ref-find
+                :desc "org-roam-show-graph" "g" #'org-roam-show-graph
+                :desc "org-roam-dailies-capture-today" "T" #'org-roam-dailies-capture-today
+                :desc "org-roam-dailies-goto-today" "t" #'org-roam-dailies-goto-today
+                :desc "jethro/org-capture-slipbox" "<tab>" #'jethro/org-capture-slipbox
+                :desc "org-roam-capture" "c" #'org-roam-capture)
+          (setq org-roam-directory (file-truename "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/")
+                org-roam-database-connector 'sqlite-builtin
+                org-roam-db-gc-threshold most-positive-fixnum
+                org-id-link-to-org-use-id t)
+          :config
+          (org-roam-db-autosync-mode +1)
+          (set-popup-rules!
+            `((,(regexp-quote org-roam-buffer) ; persistent org-roam buffer
+               :side right :width .33 :height .5 :ttl nil :modeline nil :quit nil :slot 1)
+              ("^\\*org-roam: " ; node dedicated org-roam buffer
+               :side right :width .33 :height .5 :ttl nil :modeline nil :quit nil :slot 2)))
+          (add-hook 'org-roam-mode-hook #'turn-on-visual-line-mode)
+          (setq org-roam-capture-templates
+                '(
+                  ("m" "main" plain
+                   "%?"
+                   :if-new (file+head "main/${slug}.org"
+                                      "#+title: ${title}\n#+TAGS: :\n")
+                   :immediate-finish t
+                   :unnarrowed t)
+                  ("c" "catb" plain
+                   "%?"
+                   :if-new (file+head "main/gb_b_catb_${slug}.org"
+                                      "#+title: ${title}\n#+TAGS: :\n")
+                   :immediate-finish t
+                   :unnarrowed t)
+                  ("r" "reference" plain "%?"
+                   :if-new
+                   (file+head "reference/${slug}.org" "#+title: ${title}\n")
+                   :immediate-finish t
+                   :unnarrowed t)
+                  ("a" "article" plain "%?"
+                   :if-new
+                   (file+head "articles/${slug}.org" "#+title: ${title}\n#+filetags: :article:\n")
+                   :immediate-finish t
+                   :unnarrowed t)
+                  ("d" "dictionary" plain "%?"
+                   :if-new
+                   (file+head "dictionary/${slug}.org" "#+title: ${title}\n#+filetags: :dictionary:\n")
+                   :immediate-finish t
+                   :unnarrowed t)))
+          (cl-defmethod org-roam-node-type ((node org-roam-node))
+            "Return the TYPE of NODE."
+            (condition-case nil
+                (file-name-nondirectory
+                 (directory-file-name
+                  (file-name-directory
+                   (file-relative-name (org-roam-node-file node) org-roam-directory))))
+              (error "")))
+          (setq org-roam-node-display-template
+                (concat "${type:15} ${title:*} " (propertize "${tags:10}" 'face 'org-tag))))
 
-  ;; Optional: Add keybindings
-  :bind (:map global-map
-              ("C-c l l" . linear-list-issues)
-              ("C-c l n" . linear-new-issue)))
-;; Org and Org-roam
-(use-package! org-roam
-  :init
-  (map! :leader
-        :prefix "r"
-        :desc "org-roam" "l" #'org-roam-buffer-toggle
-        :desc "org-roam-node-insert" "i" #'org-roam-node-insert
-        :desc "org-roam-node-find" "f" #'org-roam-node-find
-        :desc "org-roam-ref-find" "r" #'org-roam-ref-find
-        :desc "org-roam-show-graph" "g" #'org-roam-show-graph
-        :desc "org-roam-dailies-capture-today" "T" #'org-roam-dailies-capture-today
-        :desc "org-roam-dailies-goto-today" "t" #'org-roam-dailies-goto-today
-        :desc "jethro/org-capture-slipbox" "<tab>" #'jethro/org-capture-slipbox
-        :desc "org-roam-capture" "c" #'org-roam-capture)
-  (setq org-roam-directory (file-truename "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/")
-        org-roam-database-connector 'sqlite-builtin
-        org-roam-db-gc-threshold most-positive-fixnum
-        org-id-link-to-org-use-id t)
-  :config
-  (org-roam-db-autosync-mode +1)
-  (set-popup-rules!
-    `((,(regexp-quote org-roam-buffer) ; persistent org-roam buffer
-       :side right :width .33 :height .5 :ttl nil :modeline nil :quit nil :slot 1)
-      ("^\\*org-roam: " ; node dedicated org-roam buffer
-       :side right :width .33 :height .5 :ttl nil :modeline nil :quit nil :slot 2)))
-  (add-hook 'org-roam-mode-hook #'turn-on-visual-line-mode)
-  (setq org-roam-capture-templates
-        '(
-          ("m" "main" plain
-           "%?"
-           :if-new (file+head "main/${slug}.org"
-                              "#+title: ${title}\n#+TAGS: :\n")
-           :immediate-finish t
-           :unnarrowed t)
-          ("c" "catb" plain
-           "%?"
-           :if-new (file+head "main/gb_b_catb_${slug}.org"
-                              "#+title: ${title}\n#+TAGS: :\n")
-           :immediate-finish t
-           :unnarrowed t)
-          ("r" "reference" plain "%?"
-           :if-new
-           (file+head "reference/${slug}.org" "#+title: ${title}\n")
-           :immediate-finish t
-           :unnarrowed t)
-          ("a" "article" plain "%?"
-           :if-new
-           (file+head "articles/${slug}.org" "#+title: ${title}\n#+filetags: :article:\n")
-           :immediate-finish t
-           :unnarrowed t)
-          ("d" "dictionary" plain "%?"
-           :if-new
-           (file+head "dictionary/${slug}.org" "#+title: ${title}\n#+filetags: :dictionary:\n")
-           :immediate-finish t
-           :unnarrowed t)))
-  (cl-defmethod org-roam-node-type ((node org-roam-node))
-    "Return the TYPE of NODE."
-    (condition-case nil
-        (file-name-nondirectory
-         (directory-file-name
-          (file-name-directory
-           (file-relative-name (org-roam-node-file node) org-roam-directory))))
-      (error "")))
-  (setq org-roam-node-display-template
-        (concat "${type:15} ${title:*} " (propertize "${tags:10}" 'face 'org-tag))))
+        ;; Org-roam dailies
+        (setq org-roam-dailies-directory "daily/")
+        (setq org-roam-dailies-capture-templates
+              '(("d" "default" entry
+                 "* %?"
+                 :target (file+head "%<%Y-%m-%d>.org"
+                                    "#+title: %<%Y-%m-%d>\n"))))
 
-;; Org-roam dailies
-(setq org-roam-dailies-directory "daily/")
-(setq org-roam-dailies-capture-templates
-      '(("d" "default" entry
-         "* %?"
-         :target (file+head "%<%Y-%m-%d>.org"
-                            "#+title: %<%Y-%m-%d>\n"))))
+        ;; Configure Org mode and ensure settings take effect
+        (after! org
+          ;; Base settings
+          (setq org-directory "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/"
+                load-prefer-newer t
+                search-highlight t
+                search-whitespace-regexp ".*?"
+                org-ellipsis " ▼ "
+                org-adapt-indentation nil
+                org-habit-show-habits-only-for-today t)
 
-;; Configure Org mode and ensure settings take effect
-(after! org
-  ;; Base settings
-  (setq org-directory "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/"
-        load-prefer-newer t
-        search-highlight t
-        search-whitespace-regexp ".*?"
-        org-ellipsis " ▼ "
-        org-adapt-indentation nil
-        org-habit-show-habits-only-for-today t)
+          ;; Custom TODO keywords
+          (setq org-todo-keywords
+                '((sequence "TODO(t)" "IN-PROGRESS(i)" "IN-REVIEW(r)" "|" "BACKLOG(b)" "BLOCKED(l)" "DONE(d)" "CANCELED(c)" "DUPLICATE(p)")))
 
-  ;; Custom TODO keywords
-  (setq org-todo-keywords
-        '((sequence "TODO(t)" "IN-PROGRESS(i)" "IN-REVIEW(r)" "|" "BACKLOG(b)" "BLOCKED(l)" "DONE(d)" "CANCELED(c)" "DUPLICATE(p)")))
+          ;; Optional: Add custom faces for your TODO states
+          (setq org-todo-keyword-faces
+                '(("TODO" . (:foreground "red" :weight bold))
+                  ("IN-PROGRESS" . (:foreground "blue" :weight bold))
+                  ("IN-REVIEW" . (:foreground "orange" :weight bold))
+                  ("BACKLOG" . (:foreground "green" :weight bold))
+                  ("BLOCKED" . (:foreground "green" :weight bold))
+                  ("DONE" . (:foreground "green" :weight bold))
+                  ("CANCELLED" . (:foreground "gray" :weight bold))
+                  ("DUPLICATE" . (:foreground "gray" :weight bold))))
 
-  ;; Optional: Add custom faces for your TODO states
-  (setq org-todo-keyword-faces
-        '(("TODO" . (:foreground "red" :weight bold))
-          ("IN-PROGRESS" . (:foreground "blue" :weight bold))
-          ("IN-REVIEW" . (:foreground "orange" :weight bold))
-          ("BACKLOG" . (:foreground "green" :weight bold))
-          ("BLOCKED" . (:foreground "green" :weight bold))
-          ("DONE" . (:foreground "green" :weight bold))
-          ("CANCELLED" . (:foreground "gray" :weight bold))
-          ("DUPLICATE" . (:foreground "gray" :weight bold))))
+          ;; Configure org-mode for inline images
+          (setq org-startup-with-inline-images t)  ; Show inline images when opening org files
+          (setq org-image-actual-width nil)        ; Use image size specifications in org files
+          (add-hook 'org-mode-hook #'org-display-inline-images)) ; Auto-display images in org buffers
 
-  ;; Configure org-mode for inline images
-  (setq org-startup-with-inline-images t)  ; Show inline images when opening org files
-  (setq org-image-actual-width nil)        ; Use image size specifications in org files
-  (add-hook 'org-mode-hook #'org-display-inline-images)) ; Auto-display images in org buffers
+        ;; Make sure Org-roam uses the same TODO keywords
+        (after! org-roam
+          ;; All your existing org-roam settings...
 
-;; Make sure Org-roam uses the same TODO keywords
-(after! org-roam
-  ;; All your existing org-roam settings...
+          ;; Add this line to ensure org-roam uses your custom TODO states
+          (setq org-roam-todo-keywords org-todo-keywords))
 
-  ;; Add this line to ensure org-roam uses your custom TODO states
-  (setq org-roam-todo-keywords org-todo-keywords))
+        ;; Deft for quick note access
+        (use-package deft
+          :commands (deft)
+          :config
+          (setq deft-directory org-directory))
+        (setq deft-recursive t)
+        (setq deft-strip-summary-regexp
+              (concat "\\("
+	              "^:.+:.*\n" ; any line with a :SOMETHING:
+	              "\\|^#\\+.*\n" ; anyline starting with a #+
+	              "\\|^\\*.+.*\n" ; anyline where an asterisk starts the line
+	              "\\)"))
+        (advice-add 'deft-parse-title :override
+                    (lambda (file contents)
+                      (if deft-use-filename-as-title
+	                  (deft-base-filename file)
+	                (let* ((case-fold-search 't)
+	                       (begin (string-match "title: " contents))
+	                       (end-of-begin (match-end 0))
+	                       (end (string-match "\n" contents begin)))
+	                  (if begin
+	                      (substring contents end-of-begin end)
+	                    (format "%s" file))))))
 
-;; Deft for quick note access
-(use-package deft
-  :commands (deft)
-  :config
-  (setq deft-directory org-directory))
-(setq deft-recursive t)
-(setq deft-strip-summary-regexp
-      (concat "\\("
-	      "^:.+:.*\n" ; any line with a :SOMETHING:
-	      "\\|^#\\+.*\n" ; anyline starting with a #+
-	      "\\|^\\*.+.*\n" ; anyline where an asterisk starts the line
-	      "\\)"))
-(advice-add 'deft-parse-title :override
-            (lambda (file contents)
-              (if deft-use-filename-as-title
-	          (deft-base-filename file)
-	        (let* ((case-fold-search 't)
-	               (begin (string-match "title: " contents))
-	               (end-of-begin (match-end 0))
-	               (end (string-match "\n" contents begin)))
-	          (if begin
-	              (substring contents end-of-begin end)
-	            (format "%s" file))))))
+        ;; Citar for bibliography management
+        (require 'citar)
+        (use-package citar
+          :no-require
+          :custom
+          (org-cite-global-bibliography '("~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode//master.json"))
+          (org-cite-insert-processor 'citar)
+          (org-cite-follow-processor 'citar)
+          (org-cite-activate-processor 'citar)
+          (citar-bibliography org-cite-global-bibliography)
+          :bind
+          (:map org-mode-map :package org ("C-c b" . #'org-cite-insert)))
 
-;; Citar for bibliography management
-(require 'citar)
-(use-package citar
-  :no-require
-  :custom
-  (org-cite-global-bibliography '("~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode//master.json"))
-  (org-cite-insert-processor 'citar)
-  (org-cite-follow-processor 'citar)
-  (org-cite-activate-processor 'citar)
-  (citar-bibliography org-cite-global-bibliography)
-  :bind
-  (:map org-mode-map :package org ("C-c b" . #'org-cite-insert)))
-
-(defun jethro/org-roam-node-from-cite (keys-entries)
-  (interactive (list (citar-select-ref :multiple nil :rebuild-cache t)))
-  (let ((title (citar--format-entry-no-widths (cdr keys-entries)
-                                              "${author editor} :: ${title}")))
-    (org-roam-capture- :templates
-                       '(("r" "reference" plain "%?" :if-new
-                          (file+head "reference/${citekey}.org"
-                                     ":PROPERTIES:
+        (defun jethro/org-roam-node-from-cite (keys-entries)
+          (interactive (list (citar-select-ref :multiple nil :rebuild-cache t)))
+          (let ((title (citar--format-entry-no-widths (cdr keys-entries)
+                                                      "${author editor} :: ${title}")))
+            (org-roam-capture- :templates
+                               '(("r" "reference" plain "%?" :if-new
+                                  (file+head "reference/${citekey}.org"
+                                             ":PROPERTIES:
   :ROAM_REFS: [cite:@${citekey}]
   :END:
   #+title: ${title}\n")
-                          :immediate-finish t
-                          :unnarrowed t))
-                       :info (list :citekey (car keys-entries))
-                       :node (org-roam-node-create :title title)
-                       :props '(:finalize find-file))))
+                                  :immediate-finish t
+                                  :unnarrowed t))
+                               :info (list :citekey (car keys-entries))
+                               :node (org-roam-node-create :title title)
+                               :props '(:finalize find-file))))
 
-;; Org-roam utility functions
-(defun my/org-roam-node-has-tag (node tag)
-  "Filter function to check if the given NODE has the specified TAG."
-  (member tag (org-roam-node-tags node)))
+        ;; Org-roam utility functions
+        (defun my/org-roam-node-has-tag (node tag)
+          "Filter function to check if the given NODE has the specified TAG."
+          (member tag (org-roam-node-tags node)))
 
-(defun my/org-roam-node-find-by-tag ()
-  "Find and open an Org-roam node based on a specified tag."
-  (interactive)
-  (let ((tag (read-string "Enter tag: ")))
-    (org-roam-node-find nil nil (lambda (node) (my/org-roam-node-has-tag node tag)))))
+        (defun my/org-roam-node-find-by-tag ()
+          "Find and open an Org-roam node based on a specified tag."
+          (interactive)
+          (let ((tag (read-string "Enter tag: ")))
+            (org-roam-node-find nil nil (lambda (node) (my/org-roam-node-has-tag node tag)))))
 
-(defun jethro/org-capture-inbox ()
-  (interactive)
-  (org-capture nil "i"))
+        (defun jethro/org-capture-inbox ()
+          (interactive)
+          (org-capture nil "i"))
 
-(defun jethro/org-capture-slipbox ()
-  (interactive)
-  (org-capture nil "s"))
+        (defun jethro/org-capture-slipbox ()
+          (interactive)
+          (org-capture nil "s"))
 
-;; Define org-agenda-files to include the right directories
-(after! org
-  ;; Include all org files from main directories for agenda
-  (setq org-agenda-files (list
-                          (expand-file-name "main" org-directory)
-                          (expand-file-name "daily" org-directory)
-                          (expand-file-name "reference" org-directory)
-                          (expand-file-name "articles" org-directory)))
+        ;; Define org-agenda-files to include the right directories
+        (after! org
+          ;; Include all org files from main directories for agenda
+          (setq org-agenda-files (list
+                                  (expand-file-name "main" org-directory)
+                                  (expand-file-name "daily" org-directory)
+                                  (expand-file-name "reference" org-directory)
+                                  (expand-file-name "articles" org-directory)))
 
-  ;; Make sure todo keywords are consistent
-  (setq org-todo-keywords
-        '((sequence "TODO(t)" "IN-PROGRESS(i)" "IN-REVIEW(r)" "|" "BACKLOG(b)" "BLOCKED(l)" "DONE(d)" "CANCELED(c)" "DUPLICATE(p)")))
+          ;; Make sure todo keywords are consistent
+          (setq org-todo-keywords
+                '((sequence "TODO(t)" "IN-PROGRESS(i)" "IN-REVIEW(r)" "|" "BACKLOG(b)" "BLOCKED(l)" "DONE(d)" "CANCELED(c)" "DUPLICATE(p)")))
 
-  ;; Enable refile targets to include agenda files
-  (setq org-refile-targets '((org-agenda-files :maxlevel . 3)))
+          ;; Enable refile targets to include agenda files
+          (setq org-refile-targets '((org-agenda-files :maxlevel . 3)))
 
-  ;; Other org settings can remain the same
-  )
-;; Linear.app integration
-;; ===============================================================
+          ;; Other org settings can remain the same
+          )
+        ;; Linear.app integration
+        ;; ===============================================================
 
-;; Linear settings
-(defcustom linear-api-key nil
-  "API key for Linear.app."
-  :type 'string
-  :group 'linear)
+        ;; Linear settings
+        (defcustom linear-api-key nil
+          "API key for Linear.app."
+          :type 'string
+          :group 'linear)
 
-(defcustom linear-graphql-url "https://api.linear.app/graphql"
-  "GraphQL endpoint URL for Linear API."
-  :type 'string
-  :group 'linear)
+        (defcustom linear-graphql-url "https://api.linear.app/graphql"
+          "GraphQL endpoint URL for Linear API."
+          :type 'string
+          :group 'linear)
 
-(defcustom linear-default-team-id nil
-  "Default team ID to use for creating issues."
-  :type 'string
-  :group 'linear)
+        (defcustom linear-default-team-id nil
+          "Default team ID to use for creating issues."
+          :type 'string
+          :group 'linear)
 
-(defcustom linear-debug nil
-  "Enable debug logging for Linear requests."
-  :type 'boolean
-  :group 'linear)
+        (defcustom linear-debug nil
+          "Enable debug logging for Linear requests."
+          :type 'boolean
+          :group 'linear)
 
-;; Define the logging function that's used by other Linear functions
-(defun linear--log (format-string &rest args)
-  "Log message with FORMAT-STRING and ARGS if debug is enabled."
-  (when linear-debug
-    (apply #'message (concat "[Linear] " format-string) args)))
+        ;; Define the logging function that's used by other Linear functions
+        (defun linear--log (format-string &rest args)
+          "Log message with FORMAT-STRING and ARGS if debug is enabled."
+          (when linear-debug
+            (apply #'message (concat "[Linear] " format-string) args)))
 
-;; Define the headers function needed for API requests
-(defun linear--headers ()
-  "Return headers for Linear API requests."
-  (unless linear-api-key
-    (error "Linear API key not set. Use M-x customize-variable RET linear-api-key"))
+        ;; Define the headers function needed for API requests
+        (defun linear--headers ()
+          "Return headers for Linear API requests."
+          (unless linear-api-key
+            (error "Linear API key not set. Use M-x customize-variable RET linear-api-key"))
 
-  ;; For personal API keys, the format is: "Authorization: <API_KEY>"
-  ;; No "Bearer" prefix for personal API keys
-  `(("Content-Type" . "application/json")
-    ("Authorization" . ,linear-api-key)))
+          ;; For personal API keys, the format is: "Authorization: <API_KEY>"
+          ;; No "Bearer" prefix for personal API keys
+          `(("Content-Type" . "application/json")
+            ("Authorization" . ,linear-api-key)))
 
-;; GraphQL request function from linear.el
-(defun linear--graphql-request (query &optional variables)
-  "Make a GraphQL request to Linear API with QUERY and optional VARIABLES."
-  (linear--log "Making GraphQL request with query: %s" query)
-  (when variables
-    (linear--log "Variables: %s" (prin1-to-string variables)))
+        ;; GraphQL request function from linear.el
+        (defun linear--graphql-request (query &optional variables)
+          "Make a GraphQL request to Linear API with QUERY and optional VARIABLES."
+          (linear--log "Making GraphQL request with query: %s" query)
+          (when variables
+            (linear--log "Variables: %s" (prin1-to-string variables)))
 
-  (let ((response nil)
-        (error-response nil)
-        (request-data (json-encode `(("query" . ,query)
-                                     ,@(when variables `(("variables" . ,variables)))))))
-    (linear--log "Request payload: %s" request-data)
+          (let ((response nil)
+                (error-response nil)
+                (request-data (json-encode `(("query" . ,query)
+                                             ,@(when variables `(("variables" . ,variables)))))))
+            (linear--log "Request payload: %s" request-data)
 
-    (request
-      linear-graphql-url
-      :type "POST"
-      :headers (linear--headers)
-      :data request-data
-      :parser 'json-read
-      :sync t
-      :success (cl-function
-                (lambda (&key data &allow-other-keys)
-                  (linear--log "Response received: %s" (prin1-to-string data))
-                  (setq response data)))
-      :error (cl-function
-              (lambda (&key error-thrown response data &allow-other-keys)
-                (setq error-response error-thrown)
-                (linear--log "Error: %s" error-thrown)
-                (when response
-                  (linear--log "Response status: %s" (request-response-status-code response)))
-                (when data
-                  (linear--log "Error response: %s" (prin1-to-string data))))))
+            (request
+              linear-graphql-url
+              :type "POST"
+              :headers (linear--headers)
+              :data request-data
+              :parser 'json-read
+              :sync t
+              :success (cl-function
+                        (lambda (&key data &allow-other-keys)
+                          (linear--log "Response received: %s" (prin1-to-string data))
+                          (setq response data)))
+              :error (cl-function
+                      (lambda (&key error-thrown response data &allow-other-keys)
+                        (setq error-response error-thrown)
+                        (linear--log "Error: %s" error-thrown)
+                        (when response
+                          (linear--log "Response status: %s" (request-response-status-code response)))
+                        (when data
+                          (linear--log "Error response: %s" (prin1-to-string data))))))
 
-    (if error-response
-        (progn
-          (message "Linear API error: %s" error-response)
-          nil)
-      response)))
+            (if error-response
+                (progn
+                  (message "Linear API error: %s" error-response)
+                  nil)
+              response)))
 
-;; Set the location for Linear org file
-(setq linear-org-file (expand-file-name "~/Documents/linear.org" org-directory))
+        ;; Set the location for Linear org file
+        (setq linear-org-file (expand-file-name "~/Documents/linear.org" org-directory))
 
-;; Mapping between Linear states and org TODO keywords
-(setq linear-org-state-mapping
-      '(("Todo" . "TODO")
-        ("In Progress" . "IN-PROGRESS")
-        ("In Review" . "IN-REVIEW")
-        ("Backlog" . "BACKLOG")
-        ("Blocked" . "BLOCKED")
-        ("Done" . "DONE")
-        ("Canceled" . "CANCELED")
-        ("Duplicate" . "DUPLICATE")))
+        ;; Mapping between Linear states and org TODO keywords
+        (setq linear-org-state-mapping
+              '(("Todo" . "TODO")
+                ("In Progress" . "IN-PROGRESS")
+                ("In Review" . "IN-REVIEW")
+                ("Backlog" . "BACKLOG")
+                ("Blocked" . "BLOCKED")
+                ("Done" . "DONE")
+                ("Canceled" . "CANCELED")
+                ("Duplicate" . "DUPLICATE")))
 
-;; Mapping between Linear priority values and org priorities
-(setq linear-org-priority-mapping
-      '((0 . nil)   ; No priority
-        (1 . "A")   ; Urgent
-        (2 . "B")   ; High
-        (3 . "C")   ; Medium
-        (4 . "D"))) ; Low
+        ;; Mapping between Linear priority values and org priorities
+        (setq linear-org-priority-mapping
+              '((0 . nil)   ; No priority
+                (1 . "A")   ; Urgent
+                (2 . "B")   ; High
+                (3 . "C")   ; Medium
+                (4 . "D"))) ; Low
 
-;; Property names for storing Linear metadata
-(setq linear-org-issue-id-property "LINEAR_ID"
-      linear-org-team-id-property "LINEAR_TEAM"
-      linear-org-modified-property "LINEAR_MODIFIED"
-      linear-org-url-property "LINEAR_URL")
+        ;; Property names for storing Linear metadata
+        (setq linear-org-issue-id-property "LINEAR_ID"
+              linear-org-team-id-property "LINEAR_TEAM"
+              linear-org-modified-property "LINEAR_MODIFIED"
+              linear-org-url-property "LINEAR_URL")
 
-;; Modified Function: Ensure the Linear org file exists with proper structure and top-level heading
-(defun linear-org-ensure-linear-file ()
-  "Ensure the Linear org file exists with proper structure including a top-level OCL heading."
-  (unless (file-exists-p linear-org-file)
-    (with-temp-file linear-org-file
-      (insert "#+TITLE: Linear Tasks\n")
-      (insert "#+FILETAGS: :linear:\n")
-      (insert "#+TODO: TODO IN-PROGRESS IN-REVIEW BACKLOG BLOCKED | DONE CANCELED DUPLICATE\n\n")
-      (insert "* OCL\n"))) ; Add top-level heading
+        ;; Modified Function: Ensure the Linear org file exists with proper structure and top-level heading
+        (defun linear-org-ensure-linear-file ()
+          "Ensure the Linear org file exists with proper structure including a top-level OCL heading."
+          (unless (file-exists-p linear-org-file)
+            (with-temp-file linear-org-file
+              (insert "#+TITLE: Linear Tasks\n")
+              (insert "#+FILETAGS: :linear:\n")
+              (insert "#+TODO: TODO IN-PROGRESS IN-REVIEW BACKLOG BLOCKED | DONE CANCELED DUPLICATE\n\n")
+              (insert "* OCL\n"))) ; Add top-level heading
 
-  ;; If file exists but doesn't have the OCL heading, add it
-  (with-current-buffer (find-file-noselect linear-org-file)
-    (org-with-wide-buffer
-     (goto-char (point-min))
-     (unless (re-search-forward "^\\* OCL$" nil t)
-       (goto-char (point-max))
-       (unless (bolp) (insert "\n"))
-       (insert "* OCL\n")
-       (save-buffer)))))
+          ;; If file exists but doesn't have the OCL heading, add it
+          (with-current-buffer (find-file-noselect linear-org-file)
+            (org-with-wide-buffer
+             (goto-char (point-min))
+             (unless (re-search-forward "^\\* OCL$" nil t)
+               (goto-char (point-max))
+               (unless (bolp) (insert "\n"))
+               (insert "* OCL\n")
+               (save-buffer)))))
 
-;; Function to query Linear API for assigned issues
-(defun linear-org-api-query-assigned-issues ()
-  "Query Linear API for assigned issues."
-  (linear--log "Fetching assigned issues for org sync")
-  (unless linear-api-key
-    (if (getenv "LINEAR_API_KEY")
-        (setq linear-api-key (getenv "LINEAR_API_KEY"))
-      (error "Linear API key not set. Set linear-api-key variable or LINEAR_API_KEY environment variable")))
-  
-  (let* ((query "query {
+        ;; Function to query Linear API for assigned issues
+        (defun linear-org-api-query-assigned-issues ()
+          "Query Linear API for assigned issues."
+          (linear--log "Fetching assigned issues for org sync")
+          (unless linear-api-key
+            (if (getenv "LINEAR_API_KEY")
+                (setq linear-api-key (getenv "LINEAR_API_KEY"))
+              (error "Linear API key not set. Set linear-api-key variable or LINEAR_API_KEY environment variable")))
+
+          (let* ((query "query {
   viewer {
   assignedIssues {
   nodes {
@@ -730,159 +724,159 @@
   }
   }
   }")
-         (response (linear--graphql-request query)))
-    (when response
-      (cdr (assoc 'nodes (assoc 'assignedIssues (assoc 'viewer (assoc 'data response))))))))
+                 (response (linear--graphql-request query)))
+            (when response
+              (cdr (assoc 'nodes (assoc 'assignedIssues (assoc 'viewer (assoc 'data response))))))))
 
-;; State conversion functions
-(defun linear-org-linear-to-org-state (linear-state)
-  "Convert LINEAR-STATE to org TODO state."
-  (or (cdr (assoc linear-state linear-org-state-mapping)) "TODO"))
+        ;; State conversion functions
+        (defun linear-org-linear-to-org-state (linear-state)
+          "Convert LINEAR-STATE to org TODO state."
+          (or (cdr (assoc linear-state linear-org-state-mapping)) "TODO"))
 
-(defun linear-org-org-to-linear-state (org-state)
-  "Convert ORG-STATE to Linear state."
-  (car (rassoc org-state linear-org-state-mapping)))
+        (defun linear-org-org-to-linear-state (org-state)
+          "Convert ORG-STATE to Linear state."
+          (car (rassoc org-state linear-org-state-mapping)))
 
-(defun linear-org-linear-to-org-priority (priority)
-  "Convert LINEAR numeric PRIORITY to org priority."
-  (cdr (assoc priority linear-org-priority-mapping)))
+        (defun linear-org-linear-to-org-priority (priority)
+          "Convert LINEAR numeric PRIORITY to org priority."
+          (cdr (assoc priority linear-org-priority-mapping)))
 
-;; Find issue heading in the org file
-(defun linear-org-find-issue-heading (issue-id)
-  "Find the org heading for the specified ISSUE-ID.
+        ;; Find issue heading in the org file
+        (defun linear-org-find-issue-heading (issue-id)
+          "Find the org heading for the specified ISSUE-ID.
   Returns marker position of the heading or nil if not found."
-  (with-current-buffer (find-file-noselect linear-org-file)
-    (org-with-wide-buffer
-     (goto-char (point-min))
-     (when (re-search-forward (format ":%s: *%s" linear-org-issue-id-property issue-id) nil t)
-       (org-back-to-heading t)
-       (point-marker)))))
-
-;; Modified Function: Format issue headings with ** instead of *
-(defun linear-org-format-issue-heading (issue)
-  "Format the heading for ISSUE as a second-level heading."
-  (let* ((identifier (cdr (assoc 'identifier issue)))
-         (title (cdr (assoc 'title issue)))
-         (state-name (cdr (assoc 'name (assoc 'state issue))))
-         (org-state (linear-org-linear-to-org-state state-name))
-         (priority (cdr (assoc 'priority issue)))
-         (org-priority (linear-org-linear-to-org-priority priority)))
-
-    (concat
-     (if org-priority
-         (format "** %s [#%s] %s: %s" org-state org-priority identifier title)
-       (format "** %s %s: %s" org-state identifier title)))))
-
-;; Formatting properties
-(defun linear-org-format-issue-properties (issue)
-  "Format the properties for ISSUE."
-  (let* ((id (cdr (assoc 'id issue)))
-         (team-id (cdr (assoc 'id (assoc 'team issue))))
-         (team-name (cdr (assoc 'name (assoc 'team issue))))
-         (url (cdr (assoc 'url issue)))
-         (updated-at (cdr (assoc 'updatedAt issue))))
-
-    (concat
-     ":PROPERTIES:\n"
-     (format ":%s: %s\n" linear-org-issue-id-property id)
-     (format ":%s: %s\n" linear-org-team-id-property team-id)
-     (format ":%s: %s\n" "LINEAR_TEAM_NAME" team-name)
-     (format ":%s: %s\n" linear-org-url-property url)
-     (format ":%s: %s\n" linear-org-modified-property updated-at)
-     ":END:\n")))
-
-;; Modified Function: Add issues under OCL heading
-(defun linear-org-sync-issue (issue)
-  "Synchronize a single ISSUE from Linear to org under the OCL heading."
-  (let* ((id (cdr (assoc 'id issue)))
-         (title (cdr (assoc 'title issue)))
-         (description (or (cdr (assoc 'description issue)) ""))
-         (existing (linear-org-find-issue-heading id)))
-
-    (with-current-buffer (find-file-noselect linear-org-file)
-      (org-with-wide-buffer
-       (if existing
-           ;; Update existing entry
-           (progn
-             (goto-char existing)
-             (delete-region (point) (line-end-position))
-             (insert (substring (linear-org-format-issue-heading issue) 2)) ; Remove the "**" prefix since we're already at the heading
-
-             ;; Update properties
-             (org-end-of-meta-data)
-             (let ((properties-end (point)))
+          (with-current-buffer (find-file-noselect linear-org-file)
+            (org-with-wide-buffer
+             (goto-char (point-min))
+             (when (re-search-forward (format ":%s: *%s" linear-org-issue-id-property issue-id) nil t)
                (org-back-to-heading t)
-               (re-search-forward ":PROPERTIES:" properties-end t)
-               (beginning-of-line)
-               (delete-region (point)
-                              (save-excursion
-                                (re-search-forward ":END:" nil t)
-                                (line-end-position)))
-               (insert (linear-org-format-issue-properties issue)))
+               (point-marker)))))
 
-             ;; Update content if necessary
-             (org-end-of-meta-data t)
-             (when (org-at-heading-p)
-               ;; No content yet, add the description
-               (insert "\n" description)))
+        ;; Modified Function: Format issue headings with ** instead of *
+        (defun linear-org-format-issue-heading (issue)
+          "Format the heading for ISSUE as a second-level heading."
+          (let* ((identifier (cdr (assoc 'identifier issue)))
+                 (title (cdr (assoc 'title issue)))
+                 (state-name (cdr (assoc 'name (assoc 'state issue))))
+                 (org-state (linear-org-linear-to-org-state state-name))
+                 (priority (cdr (assoc 'priority issue)))
+                 (org-priority (linear-org-linear-to-org-priority priority)))
 
-         ;; Create new entry - find OCL heading first
-         (goto-char (point-min))
-         (if (re-search-forward "^\\* OCL$" nil t)
-             (progn
-               ;; Go to the end of the OCL section or end of buffer
-               (let ((ocl-end (save-excursion
-                                (if (re-search-forward "^\\* " nil t)
-                                    (progn (backward-char) (point))
-                                  (point-max)))))
-                 (goto-char ocl-end)
-                 (unless (bolp) (insert "\n"))
-                 (insert (linear-org-format-issue-heading issue) "\n")
-                 (insert (linear-org-format-issue-properties issue))
-                 (when (and description (not (string-empty-p description)))
-                   (insert "\n" description))))
-           ;; If OCL heading doesn't exist, create it
-           (goto-char (point-max))
-           (unless (bolp) (insert "\n"))
-           (insert "* OCL\n")
-           (insert (linear-org-format-issue-heading issue) "\n")
-           (insert (linear-org-format-issue-properties issue))
-           (when (and description (not (string-empty-p description)))
-             (insert "\n" description)))))
-      (save-buffer))))
+            (concat
+             (if org-priority
+                 (format "** %s [#%s] %s: %s" org-state org-priority identifier title)
+               (format "** %s %s: %s" org-state identifier title)))))
 
-;; Main sync function modified to handle vector to list conversion
-(defun linear-org-sync-from-linear ()
-  "Synchronize issues from Linear to org file."
-  (interactive)
-  (linear-org-ensure-linear-file)
-  (let ((issues (linear-org-api-query-assigned-issues)))
-    (if issues
-        (progn
-          (message "Syncing %d issues from Linear to org..." (length issues))
-          ;; Convert vector to list if needed
-          (when (vectorp issues)
-            (setq issues (append issues nil)))
-          ;; Now process the issues
-          (dolist (issue issues)
-            (linear-org-sync-issue issue))
-          (message "Linear-org sync completed"))
-      (message "No issues found or failed to retrieve issues"))))
+        ;; Formatting properties
+        (defun linear-org-format-issue-properties (issue)
+          "Format the properties for ISSUE."
+          (let* ((id (cdr (assoc 'id issue)))
+                 (team-id (cdr (assoc 'id (assoc 'team issue))))
+                 (team-name (cdr (assoc 'name (assoc 'team issue))))
+                 (url (cdr (assoc 'url issue)))
+                 (updated-at (cdr (assoc 'updatedAt issue))))
 
-;; Extract issue information functions
-(defun linear-org-extract-issue-id ()
-  "Extract Linear issue ID from the current org entry."
-  (org-entry-get (point) linear-org-issue-id-property))
+            (concat
+             ":PROPERTIES:\n"
+             (format ":%s: %s\n" linear-org-issue-id-property id)
+             (format ":%s: %s\n" linear-org-team-id-property team-id)
+             (format ":%s: %s\n" "LINEAR_TEAM_NAME" team-name)
+             (format ":%s: %s\n" linear-org-url-property url)
+             (format ":%s: %s\n" linear-org-modified-property updated-at)
+             ":END:\n")))
 
-(defun linear-org-extract-team-id ()
-  "Extract Linear team ID from the current org entry."
-  (org-entry-get (point) linear-org-team-id-property))
+        ;; Modified Function: Add issues under OCL heading
+        (defun linear-org-sync-issue (issue)
+          "Synchronize a single ISSUE from Linear to org under the OCL heading."
+          (let* ((id (cdr (assoc 'id issue)))
+                 (title (cdr (assoc 'title issue)))
+                 (description (or (cdr (assoc 'description issue)) ""))
+                 (existing (linear-org-find-issue-heading id)))
 
-;; Update Linear issue from org entry
-(defun linear-org-update-linear-issue (id team-id title state description)
-  "Update a Linear issue with ID, TEAM-ID, TITLE, STATE, and DESCRIPTION."
-  (linear--log "Updating Linear issue %s" id)
-  (let* ((query "mutation UpdateIssue($id: String!, $input: IssueUpdateInput!) {
+            (with-current-buffer (find-file-noselect linear-org-file)
+              (org-with-wide-buffer
+               (if existing
+                   ;; Update existing entry
+                   (progn
+                     (goto-char existing)
+                     (delete-region (point) (line-end-position))
+                     (insert (substring (linear-org-format-issue-heading issue) 2)) ; Remove the "**" prefix since we're already at the heading
+
+                     ;; Update properties
+                     (org-end-of-meta-data)
+                     (let ((properties-end (point)))
+                       (org-back-to-heading t)
+                       (re-search-forward ":PROPERTIES:" properties-end t)
+                       (beginning-of-line)
+                       (delete-region (point)
+                                      (save-excursion
+                                        (re-search-forward ":END:" nil t)
+                                        (line-end-position)))
+                       (insert (linear-org-format-issue-properties issue)))
+
+                     ;; Update content if necessary
+                     (org-end-of-meta-data t)
+                     (when (org-at-heading-p)
+                       ;; No content yet, add the description
+                       (insert "\n" description)))
+
+                 ;; Create new entry - find OCL heading first
+                 (goto-char (point-min))
+                 (if (re-search-forward "^\\* OCL$" nil t)
+                     (progn
+                       ;; Go to the end of the OCL section or end of buffer
+                       (let ((ocl-end (save-excursion
+                                        (if (re-search-forward "^\\* " nil t)
+                                            (progn (backward-char) (point))
+                                          (point-max)))))
+                         (goto-char ocl-end)
+                         (unless (bolp) (insert "\n"))
+                         (insert (linear-org-format-issue-heading issue) "\n")
+                         (insert (linear-org-format-issue-properties issue))
+                         (when (and description (not (string-empty-p description)))
+                           (insert "\n" description))))
+                   ;; If OCL heading doesn't exist, create it
+                   (goto-char (point-max))
+                   (unless (bolp) (insert "\n"))
+                   (insert "* OCL\n")
+                   (insert (linear-org-format-issue-heading issue) "\n")
+                   (insert (linear-org-format-issue-properties issue))
+                   (when (and description (not (string-empty-p description)))
+                     (insert "\n" description)))))
+              (save-buffer))))
+
+        ;; Main sync function modified to handle vector to list conversion
+        (defun linear-org-sync-from-linear ()
+          "Synchronize issues from Linear to org file."
+          (interactive)
+          (linear-org-ensure-linear-file)
+          (let ((issues (linear-org-api-query-assigned-issues)))
+            (if issues
+                (progn
+                  (message "Syncing %d issues from Linear to org..." (length issues))
+                  ;; Convert vector to list if needed
+                  (when (vectorp issues)
+                    (setq issues (append issues nil)))
+                  ;; Now process the issues
+                  (dolist (issue issues)
+                    (linear-org-sync-issue issue))
+                  (message "Linear-org sync completed"))
+              (message "No issues found or failed to retrieve issues"))))
+
+        ;; Extract issue information functions
+        (defun linear-org-extract-issue-id ()
+          "Extract Linear issue ID from the current org entry."
+          (org-entry-get (point) linear-org-issue-id-property))
+
+        (defun linear-org-extract-team-id ()
+          "Extract Linear team ID from the current org entry."
+          (org-entry-get (point) linear-org-team-id-property))
+
+        ;; Update Linear issue from org entry
+        (defun linear-org-update-linear-issue (id team-id title state description)
+          "Update a Linear issue with ID, TEAM-ID, TITLE, STATE, and DESCRIPTION."
+          (linear--log "Updating Linear issue %s" id)
+          (let* ((query "mutation UpdateIssue($id: String!, $input: IssueUpdateInput!) {
   issueUpdate(id: $id, input: $input) {
   success
   issue {
@@ -893,8 +887,8 @@
   }
   }
   }")
-         (state-id (when state
-                     (let* ((states-query "query GetStates($teamId: String!) {
+                 (state-id (when state
+                             (let* ((states-query "query GetStates($teamId: String!) {
   team(id: $teamId) {
   states {
   nodes {
@@ -904,114 +898,114 @@
   }
   }
   }")
-                            (variables `(("teamId" . ,team-id)))
-                            (response (linear--graphql-request states-query variables))
-                            (states (when response
-                                      (cdr (assoc 'nodes (assoc 'states (assoc 'team (assoc 'data response))))))))
-                       (when states
-                         (cdr (assoc 'id
-                                     (seq-find (lambda (s)
-                                                 (string= (cdr (assoc 'name s)) state))
-                                               states)))))))
+                                    (variables `(("teamId" . ,team-id)))
+                                    (response (linear--graphql-request states-query variables))
+                                    (states (when response
+                                              (cdr (assoc 'nodes (assoc 'states (assoc 'team (assoc 'data response))))))))
+                               (when states
+                                 (cdr (assoc 'id
+                                             (seq-find (lambda (s)
+                                                         (string= (cdr (assoc 'name s)) state))
+                                                       states)))))))
 
-         (input `(("title" . ,title)
-                  ,@(when description
-                      `(("description" . ,description)))
-                  ,@(when state-id
-                      `(("stateId" . ,state-id)))))
+                 (input `(("title" . ,title)
+                          ,@(when description
+                              `(("description" . ,description)))
+                          ,@(when state-id
+                              `(("stateId" . ,state-id)))))
 
-         (variables `(("id" . ,id)
-                      ("input" . ,input)))
+                 (variables `(("id" . ,id)
+                              ("input" . ,input)))
 
-         (response (linear--graphql-request query variables)))
+                 (response (linear--graphql-request query variables)))
 
-    (if (and response (assoc 'data response))
-        (progn
-          (message "Updated Linear issue: %s"
-                   (cdr (assoc 'identifier
-                               (assoc 'issue
-                                      (assoc 'issueUpdate
-                                             (assoc 'data response))))))
-          t)
-      (message "Failed to update Linear issue")
-      nil)))
-
-;; Sync org entry to Linear
-(defun linear-org-sync-to-linear ()
-  "Sync the current org entry to Linear."
-  (interactive)
-  (save-excursion
-    (org-back-to-heading t)
-    (let* ((issue-id (linear-org-extract-issue-id))
-           (team-id (linear-org-extract-team-id)))
-
-      (if (and issue-id team-id)
-          (let* ((title (org-get-heading t t t t))
-                 ;; Extract the identifier prefix if present
-                 (title (if (string-match "\\([A-Z]+-[0-9]+\\): \\(.*\\)" title)
-                            (match-string 2 title)
-                          title))
-                 (todo-state (org-get-todo-state))
-                 (linear-state (linear-org-org-to-linear-state todo-state))
-                 ;; Get description from content
-                 (description (save-excursion
-                                (org-end-of-meta-data t)
-                                (when (org-at-heading-p)
-                                  "")
-                                (let ((start (point)))
-                                  (if (org-goto-sibling)
-                                      (buffer-substring-no-properties start (line-beginning-position))
-                                    (buffer-substring-no-properties start (point-max)))))))
-
-            (if (linear-org-update-linear-issue issue-id team-id title linear-state description)
+            (if (and response (assoc 'data response))
                 (progn
-                  (message "Synchronized org entry to Linear")
-                  (org-entry-put (point) linear-org-modified-property
-                                 (format-time-string "%Y-%m-%dT%H:%M:%SZ" (current-time))))
-              (message "Failed to sync to Linear")))
+                  (message "Updated Linear issue: %s"
+                           (cdr (assoc 'identifier
+                                       (assoc 'issue
+                                              (assoc 'issueUpdate
+                                                     (assoc 'data response))))))
+                  t)
+              (message "Failed to update Linear issue")
+              nil)))
 
-        (message "Current entry is not a Linear task")))))
+        ;; Sync org entry to Linear
+        (defun linear-org-sync-to-linear ()
+          "Sync the current org entry to Linear."
+          (interactive)
+          (save-excursion
+            (org-back-to-heading t)
+            (let* ((issue-id (linear-org-extract-issue-id))
+                   (team-id (linear-org-extract-team-id)))
 
-;; Open Linear issue in browser
-(defun linear-org-open-issue ()
-  "Open the current Linear issue in browser."
-  (interactive)
-  (let ((url (org-entry-get (point) linear-org-url-property)))
-    (if url
-        (browse-url url)
-      (message "No Linear URL found for this entry"))))
+              (if (and issue-id team-id)
+                  (let* ((title (org-get-heading t t t t))
+                         ;; Extract the identifier prefix if present
+                         (title (if (string-match "\\([A-Z]+-[0-9]+\\): \\(.*\\)" title)
+                                    (match-string 2 title)
+                                  title))
+                         (todo-state (org-get-todo-state))
+                         (linear-state (linear-org-org-to-linear-state todo-state))
+                         ;; Get description from content
+                         (description (save-excursion
+                                        (org-end-of-meta-data t)
+                                        (when (org-at-heading-p)
+                                          "")
+                                        (let ((start (point)))
+                                          (if (org-goto-sibling)
+                                              (buffer-substring-no-properties start (line-beginning-position))
+                                            (buffer-substring-no-properties start (point-max)))))))
 
-;; Capture a new Linear issue and place it under OCL heading
-(defun linear-org-capture-to-linear ()
-  "Capture a new Linear issue from an org entry and place it under OCL heading."
-  (interactive)
-  (save-excursion
-    (org-back-to-heading t)
-    (let* ((title (org-get-heading t t t t))
-           (todo-state (org-get-todo-state))
-           (linear-state (linear-org-org-to-linear-state todo-state))
-           ;; Get description from content
-           (description (save-excursion
-                          (org-end-of-meta-data t)
-                          (when (org-at-heading-p)
-                            "")
-                          (let ((start (point)))
-                            (if (org-goto-sibling)
-                                (buffer-substring-no-properties start (line-beginning-position))
-                              (buffer-substring-no-properties start (point-max))))))
+                    (if (linear-org-update-linear-issue issue-id team-id title linear-state description)
+                        (progn
+                          (message "Synchronized org entry to Linear")
+                          (org-entry-put (point) linear-org-modified-property
+                                         (format-time-string "%Y-%m-%dT%H:%M:%SZ" (current-time))))
+                      (message "Failed to sync to Linear")))
 
-           ;; Ask for the team
-           (teams (linear-get-teams))
-           (team-options (mapcar (lambda (team)
-                                   (cons (cdr (assoc 'name team))
-                                         team))
-                                 teams))
-           (selected-team-name (completing-read "Team: " team-options nil t))
-           (selected-team (cdr (assoc selected-team-name team-options)))
-           (team-id (cdr (assoc 'id selected-team)))
+                (message "Current entry is not a Linear task")))))
 
-           ;; Create the issue in Linear
-           (query "mutation CreateIssue($input: IssueCreateInput!) {
+        ;; Open Linear issue in browser
+        (defun linear-org-open-issue ()
+          "Open the current Linear issue in browser."
+          (interactive)
+          (let ((url (org-entry-get (point) linear-org-url-property)))
+            (if url
+                (browse-url url)
+              (message "No Linear URL found for this entry"))))
+
+        ;; Capture a new Linear issue and place it under OCL heading
+        (defun linear-org-capture-to-linear ()
+          "Capture a new Linear issue from an org entry and place it under OCL heading."
+          (interactive)
+          (save-excursion
+            (org-back-to-heading t)
+            (let* ((title (org-get-heading t t t t))
+                   (todo-state (org-get-todo-state))
+                   (linear-state (linear-org-org-to-linear-state todo-state))
+                   ;; Get description from content
+                   (description (save-excursion
+                                  (org-end-of-meta-data t)
+                                  (when (org-at-heading-p)
+                                    "")
+                                  (let ((start (point)))
+                                    (if (org-goto-sibling)
+                                        (buffer-substring-no-properties start (line-beginning-position))
+                                      (buffer-substring-no-properties start (point-max))))))
+
+                   ;; Ask for the team
+                   (teams (linear-get-teams))
+                   (team-options (mapcar (lambda (team)
+                                           (cons (cdr (assoc 'name team))
+                                                 team))
+                                         teams))
+                   (selected-team-name (completing-read "Team: " team-options nil t))
+                   (selected-team (cdr (assoc selected-team-name team-options)))
+                   (team-id (cdr (assoc 'id selected-team)))
+
+                   ;; Create the issue in Linear
+                   (query "mutation CreateIssue($input: IssueCreateInput!) {
   issueCreate(input: $input) {
   success
   issue {
@@ -1024,453 +1018,449 @@
   }
   }")
 
-           (input `(("title" . ,title)
-                    ("description" . ,description)
-                    ("teamId" . ,team-id)))
+                   (input `(("title" . ,title)
+                            ("description" . ,description)
+                            ("teamId" . ,team-id)))
 
-           (variables `(("input" . ,input)))
-           (response (linear--graphql-request query variables)))
+                   (variables `(("input" . ,input)))
+                   (response (linear--graphql-request query variables)))
 
-      (if (and response (assoc 'data response))
-          (let* ((issue-data (assoc 'issue (assoc 'issueCreate (assoc 'data response))))
-                 (id (cdr (assoc 'id issue-data)))
-                 (identifier (cdr (assoc 'identifier issue-data)))
-                 (url (cdr (assoc 'url issue-data)))
-                 (updated-at (cdr (assoc 'updatedAt issue-data))))
+              (if (and response (assoc 'data response))
+                  (let* ((issue-data (assoc 'issue (assoc 'issueCreate (assoc 'data response))))
+                         (id (cdr (assoc 'id issue-data)))
+                         (identifier (cdr (assoc 'identifier issue-data)))
+                         (url (cdr (assoc 'url issue-data)))
+                         (updated-at (cdr (assoc 'updatedAt issue-data))))
 
-            ;; Set properties on the org entry
-            (org-entry-put (point) linear-org-issue-id-property id)
-            (org-entry-put (point) linear-org-team-id-property team-id)
-            (org-entry-put (point) "LINEAR_TEAM_NAME" (cdr (assoc 'name selected-team)))
-            (org-entry-put (point) linear-org-url-property url)
-            (org-entry-put (point) linear-org-modified-property updated-at)
+                    ;; Set properties on the org entry
+                    (org-entry-put (point) linear-org-issue-id-property id)
+                    (org-entry-put (point) linear-org-team-id-property team-id)
+                    (org-entry-put (point) "LINEAR_TEAM_NAME" (cdr (assoc 'name selected-team)))
+                    (org-entry-put (point) linear-org-url-property url)
+                    (org-entry-put (point) linear-org-modified-property updated-at)
 
-            ;; Update the heading to include the identifier
-            (let ((new-heading (if (string-match "^\\* \\(TODO\\|IN-PROGRESS\\|IN-REVIEW\\|BACKLOG\\|BLOCKED\\|DONE\\|CANCELED\\|DUPLICATE\\) " title)
-                                   (replace-match (format "** %s %s: " (match-string 1 title) identifier) t t title)
-                                 (format "** TODO %s: %s" identifier title))))
-              (delete-region (line-beginning-position) (line-end-position))
-              (insert new-heading))
+                    ;; Update the heading to include the identifier
+                    (let ((new-heading (if (string-match "^\\* \\(TODO\\|IN-PROGRESS\\|IN-REVIEW\\|BACKLOG\\|BLOCKED\\|DONE\\|CANCELED\\|DUPLICATE\\) " title)
+                                           (replace-match (format "** %s %s: " (match-string 1 title) identifier) t t title)
+                                         (format "** TODO %s: %s" identifier title))))
+                      (delete-region (line-beginning-position) (line-end-position))
+                      (insert new-heading))
 
-            (message "Created Linear issue: %s" identifier)
-            (save-buffer))
+                    (message "Created Linear issue: %s" identifier)
+                    (save-buffer))
 
-        (message "Failed to create Linear issue")))))
+                (message "Failed to create Linear issue")))))
 
-;; Hook to sync changes to Linear when todo state changes
-(defun linear-org-after-todo-state-change ()
-  "Hook function to sync todo state changes to Linear."
-  (when (and (buffer-file-name)
-             (string= (expand-file-name (buffer-file-name)) (expand-file-name linear-org-file))
-             (org-entry-get (point) linear-org-issue-id-property))
-    (linear-org-sync-to-linear)))
+        ;; Hook to sync changes to Linear when todo state changes
+        (defun linear-org-after-todo-state-change ()
+          "Hook function to sync todo state changes to Linear."
+          (when (and (buffer-file-name)
+                     (string= (expand-file-name (buffer-file-name)) (expand-file-name linear-org-file))
+                     (org-entry-get (point) linear-org-issue-id-property))
+            (linear-org-sync-to-linear)))
 
-;; Add hook for todo state changes
-(add-hook 'org-after-todo-state-change-hook 'linear-org-after-todo-state-change)
+        ;; Add hook for todo state changes
+        (add-hook 'org-after-todo-state-change-hook 'linear-org-after-todo-state-change)
 
-;; Update org-capture-templates for Linear tasks to handle second-level heading
-(after! org
-  (add-to-list 'org-capture-templates
-               '("L" "Linear Task" entry
-                 (file+headline linear-org-file "OCL")
-                 "** TODO %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n%i\n"
-                 :immediate-finish nil
-                 :jump-to-captured t
-                 :after-finalize (lambda ()
-                                   (with-current-buffer (find-buffer-visiting linear-org-file)
-                                     (save-excursion
-                                       (goto-char (point-max))
-                                       (org-back-to-heading t)
-                                       (call-interactively 'linear-org-capture-to-linear)))))))
+        ;; Update org-capture-templates for Linear tasks to handle second-level heading
+        (after! org
+          (add-to-list 'org-capture-templates
+                       '("L" "Linear Task" entry
+                         (file+headline linear-org-file "OCL")
+                         "** TODO %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n%i\n"
+                         :immediate-finish nil
+                         :jump-to-captured t
+                         :after-finalize (lambda ()
+                                           (with-current-buffer (find-buffer-visiting linear-org-file)
+                                             (save-excursion
+                                               (goto-char (point-max))
+                                               (org-back-to-heading t)
+                                               (call-interactively 'linear-org-capture-to-linear)))))))
 
-;; Optional: Integration with Doom Emacs keybindings
-(after! linear
-  (map! :map org-mode-map
-        :localleader
-        (:prefix ("L" . "Linear")
-         :desc "Sync from Linear" "s" #'linear-org-sync-from-linear
-         :desc "Sync to Linear" "p" #'linear-org-sync-to-linear
-         :desc "Open in browser" "o" #'linear-org-open-issue
-         :desc "List issues" "l" #'linear-list-issues
-         :desc "New issue" "n" #'linear-new-issue
-         :desc "Test connection" "t" #'linear-test-connection
-         :desc "Toggle debug" "d" #'linear-toggle-debug)))
+        ;; Optional: Integration with Doom Emacs keybindings
+        (after! linear
+          (map! :map org-mode-map
+                :localleader
+                (:prefix ("L" . "Linear")
+                 :desc "Sync from Linear" "s" #'linear-org-sync-from-linear
+                 :desc "Sync to Linear" "p" #'linear-org-sync-to-linear
+                 :desc "Open in browser" "o" #'linear-org-open-issue
+                 :desc "List issues" "l" #'linear-list-issues
+                 :desc "New issue" "n" #'linear-new-issue
+                 :desc "Test connection" "t" #'linear-test-connection
+                 :desc "Toggle debug" "d" #'linear-toggle-debug)))
 
-;; Optional: Integration with Doom Emacs keybindings
-(after! linear
-  (map! :leader
-        (:prefix ("L" . "Linear")
-         :desc "List issues" "l" #'linear-list-issues
-         :desc "New issue" "n" #'linear-new-issue
-         :desc "Test connection" "t" #'linear-test-connection
-         :desc "Toggle debug" "d" #'linear-toggle-debug
-         :desc "Update linear.org" "u" #'update-linear-org)))
-
-         :desc "New issue" "n" #'linear-new-issue
-         :desc "Test connection" "t" #'linear-test-connection
-         :desc "Toggle debug" "d" #'linear-toggle-debug)))
+        ;; Optional: Integration with Doom Emacs keybindings
+        (after! linear
+          (map! :leader
+                (:prefix ("L" . "Linear")
+                 :desc "List issues" "l" #'linear-list-issues
+                 :desc "New issue" "n" #'linear-new-issue
+                 :desc "Test connection" "t" #'linear-test-connection
+                 :desc "Toggle debug" "d" #'linear-toggle-debug
+                 :desc "Update linear.org" "u" #'update-linear-org)))
 
 
-;; GPG/Pinentry
-(use-package! epa-file
-  :config
-  (epa-file-enable)
-  (setq epg-gpg-program "/Users/allup/.gnupg")
-  (setq epa-file-select-keys nil))
+        ;; GPG/Pinentry
+        (use-package! epa-file
+          :config
+          (epa-file-enable)
+          (setq epg-gpg-program "/Users/allup/.gnupg")
+          (setq epa-file-select-keys nil))
 
-(setq magit-commit-arguments '("--gpg-sign=%s"))
-(setq transient-default-level 5)
+        (setq magit-commit-arguments '("--gpg-sign=%s"))
+        (setq transient-default-level 5)
 
-(use-package! pinentry
-  :init (setq epa-pinentry-mode `loopback)
-  (pinentry-start))
+        (use-package! pinentry
+          :init (setq epa-pinentry-mode `loopback)
+          (pinentry-start))
 
-(setq auth-sources '("~/.authinfo" "~/.authinfo.gpg" "~/.netrc"))
+        (setq auth-sources '("~/.authinfo" "~/.authinfo.gpg" "~/.netrc"))
 
-;; Rainbow mode for color visualization
-(use-package! rainbow-mode
-  :hook (((css-mode scss-mode org-mode typescript-mode js-mode emacs-lisp-mode). rainbow-mode))
-  :defer 5)
+        ;; Rainbow mode for color visualization
+        (use-package! rainbow-mode
+          :hook (((css-mode scss-mode org-mode typescript-mode js-mode emacs-lisp-mode). rainbow-mode))
+          :defer 5)
 
-;; Aidermacs configuration
-(use-package aidermacs
-  :bind (("C-c a" . aidermacs-transient-menu))
-  :config
-  :custom
-  (aidermacs-default-model "claude-3-7-sonnet-20250219"))
+        ;; Aidermacs configuration
+        (use-package aidermacs
+          :bind (("C-c a" . aidermacs-transient-menu))
+          :config
+          :custom
+          (aidermacs-default-model "claude-3-7-sonnet-20250219"))
 
-(setq aidermacs-backend 'vterm)
-(add-hook 'find-file-hook
-          (lambda ()
-            (when (and (buffer-file-name)
-                       (string-match-p "aider" (buffer-file-name)))
-              (aider-minor-mode 1))))
+        (setq aidermacs-backend 'vterm)
+        (add-hook 'find-file-hook
+                  (lambda ()
+                    (when (and (buffer-file-name)
+                               (string-match-p "aider" (buffer-file-name)))
+                      (aider-minor-mode 1))))
 
-(setq aidermacs-auto-mode-files
-      '(".aider.prompt.org"
-        ".aider.chat.md"
-        ".aider.chat.history.md"
-        ".aider.input.history"
-        "my-custom-aider-file.org"))  ; Add your own files
+        (setq aidermacs-auto-mode-files
+              '(".aider.prompt.org"
+                ".aider.chat.md"
+                ".aider.chat.history.md"
+                ".aider.input.history"
+                "my-custom-aider-file.org"))  ; Add your own files
 
-;; GPTel (Ollama) configuration
-(setq
- gptel-model 'llama3.2:latest
- gptel-backend (gptel-make-ollama "Ollama"
-                 :host "localhost:11434"
-                 :stream t
-                 :models '("llama3.2:latest")))
-(after!
-  (gptel-mode 'org-mode))
+        ;; GPTel (Ollama) configuration
+        (setq
+         gptel-model 'llama3.2:latest
+         gptel-backend (gptel-make-ollama "Ollama"
+                         :host "localhost:11434"
+                         :stream t
+                         :models '("llama3.2:latest")))
+        (after!
+          (gptel-mode 'org-mode))
 
-;; Treemacs configuration
-(after! treemacs
-  (treemacs-follow-mode 1)
-  (setq treemacs-width 40))
+        ;; Treemacs configuration
+        (after! treemacs
+          (treemacs-follow-mode 1)
+          (setq treemacs-width 40))
 
-;; Marginalia improvements for file display
-(after! marginalia
-  (setq marginalia-censor-variables nil)
+        ;; Marginalia improvements for file display
+        (after! marginalia
+          (setq marginalia-censor-variables nil)
 
-  (defadvice! +marginalia--anotate-local-file-colorful (cand)
-    "Just a more colourful version of `marginalia--anotate-local-file'."
-    :override #'marginalia--annotate-local-file
-    (when-let (attrs (file-attributes (substitute-in-file-name
-                                       (marginalia--full-candidate cand))
-                                      'integer))
-      (marginalia--fields
-       ((marginalia--file-owner attrs)
-        :width 12 :face 'marginalia-file-owner)
-       ((marginalia--file-modes attrs))
-       ((+marginalia-file-size-colorful (file-attribute-size attrs))
-        :width 7)
-       ((+marginalia--time-colorful (file-attribute-modification-time attrs))
-        :width 12))))
+          (defadvice! +marginalia--anotate-local-file-colorful (cand)
+            "Just a more colourful version of `marginalia--anotate-local-file'."
+            :override #'marginalia--annotate-local-file
+            (when-let (attrs (file-attributes (substitute-in-file-name
+                                               (marginalia--full-candidate cand))
+                                              'integer))
+              (marginalia--fields
+               ((marginalia--file-owner attrs)
+                :width 12 :face 'marginalia-file-owner)
+               ((marginalia--file-modes attrs))
+               ((+marginalia-file-size-colorful (file-attribute-size attrs))
+                :width 7)
+               ((+marginalia--time-colorful (file-attribute-modification-time attrs))
+                :width 12))))
 
-  (defun +marginalia--time-colorful (time)
-    (let* ((seconds (float-time (time-subtract (current-time) time)))
-           (color (doom-blend
-                   (face-attribute 'marginalia-date :foreground nil t)
-                   (face-attribute 'marginalia-documentation :foreground nil t)
-                   (/ 1.0 (log (+ 3 (/ (+ 1 seconds) 345600.0)))))))
-      ;; 1 - log(3 + 1/(days + 1)) % grey
-      (propertize (marginalia--time time) 'face (list :foreground color))))
+          (defun +marginalia--time-colorful (time)
+            (let* ((seconds (float-time (time-subtract (current-time) time)))
+                   (color (doom-blend
+                           (face-attribute 'marginalia-date :foreground nil t)
+                           (face-attribute 'marginalia-documentation :foreground nil t)
+                           (/ 1.0 (log (+ 3 (/ (+ 1 seconds) 345600.0)))))))
+              ;; 1 - log(3 + 1/(days + 1)) % grey
+              (propertize (marginalia--time time) 'face (list :foreground color))))
 
-  (defun +marginalia-file-size-colorful (size)
-    (let* ((size-index (/ (log10 (+ 1 size)) 7.0))
-           (color (if (< size-index 10000000) ; 10m
-                      (doom-blend 'orange 'green size-index)
-                    (doom-blend 'red 'orange (- size-index 1)))))
-      (propertize (file-size-human-readable size) 'face (list :foreground color)))))
+          (defun +marginalia-file-size-colorful (size)
+            (let* ((size-index (/ (log10 (+ 1 size)) 7.0))
+                   (color (if (< size-index 10000000) ; 10m
+                              (doom-blend 'orange 'green size-index)
+                            (doom-blend 'red 'orange (- size-index 1)))))
+              (propertize (file-size-human-readable size) 'face (list :foreground color)))))
 
-;; SVG tag mode
-(use-package! svg-tag-mode
-  :config
-  (svg-tag-mode +1))
+        ;; SVG tag mode
+        (use-package! svg-tag-mode
+          :config
+          (svg-tag-mode +1))
 
                                         ; Image support
-(after! image
-  (setq image-use-external-converter t)
-  (add-to-list 'image-types 'svg)  ; Enable SVG support
-  (add-to-list 'image-types 'jpeg))  ; Enable jpeg support
+        (after! image
+          (setq image-use-external-converter t)
+          (add-to-list 'image-types 'svg)  ; Enable SVG support
+          (add-to-list 'image-types 'jpeg))  ; Enable jpeg support
 
-;; Yasnippet configuration
-(after! yasnippet
-  (yas-reload-all)
-  (add-to-list 'yas-snippet-dirs "~/.config/emacs/snippets"))
+        ;; Yasnippet configuration
+        (after! yasnippet
+          (yas-reload-all)
+          (add-to-list 'yas-snippet-dirs "~/.config/emacs/snippets"))
 
-;; Compilation buffer auto-close
-(defun bury-compile-buffer-if-successful (buffer string)
-  "Bury a compilation buffer if succeeded without warnings."
-  (when (and (eq major-mode 'comint-mode)
-             (string-match "finished" string)
-             (not
-              (with-current-buffer buffer
-                (search-forward "warning" nil t))))
-    (run-with-timer 1 nil
-                    (lambda (buf)
-                      (let ((window (get-buffer-window buf)))
-                        (when (and (window-live-p window)
-                                   (eq buf (window-buffer window)))
-                          (delete-window window))))
-                    buffer)))
+        ;; Compilation buffer auto-close
+        (defun bury-compile-buffer-if-successful (buffer string)
+          "Bury a compilation buffer if succeeded without warnings."
+          (when (and (eq major-mode 'comint-mode)
+                     (string-match "finished" string)
+                     (not
+                      (with-current-buffer buffer
+                        (search-forward "warning" nil t))))
+            (run-with-timer 1 nil
+                            (lambda (buf)
+                              (let ((window (get-buffer-window buf)))
+                                (when (and (window-live-p window)
+                                           (eq buf (window-buffer window)))
+                                  (delete-window window))))
+                            buffer)))
 
-(add-hook 'compilation-finish-functions #'bury-compile-buffer-if-successful)
+        (add-hook 'compilation-finish-functions #'bury-compile-buffer-if-successful)
 
 ;;; =========================================================================
 ;;; PROGRAMMING LANGUAGE SPECIFIC CONFIGURATIONS
 ;;; =========================================================================
 
-;; Copilot configuration
-(after! copilot
-  (add-hook! (prog-mode markdown-mode markdown-mode org-mode) #'copilot-mode)
-  (map! :map copilot-completion-map
-        "TAB"     #'copilot-accept-completion
-        "C-<tab>" #'copilot-accept-completion-by-word
-        "C-p"     #'copilot-previous-completion
-        "C-n"     #'copilot-next-completion))
+        ;; Copilot configuration
+        (after! copilot
+          (add-hook! (prog-mode markdown-mode markdown-mode org-mode) #'copilot-mode)
+          (map! :map copilot-completion-map
+                "TAB"     #'copilot-accept-completion
+                "C-<tab>" #'copilot-accept-completion-by-word
+                "C-p"     #'copilot-previous-completion
+                "C-n"     #'copilot-next-completion))
 
-(setq copilot-indent-offset-warning-disable t)
+        (setq copilot-indent-offset-warning-disable t)
 
-;; Initialize path from shell when running as daemon
-(when (daemonp)
-  (exec-path-from-shell-initialize))
-
-
-(add-hook 'rust-mode-hook 'lsp-deferred)
-(add-to-list 'warning-suppress-log-types '(lsp-mode))
-(add-to-list 'warning-suppress-types '(lsp-mode))
-
-;; Rust analyzer path
-(setq lsp-rust-analyzer-store-path "/Users/allup/.cargo/bin/rust-analyzer")
-
-;; Project management
-(setq projectile-indexing-method 'hybrid)
+        ;; Initialize path from shell when running as daemon
+        (when (daemonp)
+          (exec-path-from-shell-initialize))
 
 
-;; Hook into magit-checkout
-(after! magit
-  (advice-add 'magit-checkout :after #'my/projectile-invalidate-cache-on-git-checkout)
-  (advice-add 'magit-branch-and-checkout :after #'my/projectile-invalidate-cache-on-git-checkout))
+        (add-hook 'rust-mode-hook 'lsp-deferred)
+        (add-to-list 'warning-suppress-log-types '(lsp-mode))
+        (add-to-list 'warning-suppress-types '(lsp-mode))
 
-;; Make sure copilot is loaded
-(after! copilot
-  ;; Enable copilot in git-commit-mode (used by Magit for commit messages)
-  (add-hook! 'git-commit-mode-hook #'copilot-mode)
+        ;; Rust analyzer path
+        (setq lsp-rust-analyzer-store-path "/Users/allup/.cargo/bin/rust-analyzer")
 
-  ;; Ensure it's also enabled in the specific Magit commit message buffer
-  (add-hook! 'with-editor-mode-hook
-    (defun my/maybe-enable-copilot-for-commit ()
-      "Enable copilot-mode when in a Magit commit buffer."
-      (when (equal (buffer-name) "COMMIT_EDITMSG")
-        (copilot-mode 1))))
+        ;; Project management
+        (setq projectile-indexing-method 'hybrid)
 
-  ;; Alternative approach using magit hooks directly
-  (add-hook! 'magit-commit-setup-hook
-    (defun my/enable-copilot-in-commit ()
-      "Enable copilot-mode in the commit message buffer."
-      (copilot-mode 1)))
 
-  ;; Make sure Copilot doesn't interfere with Magit's own keybindings
-  (map! :map git-commit-mode-map
-        "TAB" nil  ; Don't let Copilot take over TAB in commit messages
-        "C-<tab>" #'copilot-accept-completion
-        "C-TAB" #'copilot-accept-completion))
+        ;; Hook into magit-checkout
+        (after! magit
+          (advice-add 'magit-checkout :after #'my/projectile-invalidate-cache-on-git-checkout)
+          (advice-add 'magit-branch-and-checkout :after #'my/projectile-invalidate-cache-on-git-checkout))
 
-;; Display a message confirming that copilot is enabled in commit buffers
-(add-hook! 'git-commit-setup-hook
-  (defun my/confirm-copilot-in-commit ()
-    "Display a message confirming copilot is active."
-    (message "Copilot is now active in this commit message buffer")))
+        ;; Make sure copilot is loaded
+        (after! copilot
+          ;; Enable copilot in git-commit-mode (used by Magit for commit messages)
+          (add-hook! 'git-commit-mode-hook #'copilot-mode)
 
-;; Also hook into any other ways you might checkout branches
-(after! projectile
-  ;; Ensure we refresh cache after any git operations that might change branch
-  (advice-add 'projectile-vc-branch-default :after #'my/projectile-invalidate-cache-on-git-checkout))
+          ;; Ensure it's also enabled in the specific Magit commit message buffer
+          (add-hook! 'with-editor-mode-hook
+            (defun my/maybe-enable-copilot-for-commit ()
+              "Enable copilot-mode when in a Magit commit buffer."
+              (when (equal (buffer-name) "COMMIT_EDITMSG")
+                (copilot-mode 1))))
 
-;; Workspaces display in minibuffer
-(after! persp-mode
-  (defun display-workspaces-in-minibuffer ()
-    (with-current-buffer " *Minibuf-0*"
-      (erase-buffer)
-      (insert (+workspace--tabline))))
-  (run-with-idle-timer 1 t #'display-workspaces-in-minibuffer)
-  (+workspace/display))
+          ;; Alternative approach using magit hooks directly
+          (add-hook! 'magit-commit-setup-hook
+            (defun my/enable-copilot-in-commit ()
+              "Enable copilot-mode in the commit message buffer."
+              (copilot-mode 1)))
 
-;; Ditaa configuration
-(setq org-ditaa-jar-path "/opt/homebrew/bin/ditaa.jar")
+          ;; Make sure Copilot doesn't interfere with Magit's own keybindings
+          (map! :map git-commit-mode-map
+                "TAB" nil  ; Don't let Copilot take over TAB in commit messages
+                "C-<tab>" #'copilot-accept-completion
+                "C-TAB" #'copilot-accept-completion))
+
+        ;; Display a message confirming that copilot is enabled in commit buffers
+        (add-hook! 'git-commit-setup-hook
+          (defun my/confirm-copilot-in-commit ()
+            "Display a message confirming copilot is active."
+            (message "Copilot is now active in this commit message buffer")))
+
+        ;; Also hook into any other ways you might checkout branches
+        (after! projectile
+          ;; Ensure we refresh cache after any git operations that might change branch
+          (advice-add 'projectile-vc-branch-default :after #'my/projectile-invalidate-cache-on-git-checkout))
+
+        ;; Workspaces display in minibuffer
+        (after! persp-mode
+          (defun display-workspaces-in-minibuffer ()
+            (with-current-buffer " *Minibuf-0*"
+              (erase-buffer)
+              (insert (+workspace--tabline))))
+          (run-with-idle-timer 1 t #'display-workspaces-in-minibuffer)
+          (+workspace/display))
+
+        ;; Ditaa configuration
+        (setq org-ditaa-jar-path "/opt/homebrew/bin/ditaa.jar")
 
 ;;; =========================================================================
 ;;; MISCELLANEOUS SETTINGS
 ;;; =========================================================================
 
-;; General settings
-(setq load-prefer-newer t
-      search-highlight t
-      search-whitespace-regexp ".*?")
+        ;; General settings
+        (setq load-prefer-newer t
+              search-highlight t
+              search-whitespace-regexp ".*?")
 
-;; Emacs Everywhere Configuration
-(after! emacs-everywhere
-  ;; Set the default major mode to markdown-mode
-  (setq emacs-everywhere-major-mode-function 'markdown-mode)
+        ;; Emacs Everywhere Configuration
+        (after! emacs-everywhere
+          ;; Set the default major mode to markdown-mode
+          (setq emacs-everywhere-major-mode-function 'markdown-mode)
 
-  ;; Optionally add hooks for specific adjustments when Emacs Everywhere activates
-  (add-hook 'emacs-everywhere-init-hooks
-            (lambda ()
-              ;; Enable visual-line-mode for better text wrapping
-              (visual-line-mode)
-              ;; Disable line numbers for cleaner interface
-              (display-line-numbers-mode -1)
-              ;; Optionally center the buffer contents
-              (centered-cursor-mode)
-              ;; Optionally enable copilot-mode
-              (copilot-mode))))
+          ;; Optionally add hooks for specific adjustments when Emacs Everywhere activates
+          (add-hook 'emacs-everywhere-init-hooks
+                    (lambda ()
+                      ;; Enable visual-line-mode for better text wrapping
+                      (visual-line-mode)
+                      ;; Disable line numbers for cleaner interface
+                      (display-line-numbers-mode -1)
+                      ;; Optionally center the buffer contents
+                      (centered-cursor-mode)
+                      ;; Optionally enable copilot-mode
+                      (copilot-mode))))
 
 
 ;;; =========================================================================
 ;;; ORG-ROAM CONFIGURATION
 ;;; =========================================================================
 
-(use-package! org-roam
-  :init
-  (map! :leader
-        :prefix "r"
-        :desc "org-roam" "l" #'org-roam-buffer-toggle
-        :desc "org-roam-node-insert" "i" #'org-roam-node-insert
-        :desc "org-roam-node-find" "f" #'org-roam-node-find
-        :desc "org-roam-ref-find" "r" #'org-roam-ref-find
-        :desc "org-roam-show-graph" "g" #'org-roam-show-graph
-        :desc "org-roam-dailies-capture-today" "T" #'org-roam-dailies-capture-today
-        :desc "org-roam-dailies-goto-today" "t" #'org-roam-dailies-goto-today
-        :desc "jethro/org-capture-slipbox" "<tab>" #'jethro/org-capture-slipbox
-        :desc "org-roam-capture" "c" #'org-roam-capture)
-  (setq org-roam-directory (file-truename "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/")
-        org-roam-database-connector 'sqlite-builtin
-        org-roam-db-gc-threshold most-positive-fixnum
-        org-id-link-to-org-use-id t)
-  :config
-  (org-roam-db-autosync-mode +1)
-  (set-popup-rules!
-    `((,(regexp-quote org-roam-buffer) ; persistent org-roam buffer
-       :side right :width .33 :height .5 :ttl nil :modeline nil :quit nil :slot 1)
-      ("^\\*org-roam: " ; node dedicated org-roam buffer
-       :side right :width .33 :height .5 :ttl nil :modeline nil :quit nil :slot 2)))
-  (add-hook 'org-roam-mode-hook #'turn-on-visual-line-mode)
-  (setq org-roam-capture-templates
-        '(
-          ("m" "main" plain
-           "%?"
-           :if-new (file+head "main/${slug}.org"
-                              "#+title: ${title}\n#+TAGS: :\n")
-           :immediate-finish t
-           :unnarrowed t)
-          ("c" "catb" plain
-           "%?"
-           :if-new (file+head "main/gb_b_catb_${slug}.org"
-                              "#+title: ${title}\n#+TAGS: :\n")
-           :immediate-finish t
-           :unnarrowed t)
-          ("r" "reference" plain "%?"
-           :if-new
-           (file+head "reference/${slug}.org" "#+title: ${title}\n")
-           :immediate-finish t
-           :unnarrowed t)
-          ("a" "article" plain "%?"
-           :if-new
-           (file+head "articles/${slug}.org" "#+title: ${title}\n#+filetags: :article:\n")
-           :immediate-finish t
-           :unnarrowed t)
-          ("d" "dictionary" plain "%?"
-           :if-new
-           (file+head "dictionary/${slug}.org" "#+title: ${title}\n#+filetags: :dictionary:\n")
-           :immediate-finish t
-           :unnarrowed t)))
-  (cl-defmethod org-roam-node-type ((node org-roam-node))
-    "Return the TYPE of NODE."
-    (condition-case nil
-        (file-name-nondirectory
-         (directory-file-name
-          (file-name-directory
-           (file-relative-name (org-roam-node-file node) org-roam-directory))))
-      (error "")))
-  (setq org-roam-node-display-template
-        (concat "${type:15} ${title:*} " (propertize "${tags:10}" 'face 'org-tag))))
+        (use-package! org-roam
+          :init
+          (map! :leader
+                :prefix "r"
+                :desc "org-roam" "l" #'org-roam-buffer-toggle
+                :desc "org-roam-node-insert" "i" #'org-roam-node-insert
+                :desc "org-roam-node-find" "f" #'org-roam-node-find
+                :desc "org-roam-ref-find" "r" #'org-roam-ref-find
+                :desc "org-roam-show-graph" "g" #'org-roam-show-graph
+                :desc "org-roam-dailies-capture-today" "T" #'org-roam-dailies-capture-today
+                :desc "org-roam-dailies-goto-today" "t" #'org-roam-dailies-goto-today
+                :desc "jethro/org-capture-slipbox" "<tab>" #'jethro/org-capture-slipbox
+                :desc "org-roam-capture" "c" #'org-roam-capture)
+          (setq org-roam-directory (file-truename "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/")
+                org-roam-database-connector 'sqlite-builtin
+                org-roam-db-gc-threshold most-positive-fixnum
+                org-id-link-to-org-use-id t)
+          :config
+          (org-roam-db-autosync-mode +1)
+          (set-popup-rules!
+            `((,(regexp-quote org-roam-buffer) ; persistent org-roam buffer
+               :side right :width .33 :height .5 :ttl nil :modeline nil :quit nil :slot 1)
+              ("^\\*org-roam: " ; node dedicated org-roam buffer
+               :side right :width .33 :height .5 :ttl nil :modeline nil :quit nil :slot 2)))
+          (add-hook 'org-roam-mode-hook #'turn-on-visual-line-mode)
+          (setq org-roam-capture-templates
+                '(
+                  ("m" "main" plain
+                   "%?"
+                   :if-new (file+head "main/${slug}.org"
+                                      "#+title: ${title}\n#+TAGS: :\n")
+                   :immediate-finish t
+                   :unnarrowed t)
+                  ("c" "catb" plain
+                   "%?"
+                   :if-new (file+head "main/gb_b_catb_${slug}.org"
+                                      "#+title: ${title}\n#+TAGS: :\n")
+                   :immediate-finish t
+                   :unnarrowed t)
+                  ("r" "reference" plain "%?"
+                   :if-new
+                   (file+head "reference/${slug}.org" "#+title: ${title}\n")
+                   :immediate-finish t
+                   :unnarrowed t)
+                  ("a" "article" plain "%?"
+                   :if-new
+                   (file+head "articles/${slug}.org" "#+title: ${title}\n#+filetags: :article:\n")
+                   :immediate-finish t
+                   :unnarrowed t)
+                  ("d" "dictionary" plain "%?"
+                   :if-new
+                   (file+head "dictionary/${slug}.org" "#+title: ${title}\n#+filetags: :dictionary:\n")
+                   :immediate-finish t
+                   :unnarrowed t)))
+          (cl-defmethod org-roam-node-type ((node org-roam-node))
+            "Return the TYPE of NODE."
+            (condition-case nil
+                (file-name-nondirectory
+                 (directory-file-name
+                  (file-name-directory
+                   (file-relative-name (org-roam-node-file node) org-roam-directory))))
+              (error "")))
+          (setq org-roam-node-display-template
+                (concat "${type:15} ${title:*} " (propertize "${tags:10}" 'face 'org-tag))))
 
-;; Make sure Org-roam uses the same TODO keywords
-(after! org-roam
-  ;; Add this line to ensure org-roam uses your custom TODO states
-  (setq org-roam-todo-keywords org-todo-keywords))
+        ;; Make sure Org-roam uses the same TODO keywords
+        (after! org-roam
+          ;; Add this line to ensure org-roam uses your custom TODO states
+          (setq org-roam-todo-keywords org-todo-keywords))
 
-;; Org-roam dailies
-(setq org-roam-dailies-directory "daily/")
-(setq org-roam-dailies-capture-templates
-      '(("d" "default" entry
-         "* %?"
-         :target (file+head "%<%Y-%m-%d>.org"
-                            "#+title: %<%Y-%m-%d>\n"))))
+        ;; Org-roam dailies
+        (setq org-roam-dailies-directory "daily/")
+        (setq org-roam-dailies-capture-templates
+              '(("d" "default" entry
+                 "* %?"
+                 :target (file+head "%<%Y-%m-%d>.org"
+                                    "#+title: %<%Y-%m-%d>\n"))))
 
-;; Org-roam utility functions
-(defun my/org-roam-node-has-tag (node tag)
-  "Filter function to check if the given NODE has the specified TAG."
-  (member tag (org-roam-node-tags node)))
+        ;; Org-roam utility functions
+        (defun my/org-roam-node-has-tag (node tag)
+          "Filter function to check if the given NODE has the specified TAG."
+          (member tag (org-roam-node-tags node)))
 
-(defun my/org-roam-node-find-by-tag ()
-  "Find and open an Org-roam node based on a specified tag."
-  (interactive)
-  (let ((tag (read-string "Enter tag: ")))
-    (org-roam-node-find nil nil (lambda (node) (my/org-roam-node-has-tag node tag)))))
+        (defun my/org-roam-node-find-by-tag ()
+          "Find and open an Org-roam node based on a specified tag."
+          (interactive)
+          (let ((tag (read-string "Enter tag: ")))
+            (org-roam-node-find nil nil (lambda (node) (my/org-roam-node-has-tag node tag)))))
 
 
 ;;; =========================================================================
 ;;; CITAR AND BIBLIOGRAPHY MANAGEMENT
 ;;; =========================================================================
 
-;; Citar for bibliography management
-(require 'citar)
-(use-package citar
-  :no-require
-  :custom
-  (org-cite-global-bibliography '("~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/"))
-  (org-cite-insert-processor 'citar)
-  (org-cite-follow-processor 'citar)
-  (org-cite-activate-processor 'citar)
-  (citar-bibliography org-cite-global-bibliography)
-  :bind
-  (:map org-mode-map :package org ("C-c b" . #'org-cite-insert)))
+        ;; Citar for bibliography management
+        (require 'citar)
+        (use-package citar
+          :no-require
+          :custom
+          (org-cite-global-bibliography '("~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/"))
+          (org-cite-insert-processor 'citar)
+          (org-cite-follow-processor 'citar)
+          (org-cite-activate-processor 'citar)
+          (citar-bibliography org-cite-global-bibliography)
+          :bind
+          (:map org-mode-map :package org ("C-c b" . #'org-cite-insert)))
 
-(defun jethro/org-roam-node-from-cite (keys-entries)
-  (interactive (list (citar-select-ref :multiple nil :rebuild-cache t)))
-  (let ((title (citar--format-entry-no-widths (cdr keys-entries)
-                                              "${author editor} :: ${title}")))
-    (org-roam-capture- :templates
-                       '(("r" "reference" plain "%?" :if-new
-                          (file+head "reference/${citekey}.org"
-                                     ":PROPERTIES:
+        (defun jethro/org-roam-node-from-cite (keys-entries)
+          (interactive (list (citar-select-ref :multiple nil :rebuild-cache t)))
+          (let ((title (citar--format-entry-no-widths (cdr keys-entries)
+                                                      "${author editor} :: ${title}")))
+            (org-roam-capture- :templates
+                               '(("r" "reference" plain "%?" :if-new
+                                  (file+head "reference/${citekey}.org"
+                                             ":PROPERTIES:
   :ROAM_REFS: [cite:@${citekey}]
   :END:
   #+title: ${title}\n")
-                          :immediate-finish t
-                          :unnarrowed t))
-                       :info (list :citekey (car keys-entries))
-                       :node (org-roam-node-create :title title)
-                       :props '(:finalize find-file))))
+                                  :immediate-finish t
+                                  :unnarrowed t))
+                               :info (list :citekey (car keys-entries))
+                               :node (org-roam-node-create :title title)
+                               :props '(:finalize find-file))))
