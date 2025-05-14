@@ -350,6 +350,152 @@
               ("C-c l l" . linear-list-issues)
               ("C-c l n" . linear-new-issue)))
 
+;; Function to update linear.org with data from Linear API
+(defun update-linear-org ()
+  "Update linear.org with current data from Linear API."
+  (interactive)
+  (if (linear-test-connection)
+      (progn
+        (message "Connected to Linear API. Fetching data...")
+        (let ((issues (linear-get-issues))
+              (teams (linear-get-teams))
+              (updated-content ""))
+
+          ;; Create the basic structure
+          (setq updated-content (concat
+                                 "#+TITLE: Linear Tasks\n"
+                                 "#+AUTHOR: Gael Blanchemain\n"
+                                 (format "#+DATE: [%s]\n" (format-time-string "%Y-%m-%d"))
+                                 "#+STARTUP: overview\n"
+                                 "#+OPTIONS: toc:2\n\n"
+                                 "* Linear Tasks\n"))
+
+          ;; Add Configuration section
+          (setq updated-content (concat updated-content
+                                        "** Configuration\n"
+                                        ":PROPERTIES:\n"
+                                        ":VISIBILITY: folded\n"
+                                        ":END:\n\n"
+                                        "Linear API is configured in your Emacs setup. You can use the following commands:\n"
+                                        "- ~linear-list-issues~ - List all your assigned issues\n"
+                                        "- ~linear-new-issue~ - Create a new issue\n"
+                                        "- ~linear-test-connection~ - Test the connection to Linear API\n"
+                                        "- ~linear-toggle-debug~ - Toggle debug mode for troubleshooting\n\n"))
+
+          ;; Add Assigned Issues section
+          (setq updated-content (concat updated-content
+                                        "** My Assigned Issues\n"
+                                        ":PROPERTIES:\n"
+                                        ":CATEGORY: Linear\n"
+                                        ":END:\n\n"))
+
+          ;; Add actual issues if available
+          (if issues
+              (progn
+                (when (vectorp issues)
+                  (setq issues (append issues nil)))
+                (dolist (issue issues)
+                  (let ((id (cdr (assoc 'id issue)))
+                        (identifier (cdr (assoc 'identifier issue)))
+                        (title (cdr (assoc 'title issue)))
+                        (state (cdr (assoc 'name (assoc 'state issue)))))
+                    (setq updated-content
+                          (concat updated-content
+                                  (format "*** %s %s\n"
+                                          (if (string= state "Done") "DONE" "TODO")
+                                          title)
+                                  ":PROPERTIES:\n"
+                                  (format ":LINEAR_ID: %s\n" identifier)
+                                  (format ":LINEAR_STATE: %s\n" state)
+                                  ":END:\n\n"
+                                  (format "[[https://linear.app/issue/%s][%s]] - %s\n\n"
+                                          identifier identifier title))))))
+            ;; No issues found
+            (setq updated-content
+                  (concat updated-content
+                          "*** TODO No assigned issues found\n"
+                          ":PROPERTIES:\n"
+                          ":LINEAR_ID: none\n"
+                          ":END:\n\n"
+                          "No issues are currently assigned to you in Linear.\n\n")))
+
+          ;; Add Teams section
+          (setq updated-content (concat updated-content
+                                        "** Open Issues By Team\n"
+                                        ":PROPERTIES:\n"
+                                        ":CATEGORY: Linear\n"
+                                        ":VISIBILITY: folded\n"
+                                        ":END:\n\n"))
+
+          ;; Add actual teams if available
+          (if teams
+              (progn
+                (when (vectorp teams)
+                  (setq teams (append teams nil)))
+                (dolist (team teams)
+                  (let ((team-id (cdr (assoc 'id team)))
+                        (team-name (cdr (assoc 'name team))))
+                    (setq updated-content
+                          (concat updated-content
+                                  (format "*** %s\n" team-name)
+                                  ":PROPERTIES:\n"
+                                  (format ":LINEAR_TEAM_ID: %s\n" team-id)
+                                  ":END:\n\n"
+                                  (format "Team ID: %s\n\n" team-id))))))
+            ;; No teams found
+            (setq updated-content
+                  (concat updated-content
+                          "*** No teams found\n\n"
+                          "No teams are available in your Linear workspace.\n\n")))
+
+          ;; Add Templates section
+          (setq updated-content (concat updated-content
+                                        "** Templates\n"
+                                        ":PROPERTIES:\n"
+                                        ":CATEGORY: Linear\n"
+                                        ":VISIBILITY: folded\n"
+                                        ":END:\n\n"
+                                        "*** Bug Report Template\n"
+                                        ":PROPERTIES:\n"
+                                        ":LINEAR_TEMPLATE: bug\n"
+                                        ":END:\n\n"
+                                        "**Title**: Bug: [Short description]\n\n"
+                                        "**Description**:\n"
+                                        "- **Expected behavior**: [What should happen]\n"
+                                        "- **Actual behavior**: [What actually happens]\n"
+                                        "- **Steps to reproduce**:\n"
+                                        "  1. [First step]\n"
+                                        "  2. [Second step]\n"
+                                        "  3. [More steps as needed]\n"
+                                        "- **Environment**: [Relevant environment details]\n"
+                                        "- **Screenshots/Videos**: [If applicable]\n\n"
+                                        "*** Feature Request Template\n"
+                                        ":PROPERTIES:\n"
+                                        ":LINEAR_TEMPLATE: feature\n"
+                                        ":END:\n\n"
+                                        "**Title**: Feature: [Short description]\n\n"
+                                        "**Description**:\n"
+                                        "- **Problem statement**: [What problem does this feature solve?]\n"
+                                        "- **Proposed solution**: [How should this feature work?]\n"
+                                        "- **Alternatives considered**: [Other solutions considered]\n"
+                                        "- **Additional context**: [Any other relevant information]\n\n"))
+
+          ;; Add Archive section
+          (setq updated-content (concat updated-content
+                                        "** Archive\n"
+                                        ":PROPERTIES:\n"
+                                        ":CATEGORY: Linear\n"
+                                        ":VISIBILITY: folded\n"
+                                        ":ARCHIVE: t\n"
+                                        ":END:\n\n"
+                                        "Archive for completed Linear tasks.\n"))
+
+          ;; Write the updated content to linear.org
+          (with-temp-file "/Users/allup/Documents/linear.org"
+            (insert updated-content))
+
+          (message "linear.org has been updated with current Linear data.")))
+    (message "Failed to connect to Linear API. Check your API key and network connection.")))
 
 ;; Optional: Integration with Doom Emacs keybindings
 (after! linear
@@ -358,7 +504,9 @@
          :desc "List issues" "l" #'linear-list-issues
          :desc "New issue" "n" #'linear-new-issue
          :desc "Test connection" "t" #'linear-test-connection
-         :desc "Toggle debug" "d" #'linear-toggle-debug)))
+         :desc "Toggle debug" "d" #'linear-toggle-debug
+         :desc "Update linear.org" "u" #'update-linear-org)))
+
 
 ;; GPG/Pinentry
 (use-package! epa-file
