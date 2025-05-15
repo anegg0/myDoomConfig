@@ -74,3 +74,76 @@
 ;;
 ;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
 ;; they are implemented.
+
+
+;;; =========================================================================
+;;; KEYBINDS
+;;; =========================================================================
+
+
+;; Avy line and char navigation
+(map! :leader
+      :desc "evil-avy-goto-line"
+      "j" #'evil-avy-goto-line)
+
+(map! :leader
+      :desc "evil-avy-goto-char"
+      "k" #'evil-avy-goto-char)
+
+;; Yank from kill ring
+(map! :leader
+      :desc "yank-from-kill-ring"
+      "Y" #'yank-from-kill-ring)
+
+;; Treemacs project
+(map! :leader
+      :desc "treemacs-add-and-display-current-project-exclusively"
+      "z" #'treemacs-add-and-display-current-project-exclusively)
+
+;; Register operations
+(map! :leader
+      :desc "copy-to-register-1"
+      "1" #'xah-copy-to-register-1)
+
+(map! :leader
+      :desc "paste-from-register-1"
+      "2" #'xah-paste-from-register-1)
+
+(map! :leader
+      :desc "copy-to-register"
+      "3" #'copy-to-register)
+
+(map! :leader
+      :desc "insert-register"
+      "4" #'insert-register)
+
+;; Frame and buffer navigation
+(map! :leader
+      :desc "switch-to-other-frame"
+      "7" #'other-frame)
+
+;; Aider integration
+(map! :leader
+      :desc "aidermacs-add-file"
+      "8" #'aidermacs-add-file)
+
+(map! :leader
+      :desc "file-one-up"
+      "9" #'file-one-up)
+
+(map! :leader
+      :desc "avy-move-line"
+      "a" #'avy-move-line)
+
+(map! :leader
+      :desc "aidermacs-run"
+      "0" #'aidermacs-run)
+
+(map! :leader
+      :desc "other-window"
+      "]" #'other-window)
+
+
+(map! :leader
+      :prefix ("r" . "org-roam")
+      :n "F" #'my/org-roam-node-find-by-tag)
