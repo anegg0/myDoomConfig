@@ -202,23 +202,25 @@
       :prefix ("r" . "org-roam")
       :n "F" #'my/org-roam-node-find-by-tag)
 
-;; Window resizing with hydra
-(defhydra hydra/evil-window-resize (:color red)
-  "Resize window"
-  ("h" evil-window-decrease-width "decrease width")
-  ("j" evil-window-decrease-height "decrease height")
-  ("k" evil-window-increase-height "increase height")
-  ("l" evil-window-increase-width "increase width")
-  ("q" nil "quit"))
-
-(map! :leader
-      :prefix ("r" . "org-roam")
-      :n "F" #'my/org-roam-node-find-by-tag)
-
-
 ;;; =========================================================================
 ;;; EDITOR SETTINGS
 ;;; =========================================================================
+;;;
+(use-package! smartparens
+  :init
+  (map! :map smartparens-mode-map
+        "C-M-f" #'sp-forward-sexp
+        "C-M-b" #'sp-backward-sexp
+        "C-M-u" #'sp-backward-up-sexp
+        "C-M-d" #'sp-down-sexp
+        "C-M-p" #'sp-backward-down-sexp
+        "C-M-n" #'sp-up-sexp
+        "C-M-s" #'sp-splice-sexp
+        "C-)" #'sp-forward-slurp-sexp
+        "C-}" #'sp-forward-barf-sexp
+        "C-(" #'sp-backward-slurp-sexp
+        "C-M-)" #'sp-backward-slurp-sexp
+        "C-M-)" #'sp-backward-barf-sexp))
 
 ;; Markdown configuration
 (custom-set-faces!
@@ -389,6 +391,8 @@
                               "#+title: ${title}\n#+TAGS: :\n")
            :immediate-finish t
            :unnarrowed t)
+          ("s" "Slipbox" entry  (file "/braindump/org/inbox.org")
+           "* %?\n")
           ("r" "reference" plain "%?"
            :if-new
            (file+head "reference/${slug}.org" "#+title: ${title}\n")
@@ -434,6 +438,19 @@
         org-adapt-indentation nil
         org-habit-show-habits-only-for-today t)
 
+  (setq org-capture-templates
+        `(("i" "Inbox" entry  (file "gtd/inbox.org")
+           ,(concat "* TODO %?\n"
+                    "/Entered on/ %U"))
+          ("s" "Slipbox" entry  (file "braindump/org/inbox.org")
+           "* %?\n")))
+  (defun jethro/org-capture-inbox ()
+    (interactive)
+    (org-capture nil "i"))
+
+  (defun jethro/org-capture-slipbox ()
+    (interactive)
+    (org-capture nil "s"))
 
   ;; Configure org-mode for inline images
   (setq org-startup-with-inline-images t)  ; Show inline images when opening org files
@@ -482,7 +499,6 @@
                                        (call-interactively 'linear-org-capture-to-linear)))))))
 ;; Make sure Org-roam uses the same TODO keywords
 (after! org-roam
-  ;; All your existing org-roam settings...
 
   ;; Add this line to ensure org-roam uses your custom TODO states
   (setq org-roam-todo-keywords org-todo-keywords))
@@ -516,7 +532,7 @@
 (use-package citar
   :no-require
   :custom
-  (org-cite-global-bibliography '("~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode//master.json"))
+  (org-cite-global-bibliography '("~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/master.json"))
   (org-cite-insert-processor 'citar)
   (org-cite-follow-processor 'citar)
   (org-cite-activate-processor 'citar)
@@ -552,13 +568,6 @@
   (let ((tag (read-string "Enter tag: ")))
     (org-roam-node-find nil nil (lambda (node) (my/org-roam-node-has-tag node tag)))))
 
-(defun jethro/org-capture-inbox ()
-  (interactive)
-  (org-capture nil "i"))
-
-(defun jethro/org-capture-slipbox ()
-  (interactive)
-  (org-capture nil "s"))
 
 ;; Linear.app integration
 ;; ===============================================================
@@ -1320,126 +1329,5 @@
               (copilot-mode))))
 
 
-;;; =========================================================================
-;;; ORG-ROAM CONFIGURATION
-;;; =========================================================================
-
-(use-package! org-roam
-  :init
-  (map! :leader
-        :prefix "r"
-        :desc "org-roam" "l" #'org-roam-buffer-toggle
-        :desc "org-roam-node-insert" "i" #'org-roam-node-insert
-        :desc "org-roam-node-find" "f" #'org-roam-node-find
-        :desc "org-roam-ref-find" "r" #'org-roam-ref-find
-        :desc "org-roam-show-graph" "g" #'org-roam-show-graph
-        :desc "org-roam-dailies-capture-today" "T" #'org-roam-dailies-capture-today
-        :desc "org-roam-dailies-goto-today" "t" #'org-roam-dailies-goto-today
-        :desc "jethro/org-capture-slipbox" "<tab>" #'jethro/org-capture-slipbox
-        :desc "org-roam-capture" "c" #'org-roam-capture)
-  (setq org-roam-directory (file-truename "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/")
-        org-roam-database-connector 'sqlite-builtin
-        org-roam-db-gc-threshold most-positive-fixnum
-        org-id-link-to-org-use-id t)
-  :config
-  (org-roam-db-autosync-mode +1)
-  (set-popup-rules!
-    `((,(regexp-quote org-roam-buffer) ; persistent org-roam buffer
-       :side right :width .33 :height .5 :ttl nil :modeline nil :quit nil :slot 1)
-      ("^\\*org-roam: " ; node dedicated org-roam buffer
-       :side right :width .33 :height .5 :ttl nil :modeline nil :quit nil :slot 2)))
-  (add-hook 'org-roam-mode-hook #'turn-on-visual-line-mode)
-  (setq org-roam-capture-templates
-        '(
-          ("m" "main" plain
-           "%?"
-           :if-new (file+head "main/${slug}.org"
-                              "#+title: ${title}\n#+TAGS: :\n")
-           :immediate-finish t
-           :unnarrowed t)
-          ("c" "catb" plain
-           "%?"
-           :if-new (file+head "main/gb_b_catb_${slug}.org"
-                              "#+title: ${title}\n#+TAGS: :\n")
-           :immediate-finish t
-           :unnarrowed t)
-          ("r" "reference" plain "%?"
-           :if-new
-           (file+head "reference/${slug}.org" "#+title: ${title}\n")
-           :immediate-finish t
-           :unnarrowed t)
-          ("a" "article" plain "%?"
-           :if-new
-           (file+head "articles/${slug}.org" "#+title: ${title}\n#+filetags: :article:\n")
-           :immediate-finish t
-           :unnarrowed t)
-          ("d" "dictionary" plain "%?"
-           :if-new
-           (file+head "dictionary/${slug}.org" "#+title: ${title}\n#+filetags: :dictionary:\n")
-           :immediate-finish t
-           :unnarrowed t)))
-  (cl-defmethod org-roam-node-type ((node org-roam-node))
-    "Return the TYPE of NODE."
-    (condition-case nil
-        (file-name-nondirectory
-         (directory-file-name
-          (file-name-directory
-           (file-relative-name (org-roam-node-file node) org-roam-directory))))
-      (error "")))
-  (setq org-roam-node-display-template
-        (concat "${type:15} ${title:*} " (propertize "${tags:10}" 'face 'org-tag))))
 
 
-;; Org-roam dailies
-(setq org-roam-dailies-directory "daily/")
-(setq org-roam-dailies-capture-templates
-      '(("d" "default" entry
-         "* %?"
-         :target (file+head "%<%Y-%m-%d>.org"
-                            "#+title: %<%Y-%m-%d>\n"))))
-
-;; Org-roam utility functions
-(defun my/org-roam-node-has-tag (node tag)
-  "Filter function to check if the given NODE has the specified TAG."
-  (member tag (org-roam-node-tags node)))
-
-(defun my/org-roam-node-find-by-tag ()
-  "Find and open an Org-roam node based on a specified tag."
-  (interactive)
-  (let ((tag (read-string "Enter tag: ")))
-    (org-roam-node-find nil nil (lambda (node) (my/org-roam-node-has-tag node tag)))))
-
-
-;;; =========================================================================
-;;; CITAR AND BIBLIOGRAPHY MANAGEMENT
-;;; =========================================================================
-
-;; Citar for bibliography management
-(require 'citar)
-(use-package citar
-  :no-require
-  :custom
-  (org-cite-global-bibliography '("~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/"))
-  (org-cite-insert-processor 'citar)
-  (org-cite-follow-processor 'citar)
-  (org-cite-activate-processor 'citar)
-  (citar-bibliography org-cite-global-bibliography)
-  :bind
-  (:map org-mode-map :package org ("C-c b" . #'org-cite-insert)))
-
-(defun jethro/org-roam-node-from-cite (keys-entries)
-  (interactive (list (citar-select-ref :multiple nil :rebuild-cache t)))
-  (let ((title (citar--format-entry-no-widths (cdr keys-entries)
-                                              "${author editor} :: ${title}")))
-    (org-roam-capture- :templates
-                       '(("r" "reference" plain "%?" :if-new
-                          (file+head "reference/${citekey}.org"
-                                     ":PROPERTIES:
-  :ROAM_REFS: [cite:@${citekey}]
-  :END:
-  #+title: ${title}\n")
-                          :immediate-finish t
-                          :unnarrowed t))
-                       :info (list :citekey (car keys-entries))
-                       :node (org-roam-node-create :title title)
-                       :props '(:finalize find-file))))
