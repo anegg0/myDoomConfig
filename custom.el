@@ -1,13 +1,10 @@
+;;; -*- lexical-binding: t -*-
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(ignored-local-variable-values '((flycheck-disabled-checkers proselint textlint)))
- '(org-agenda-files
-   '("/Users/allup/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/main/gb_m_organizer.org"
-     "/Users/allup/Documents/linear.org" ))
- '(package-selected-packages '(org-trello)))
+ '(ignored-local-variable-values '((flycheck-disabled-checkers proselint textlint))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
