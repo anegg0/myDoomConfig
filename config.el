@@ -128,8 +128,8 @@
       "8" #'aidermacs-add-file)
 
 (map! :leader
-      :desc "file-one-up"
-      "9" #'file-one-up)
+      :desc "dired-jump"
+      "9" #'dired-jump)
 
 (map! :leader
       :desc "avy-move-line"
