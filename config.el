@@ -15,23 +15,6 @@
       org-agenda-files '("~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/main/gb_m_organizer.org" "~/Documents/linear.org"))
 (setq org-startup-folded 'content)
 
-(after! org-mode
-  (org-agenda-file-to-front "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/main/gb_m_organizer.org" "~/Documents/linear.org")
-  ;; Custom TODO keywords
-  (setq org-todo-keywords
-        '((sequence "TODO(t)" "IN-PROGRESS(i)" "IN-REVIEW(r)" "|" "BACKLOG(b)" "BLOCKED(l)" "DONE(d)" "CANCELED(c)" "DUPLICATE(p)")))
-
-  ;; Optional: Add custom faces for your TODO states
-  (setq org-todo-keyword-faces
-        '(("TODO" . (:foreground "red" :weight bold))
-          ("IN-PROGRESS" . (:foreground "blue" :weight bold))
-          ("IN-REVIEW" . (:foreground "orange" :weight bold))
-          ("BACKLOG" . (:foreground "orange" :weight bold))
-          ("BLOCKED" . (:foreground "green" :weight bold))
-          ("DONE" . (:foreground "green" :weight bold))
-          ("CANCELLED" . (:foreground "gray" :weight bold))
-          ("DUPLICATE" . (:foreground "black" :weight bold))))
-  )
 
 ;;; =========================================================================
 ;;; APPEARANCE
@@ -455,8 +438,48 @@
   ;; Configure org-mode for inline images
   (setq org-startup-with-inline-images t)  ; Show inline images when opening org files
   (setq org-image-actual-width nil)        ; Use image size specifications in org files
-  (add-hook 'org-mode-hook #'org-display-inline-images)) ; Auto-display images in org buffers
+  (add-hook 'org-mode-hook #'org-display-inline-images)
 
+  (org-agenda-file-to-front "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/main/gb_m_organizer.org")
+  ;; Custom TODO keywords
+  (setq org-todo-keywords
+        '((sequence "TODO(t)" "IN-PROGRESS(i)" "IN-REVIEW(r)" "|" "BACKLOG(b)" "BLOCKED(l)" "DONE(d)" "CANCELED(c)" "DUPLICATE(p)")))
+
+  ;; Optional: Add custom faces for your TODO states
+  (setq org-todo-keyword-faces
+        '(("TODO" . (:foreground "red" :weight bold))
+          ("IN-PROGRESS" . (:foreground "blue" :weight bold))
+          ("IN-REVIEW" . (:foreground "orange" :weight bold))
+          ("BACKLOG" . (:foreground "orange" :weight bold))
+          ("BLOCKED" . (:foreground "green" :weight bold))
+          ("DONE" . (:foreground "green" :weight bold))
+          ("CANCELLED" . (:foreground "gray" :weight bold))
+          ("DUPLICATE" . (:foreground "black" :weight bold))))
+
+  ;; Define org-agenda-files to include the right directories
+  ;; Include all org files from main directories for agenda
+  (setq org-agenda-files (list
+                          (expand-file-name "main" org-directory)
+                          (expand-file-name "daily" org-directory)
+                          (expand-file-name "reference" org-directory)
+                          (expand-file-name "articles" org-directory)))
+
+  ;; Enable refile targets to include agenda files
+  (setq org-refile-targets '((org-agenda-files :maxlevel . 3)))
+
+  ;; Update org-capture-templates for Linear tasks to handle second-level heading
+  (add-to-list 'org-capture-templates
+               '("L" "Linear Task" entry
+                 (file+headline linear-org-file "OCL")
+                 "** TODO %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n%i\n"
+                 :immediate-finish nil
+                 :jump-to-captured t
+                 :after-finalize (lambda ()
+                                   (with-current-buffer (find-buffer-visiting linear-org-file)
+                                     (save-excursion
+                                       (goto-char (point-max))
+                                       (org-back-to-heading t)
+                                       (call-interactively 'linear-org-capture-to-linear)))))))
 ;; Make sure Org-roam uses the same TODO keywords
 (after! org-roam
   ;; All your existing org-roam settings...
@@ -537,20 +560,6 @@
   (interactive)
   (org-capture nil "s"))
 
-;; Define org-agenda-files to include the right directories
-(after! org
-  ;; Include all org files from main directories for agenda
-  (setq org-agenda-files (list
-                          (expand-file-name "main" org-directory)
-                          (expand-file-name "daily" org-directory)
-                          (expand-file-name "reference" org-directory)
-                          (expand-file-name "articles" org-directory)))
-
-  ;; Enable refile targets to include agenda files
-  (setq org-refile-targets '((org-agenda-files :maxlevel . 3)))
-
-  ;; Other org settings can remain the same
-  )
 ;; Linear.app integration
 ;; ===============================================================
 
@@ -1050,20 +1059,6 @@
 ;; Add hook for todo state changes
 (add-hook 'org-after-todo-state-change-hook 'linear-org-after-todo-state-change)
 
-;; Update org-capture-templates for Linear tasks to handle second-level heading
-(after! org
-  (add-to-list 'org-capture-templates
-               '("L" "Linear Task" entry
-                 (file+headline linear-org-file "OCL")
-                 "** TODO %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n%i\n"
-                 :immediate-finish nil
-                 :jump-to-captured t
-                 :after-finalize (lambda ()
-                                   (with-current-buffer (find-buffer-visiting linear-org-file)
-                                     (save-excursion
-                                       (goto-char (point-max))
-                                       (org-back-to-heading t)
-                                       (call-interactively 'linear-org-capture-to-linear)))))))
 
 ;; Optional: Integration with Doom Emacs keybindings
 (after! linear
