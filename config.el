@@ -279,3 +279,11 @@
       (error "")))
   (setq org-roam-node-display-template
         (concat "${type:15} ${title:*} " (propertize "${tags:10}" 'face 'org-tag))))
+
+
+
+;;; =========================================================================
+;;; EDITOR
+;;; =========================================================================
+;; Disable dired-omit-mode globally
+(remove-hook 'dired-mode-hook 'dired-omit-mode)
