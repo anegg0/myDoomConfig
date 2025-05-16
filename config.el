@@ -287,3 +287,38 @@
 ;;; =========================================================================
 ;; Disable dired-omit-mode globally
 (remove-hook 'dired-mode-hook 'dired-omit-mode)
+
+
+;; Emacs Everywhere Configuration
+(after! emacs-everywhere
+  ;; Set the default major mode to markdown-mode
+  (setq emacs-everywhere-major-mode-function 'markdown-mode)
+
+  ;; Optionally add hooks for specific adjustments when Emacs Everywhere activates
+  (add-hook 'emacs-everywhere-init-hooks
+            (lambda ()
+              ;; Enable visual-line-mode for better text wrapping
+              (visual-line-mode)
+              ;; Disable line numbers for cleaner interface
+              (display-line-numbers-mode -1)
+              ;; Optionally center the buffer contents
+              (centered-cursor-mode)
+              ;; Optionally enable copilot-mode
+              (copilot-mode))))
+
+
+
+
+
+;;; =========================================================================
+;;; PROJECTILE
+;;; =========================================================================
+;; Auto-invalidate projectile cache when switching git branches
+(after! magit
+  (add-hook 'magit-post-checkout-hook
+            (defun my/projectile-invalidate-cache-on-branch-switch ()
+              "Invalidate projectile cache when switching git branches."
+              (let ((project-root (projectile-project-root)))
+                (when project-root
+                  (message "Invalidating projectile cache for %s" project-root)
+                  (projectile-invalidate-cache nil))))))
