@@ -307,6 +307,18 @@
               (copilot-mode))))
 
 
+;; Markdown/MDX file configuration
+(after! markdown-mode
+  ;; Ensure that `mdx` files are open in `gfm-mode` in doom emacs
+  (add-to-list 'auto-mode-alist '("\\.mdx\\'" . gfm-mode))
+
+  ;; Add a hook to force gfm-mode for mdx files if needed
+  (add-hook 'find-file-hook
+            (lambda ()
+              (when (and buffer-file-name
+                         (string-match-p "\\.mdx\\'" buffer-file-name)
+                         (not (eq major-mode 'gfm-mode)))
+                (gfm-mode)))))
 
 
 
