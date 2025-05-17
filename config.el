@@ -243,13 +243,20 @@
           ("m" "main" plain
            "%?"
            :if-new (file+head "main/${slug}.org"
-                              "#+title: ${title}\n#+TAGS: :\n")
+                              "#+title: ${title}\n#+TAGS: :\n#+FILETAGS: :\n")
            :immediate-finish t
            :unnarrowed t)
+          ("q" "quote" plain
+           "%?"
+           :if-new (file+head "main/${slug}.org"
+                              "#+title: ${title}\n#+TAGS: :\n#+FILETAGS: :quote:\n")
+           :immediate-finish t
+           :unnarrowed t)
+
           ("c" "catb" plain
            "%?"
            :if-new (file+head "main/gb_b_catb_${slug}.org"
-                              "#+title: ${title}\n#+TAGS: :\n")
+                              "#+title: ${title}\n#+TAGS: :\n#+FILETAGS: :catb:\n")
            :immediate-finish t
            :unnarrowed t)
           ("s" "Slipbox" entry  (file "/braindump/org/inbox.org")
@@ -264,9 +271,9 @@
            (file+head "articles/${slug}.org" "#+title: ${title}\n#+filetags: :article:\n")
            :immediate-finish t
            :unnarrowed t)
-          ("d" "dictionary" plain "%?"
+          ("g" "dictionary" plain "%?"
            :if-new
-           (file+head "dictionary/${slug}.org" "#+title: ${title}\n#+filetags: :dictionary:\n")
+           (file+head "glossary/${slug}.org" "#+title: ${title}\n#+filetags: :glossary:\n")
            :immediate-finish t
            :unnarrowed t)))
   (cl-defmethod org-roam-node-type ((node org-roam-node))
