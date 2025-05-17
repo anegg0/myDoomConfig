@@ -334,10 +334,9 @@
 ;;; =========================================================================
 ;; Auto-invalidate projectile cache when switching git branches: untested code!
 (after! magit
-  (add-hook 'magit-refresh-buffer-hook
-            (defun my/projectile-invalidate-cache-on-magit-refresh ()
-              "Invalidate projectile cache when refreshing magit."
-              (let ((project-root (projectile-project-root)))
-                (when project-root
-                  (message "Invalidating projectile cache for %s" project-root)
-                  (projectile-invalidate-cache nil))))))
+  (advice-add 'magit-checkout :after
+              (lambda (&rest _)
+                (let ((project-root (projectile-project-root)))
+                  (when project-root
+                    (message "Invalidating projectile cache for %s" project-root)
+                    (projectile-invalidate-cache nil))))))
