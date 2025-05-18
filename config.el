@@ -32,7 +32,7 @@
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
-(setq doom-theme 'doom-one)
+(setq doom-theme 'leuven-dark)
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -149,6 +149,30 @@
       :n "F" #'my/org-roam-node-find-by-tag)
 
 
+;;; =========================================================================
+;;; APPEARANCE
+;;; =========================================================================
+
+;; Font settings
+(setq doom-font (font-spec :family "Fira Code" :size 11))
+
+
+;; Frame transparency
+;; (set-frame-parameter (selected-frame) 'alpha '(95 95))
+(add-to-list 'default-frame-alist '(alpha 95 95))
+
+;; Set initial frame size and position
+(setq initial-frame-alist
+      (append initial-frame-alist
+              '((top . 1) (left . 1) (width . 230) (height . 180))))
+
+;; Solaire mode for better contrast
+(after! solaire-mode
+  (solaire-global-mode +1))
+
+;; Cursor settings
+(blink-cursor-mode 1)
+
 
 ;;; =========================================================================
 ;;; ORGMODE
@@ -209,8 +233,11 @@
 
   ;; Enable refile targets to include agenda files
   (setq org-refile-targets '((org-agenda-files :maxlevel . 3)))
-
   )
+
+;;; =========================================================================
+;;; ORGROAM
+;;; =========================================================================
 
 (use-package! org-roam
   ;;ADDED
@@ -271,7 +298,7 @@
            (file+head "articles/${slug}.org" "#+title: ${title}\n#+filetags: :article:\n")
            :immediate-finish t
            :unnarrowed t)
-          ("g" "dictionary" plain "%?"
+          ("g" "glossary" plain "%?"
            :if-new
            (file+head "glossary/${slug}.org" "#+title: ${title}\n#+filetags: :glossary:\n")
            :immediate-finish t
@@ -285,8 +312,19 @@
            (file-relative-name (org-roam-node-file node) org-roam-directory))))
       (error "")))
   (setq org-roam-node-display-template
-        (concat "${type:15} ${title:*} " (propertize "${tags:10}" 'face 'org-tag))))
+        (concat "${type:15} ${title:*} " (propertize "${tags:10}" 'face 'org-tag)))
 
+
+  ;; Org-roam utility functions
+  (defun my/org-roam-node-has-tag (node tag)
+    "Filter function to check if the given NODE has the specified TAG."
+    (member tag (org-roam-node-tags node)))
+
+  (defun my/org-roam-node-find-by-tag ()
+    "Find and open an Org-roam node based on a specified tag."
+    (interactive)
+    (let ((tag (read-string "Enter tag: ")))
+      (org-roam-node-find nil nil (lambda (node) (my/org-roam-node-has-tag node tag))))))
 
 
 ;;; =========================================================================
@@ -295,6 +333,41 @@
 ;; Disable dired-omit-mode globally
 (remove-hook 'dired-mode-hook 'dired-omit-mode)
 
+;; Utility functions for copy/paste with registers
+(defun xah-copy-to-register-1 ()
+  "Copy current line or selection to register 1.
+
+See also:
+`xah-copy-to-register-1'
+`xah-append-to-register-1'
+`xah-paste-from-register-1'
+`xah-clear-register-1'
+
+URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'
+Version: 2012-07-17 2022-10-03 2023-04-07"
+  (interactive)
+  (let (xp1 xp2)
+    (if (region-active-p)
+        (setq xp1 (region-beginning) xp2 (region-end))
+      (setq xp1 (line-beginning-position) xp2 (line-end-position)))
+    (copy-to-register ?1 xp1 xp2)
+    (message "Copied to register 1: [%s]." (buffer-substring-no-properties xp1 xp2))))
+
+(defun xah-paste-from-register-1 ()
+  "Paste text from register 1.
+
+See also:
+`xah-copy-to-register-1'
+`xah-append-to-register-1'
+`xah-paste-from-register-1'
+`xah-clear-register-1'
+
+URL `http://xahlee.info/emacs/emacs/elisp_copy-paste_register_1.html'
+Version: 2015-12-08 2023-04-07"
+  (interactive)
+  (when (region-active-p)
+    (delete-region (region-beginning) (region-end)))
+  (insert-register ?1 t))
 
 ;; Emacs Everywhere Configuration
 (after! emacs-everywhere
@@ -340,3 +413,14 @@
                   (when project-root
                     (message "Invalidating projectile cache for %s" project-root)
                     (projectile-invalidate-cache nil))))))
+
+;; (use-package! dired-rsync
+;;   :demand t
+;;   :after dired
+;;   :bind (:map dired-mode-map ("r" . dired-rsync))
+;;   :config (add-to-list 'mode-line-misc-info '(:eval dired-rsync-modeline-status 'append)))
+
+;; (use-package dmenu
+;;   :ensure t
+;;   :bind
+;;   ("s-SPC" . 'dmenu))
