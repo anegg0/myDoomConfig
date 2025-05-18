@@ -189,19 +189,6 @@
    org-adapt-indentation nil
    org-habit-show-habits-only-for-today t)
 
-  (setq org-capture-templates
-        `(("i" "Inbox" entry  (file "gtd/inbox.org")
-           ,(concat "* TODO %?\n"
-                    "/Entered on/ %U"))
-          ("s" "Slipbox" entry  (file "braindump/org/inbox.org")
-           "* %?\n")))
-  (defun jethro/org-capture-inbox ()
-    (interactive)
-    (org-capture nil "i"))
-
-  (defun jethro/org-capture-slipbox ()
-    (interactive)
-    (org-capture nil "s"))
 
   ;; Configure org-mode for inline images
   (setq org-startup-with-inline-images t)  ; Show inline images when opening org files
@@ -233,6 +220,25 @@
 
   ;; Enable refile targets to include agenda files
   (setq org-refile-targets '((org-agenda-files :maxlevel . 3)))
+
+  (setq org-capture-templates
+        `(("i" "Inbox" entry  (file "gtd/inbox.org")
+           ,(concat "* TODO %?\n"
+                    "/Entered on/ %U"))
+          ("s" "Slipbox" entry  (file "braindump/org/braindump.org")
+           "* %?\n")))
+
+  (defun jethro/org-capture-inbox ()
+    (interactive)
+    (org-capture nil "i"))
+
+  (defun jethro/org-capture-slipbox ()
+    (interactive)
+    (org-capture nil "s"))
+
+  (bind-key "C-c <tab>" #'jethro/org-capture-inbox)
+  (bind-key "C-c SPC" #'jethro/org-capture-slipbox)
+
   )
 
 ;;; =========================================================================
@@ -286,8 +292,8 @@
                               "#+title: ${title}\n#+TAGS: :\n#+FILETAGS: :catb:\n")
            :immediate-finish t
            :unnarrowed t)
-          ("s" "Slipbox" entry  (file "/braindump/org/inbox.org")
-           "* %?\n")
+          ;; ("s" "Slipbox" entry  (file "/braindump/org/braindump.org")
+          ;;  "* %?\n")
           ("r" "reference" plain "%?"
            :if-new
            (file+head "reference/${slug}.org" "#+title: ${title}\n")
@@ -302,7 +308,10 @@
            :if-new
            (file+head "glossary/${slug}.org" "#+title: ${title}\n#+filetags: :glossary:\n")
            :immediate-finish t
-           :unnarrowed t)))
+           :unnarrowed t)
+          ))
+
+
   (cl-defmethod org-roam-node-type ((node org-roam-node))
     "Return the TYPE of NODE."
     (condition-case nil
