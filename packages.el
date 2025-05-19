@@ -90,5 +90,3 @@
 (package! linear
   :recipe (:host github :repo "anegg0/linear-emacs" :files ("*.el")))
 (package! org-preview-html)
-(package! dired-rsync)
-;; (package! demenu)
