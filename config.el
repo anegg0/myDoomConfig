@@ -215,8 +215,23 @@
   (setq org-agenda-files (list
                           (expand-file-name "main" org-directory)
                           (expand-file-name "daily" org-directory)
+                          (expand-file-name "gtd" org-directory)
                           (expand-file-name "reference" org-directory)
                           (expand-file-name "articles" org-directory)))
+
+  ;; Ensure all your custom TODO states are included in the agenda
+  (setq org-agenda-todo-keywords-for-agenda
+        '("TODO" "IN-PROGRESS" "IN-REVIEW" "BACKLOG" "BLOCKED"))
+
+  ;; Set which TODO states should be included in the agenda by default
+  ;; This can include both active and inactive states
+  (setq org-agenda-todo-list-sublevels t)
+
+  ;; Include all TODO states in agenda views
+  (setq org-agenda-todo-ignore-scheduled nil
+        org-agenda-todo-ignore-deadlines nil
+        org-agenda-todo-ignore-timestamp nil
+        org-agenda-todo-ignore-with-date nil)
 
   ;; Enable refile targets to include agenda files
   (setq org-refile-targets '((org-agenda-files :maxlevel . 3)))
@@ -224,7 +239,7 @@
   (setq org-capture-templates
         `(("i" "Inbox" entry  (file "gtd/inbox.org")
            ,(concat "* TODO %?\n"
-                    "/Entered on/ %U"))
+                  "/Entered on/ %U"))
           ("s" "Slipbox" entry  (file "braindump/org/braindump.org")
            "* %?\n")))
 
@@ -238,6 +253,14 @@
 
   (bind-key "C-c <tab>" #'jethro/org-capture-inbox)
   (bind-key "C-c SPC" #'jethro/org-capture-slipbox)
+
+  (defun my/org-todo-list-all-by-tag (tag)
+    "Display all TODO states in org-todo-list filtered by TAG."
+    (interactive "sTag: ")
+    (let ((org-agenda-todo-keywords-for-agenda
+           '("TODO" "IN-PROGRESS" "IN-REVIEW" "BACKLOG" "BLOCKED"))
+          (org-agenda-tag-filter-preset `(,(concat "+" tag))))
+      (org-todo-list nil)))
 
   )
 
@@ -333,8 +356,46 @@
     "Find and open an Org-roam node based on a specified tag."
     (interactive)
     (let ((tag (read-string "Enter tag: ")))
-      (org-roam-node-find nil nil (lambda (node) (my/org-roam-node-has-tag node tag))))))
+      (org-roam-node-find nil nil (lambda (node) (my/org-roam-node-has-tag node tag)))))
 
+  (defun my/org-roam-find-files-without-id ()
+    "Find org files without org-roam ID property and write list to a file.
+  The list will be saved to 'list-of-orgmode-files-without-a-roam-id.org'."
+    (interactive)
+    (let* ((org-dir (expand-file-name org-roam-directory))
+           (output-file (expand-file-name "list-of-orgmode-files-without-a-roam-id.org" org-dir))
+           (org-files (directory-files-recursively org-dir "\\.org$"))
+           (files-without-id '()))
+
+      ;; Check each org file for org-roam ID
+      (dolist (file org-files)
+        (with-temp-buffer
+          (insert-file-contents file)
+          (goto-char (point-min))
+          (unless (re-search-forward "^:ID:\\s-+[[:xdigit:]-]+" nil t)
+            (push file files-without-id))))
+
+      ;; Write results to the output file
+      (with-temp-file output-file
+        (insert "#+TITLE: Org Files Without Roam IDs\n\n")
+        (insert "* Files missing org-roam IDs\n\n")
+        (if files-without-id
+            (dolist (file (sort files-without-id #'string<))
+              (let ((rel-path (file-relative-name file org-dir)))
+                (insert (format "- [[file:%s][%s]]\n" rel-path rel-path))))
+          (insert "All files have org-roam IDs.\n")))
+
+      (message "Found %d files without org-roam IDs. Results saved to %s"
+               (length files-without-id) output-file)
+
+      ;; Open the file
+      (find-file output-file)))
+
+  ;; Add keybinding for the new function
+  (map! :leader
+        :prefix "r"
+        :desc "Find files without org-roam IDs" "m" #'my/org-roam-find-files-without-id)
+  )
 
 ;;; =========================================================================
 ;;; EDITOR
@@ -342,6 +403,8 @@
 ;; Disable dired-omit-mode globally
 (remove-hook 'dired-mode-hook 'dired-omit-mode)
 
+;; Enable auto-revert for dired buffers globally
+(setq dired-auto-revert-buffer t)
 ;; Utility functions for copy/paste with registers
 (defun xah-copy-to-register-1 ()
   "Copy current line or selection to register 1.
@@ -423,13 +486,3 @@ Version: 2015-12-08 2023-04-07"
                     (message "Invalidating projectile cache for %s" project-root)
                     (projectile-invalidate-cache nil))))))
 
-;; (use-package! dired-rsync
-;;   :demand t
-;;   :after dired
-;;   :bind (:map dired-mode-map ("r" . dired-rsync))
-;;   :config (add-to-list 'mode-line-misc-info '(:eval dired-rsync-modeline-status 'append)))
-
-;; (use-package dmenu
-;;   :ensure t
-;;   :bind
-;;   ("s-SPC" . 'dmenu))
