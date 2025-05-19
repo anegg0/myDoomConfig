@@ -239,7 +239,7 @@
   (setq org-capture-templates
         `(("i" "Inbox" entry  (file "gtd/inbox.org")
            ,(concat "* TODO %?\n"
-                  "/Entered on/ %U"))
+                    "/Entered on/ %U"))
           ("s" "Slipbox" entry  (file "braindump/org/braindump.org")
            "* %?\n")))
 
@@ -479,10 +479,17 @@ Version: 2015-12-08 2023-04-07"
 ;;; =========================================================================
 ;; Auto-invalidate projectile cache when switching git branches: untested code!
 (after! magit
+
+  (defun my/magit-submodule-update-init-recursive ()
+    "Run 'git submodule update --init --recursive' via Magit."
+    (interactive)
+    (magit-run-git-async "submodule" "update" "--init" "--recursive"))
+
   (advice-add 'magit-checkout :after
               (lambda (&rest _)
                 (let ((project-root (projectile-project-root)))
                   (when project-root
                     (message "Invalidating projectile cache for %s" project-root)
-                    (projectile-invalidate-cache nil))))))
+                    (projectile-invalidate-cache nil)))))
 
+  )
