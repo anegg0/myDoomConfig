@@ -478,6 +478,7 @@ Version: 2015-12-08 2023-04-07"
 ;;; PROJECTILE
 ;;; =========================================================================
 ;; Auto-invalidate projectile cache when switching git branches: untested code!
+;; Auto-invalidate projectile cache when switching git branches: untested code!
 (after! magit
 
   (defun my/magit-submodule-update-init-recursive ()
@@ -485,11 +486,19 @@ Version: 2015-12-08 2023-04-07"
     (interactive)
     (magit-run-git-async "submodule" "update" "--init" "--recursive"))
 
-  (advice-add 'magit-checkout :after
-              (lambda (&rest _)
-                (let ((project-root (projectile-project-root)))
-                  (when project-root
-                    (message "Invalidating projectile cache for %s" project-root)
-                    (projectile-invalidate-cache nil)))))
+  (defun my/magit-checkout-advice (&rest _)
+    "Advice function to run after checkout."
+    (let ((project-root (projectile-project-root)))
+      (when project-root
+        ;; Invalidate projectile cache for all projects
+        (message "Invalidating projectile cache for %s" project-root)
+        (projectile-invalidate-cache nil)
 
+        ;; Run submodule update only for arbitrum-docs repository
+        (when (string-match-p "~/dev/OCL/arbitrum-docs" (expand-file-name project-root))
+          (message "Running submodule update for arbitrum-docs repository")
+          (my/magit-submodule-update-init-recursive)))))
+
+  ;; Add advice to magit-checkout
+  (advice-add 'magit-checkout :after #'my/magit-checkout-advice)
   )
