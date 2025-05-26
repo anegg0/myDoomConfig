@@ -324,7 +324,7 @@
            :unnarrowed t)
           ("a" "article" plain "%?"
            :if-new
-           (file+head "articles/${slug}.org" "#+title: ${title}\n#+filetags: :article:\n")
+           (file+head "articles/${slug}.org" "#+hugo_base_dir: ~/dev/gr0wing-hugo/\n#+HUGO_SECTION: posts\n#+HUGO_CODE_FENCE: nil\n* ${title} :orgmode:\n:PROPERTIES:\n:ID:       %(org-id-new)\n:EXPORT_FILE_NAME: ${slug}\n:EXPORT_DATE: %(format-time-string \"%Y-%m-%d\")\n:END:\n#+title: ${title}\n#+TAGS: :\n#+FILETAGS: :article:\n\n")
            :immediate-finish t
            :unnarrowed t)
           ("g" "glossary" plain "%?"
