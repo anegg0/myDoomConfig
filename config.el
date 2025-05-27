@@ -189,6 +189,51 @@
    org-adapt-indentation nil
    org-habit-show-habits-only-for-today t)
 
+  ;; Hot-reload function for org-mode files
+  (defun my/org-hot-reload-html-export ()
+    "Enable hot-reload for the current org-mode buffer.
+    This will automatically export to HTML whenever the file is saved."
+    (interactive)
+    (if (not (eq major-mode 'org-mode))
+        (message "This is not an org-mode buffer!")
+      (let ((hook-func (lambda () 
+                         (save-excursion
+                           (let ((org-export-show-temporary-export-buffer nil))
+                             (org-html-export-to-html nil 'visible-only nil nil)
+                             (browse-url-of-file (concat (file-name-sans-extension (buffer-file-name)) ".html")))))))
+        (add-hook 'after-save-hook hook-func nil t)
+        (message "Hot-reload enabled: this buffer will export to HTML on save"))))
+
+  (defvar-local my/org-hot-reload-hook-function nil
+    "Store the hook function for hot-reload to enable toggling.")
+
+  (defun my/org-hot-reload-toggle ()
+    "Toggle hot-reload HTML export for the current org-mode buffer."
+    (interactive)
+    (if (not (eq major-mode 'org-mode))
+        (message "This is not an org-mode buffer!")
+      (if my/org-hot-reload-hook-function
+          (progn
+            (remove-hook 'after-save-hook my/org-hot-reload-hook-function t)
+            (setq my/org-hot-reload-hook-function nil)
+            (message "Hot-reload disabled for this buffer"))
+        (setq my/org-hot-reload-hook-function
+              (lambda () 
+                (save-excursion
+                  (let ((org-export-show-temporary-export-buffer nil))
+                    (org-html-export-to-html nil 'visible-only nil nil)))))
+        (add-hook 'after-save-hook my/org-hot-reload-hook-function nil t)
+        (message "Hot-reload enabled: this buffer will export to HTML on save"))))
+
+  (defun my/org-export-html-and-open ()
+    "Export current org file to HTML and open it in the browser."
+    (interactive)
+    (if (not (eq major-mode 'org-mode))
+        (message "This is not an org-mode buffer!")
+      (save-excursion
+        (let ((org-export-show-temporary-export-buffer nil))
+          (org-html-export-to-html nil 'visible-only nil nil)
+          (browse-url-of-file (concat (file-name-sans-extension (buffer-file-name)) ".html"))))))
 
   ;; Configure org-mode for inline images
   (setq org-startup-with-inline-images t)  ; Show inline images when opening org files
