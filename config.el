@@ -324,7 +324,7 @@
            :unnarrowed t)
           ("a" "article" plain "%?"
            :if-new
-           (file+head "articles/${slug}.org" "#+hugo_base_dir: ~/dev/gr0wing-hugo/\n#+HUGO_SECTION: posts\n#+HUGO_CODE_FENCE: nil\n* ${title} :orgmode:\n:PROPERTIES:\n:ID:       %(org-id-new)\n:EXPORT_FILE_NAME: ${slug}\n:EXPORT_DATE: %(format-time-string \"%Y-%m-%d\")\n:END:\n#+title: ${title}\n#+TAGS: :\n#+FILETAGS: :article:\n\n")
+           (file+head "articles/${slug}.org" "#+hugo_base_dir: ~/dev/gr0wing-hugo/\n#+HUGO_SECTION: posts\n#+HUGO_CODE_FENCE: nil\n* ${title} :orgmode:\n#+EXPORT_FILE_NAME: ${slug}\n:EXPORT_DATE: %(format-time-string \"%Y-%m-%d\")\n:END:\n#+title: ${title}\n#+TAGS: :\n#+FILETAGS: :article:\n\n")
            :immediate-finish t
            :unnarrowed t)
           ("g" "glossary" plain "%?"
@@ -400,6 +400,16 @@
 ;;; =========================================================================
 ;;; EDITOR
 ;;; =========================================================================
+;;;
+
+;; accept completion from copilot and fallback to company
+(use-package! copilot
+  :hook (prog-mode . copilot-mode)
+  :bind (:map copilot-completion-map
+              ("C-<tab>" . 'copilot-accept-completion)
+              ("C-TAB" . 'copilot-accept-completion-by-word)
+              ("<tab>" . 'copilot-accept-completion-by-word)))
+
 ;; Disable dired-omit-mode globally
 (remove-hook 'dired-mode-hook 'dired-omit-mode)
 
@@ -457,6 +467,7 @@ Version: 2015-12-08 2023-04-07"
               (centered-cursor-mode)
               ;; Optionally enable copilot-mode
               (copilot-mode))))
+
 
 
 ;; Markdown/MDX file configuration
