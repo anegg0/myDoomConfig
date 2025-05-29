@@ -38,9 +38,6 @@
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
 (setq display-line-numbers-type t)
 
-;; If you use `org' and don't want your org files in the default location below,
-;; change `org-directory'. It must be set before org loads!
-(setq org-directory "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode" )
 
 
 ;; Whenever you reconfigure a package, make sure to wrap your config in an
@@ -93,7 +90,7 @@
 ;; Yank from kill ring
 (map! :leader
       :desc "yank-from-kill-ring"
-      "Y" #'yank-from-kill-ring)
+      "y" #'yank-from-kill-ring)
 
 ;; Treemacs project
 (map! :leader
@@ -117,15 +114,17 @@
       :desc "insert-register"
       "4" #'insert-register)
 
+(map! :leader
+      :desc "org-id-get-create"
+      "5" #'org-id-get-create)
+
+(map! :leader
+      :desc "my/magit-submodule-update-init-recursive"
+      "6" #'my/magit-submodule-update-init-recursive)
 ;; Frame and buffer navigation
 (map! :leader
-      :desc "switch-to-other-frame"
-      "7" #'other-frame)
-
-;; Aider integration
-(map! :leader
-      :desc "aidermacs-add-file"
-      "8" #'aidermacs-add-file)
+      :desc "my/org-export-html-and-open"
+      "7" #'my/org-export-html-and-open)
 
 (map! :leader
       :desc "dired-jump"
@@ -177,6 +176,11 @@
 ;;; =========================================================================
 ;;; ORGMODE
 ;;; =========================================================================
+
+
+;; If you use `org' and don't want your org files in the default location below,
+;; change `org-directory'. It must be set before org loads!
+(setq org-directory "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode" )
 
 (require 'org)
 (after! org
@@ -232,7 +236,7 @@
         (message "This is not an org-mode buffer!")
       (save-excursion
         (let ((org-export-show-temporary-export-buffer nil))
-          (org-html-export-to-html nil 'visible-only nil nil)
+          (org-html-export-to-html nil )
           (browse-url-of-file (concat (file-name-sans-extension (buffer-file-name)) ".html"))))))
 
   ;; Configure org-mode for inline images
@@ -266,7 +270,7 @@
 
   ;; Ensure all your custom TODO states are included in the agenda
   (setq org-agenda-todo-keywords-for-agenda
-        '("TODO" "IN-PROGRESS" "IN-REVIEW" "BACKLOG" "BLOCKED"))
+        '("TODO" "IN-PROGRESS" "IN-REVIEW" "BACKLOG" "BLOCKED" "DONE" "CANCELLED" "DUPLICATE"))
 
   ;; Set which TODO states should be included in the agenda by default
   ;; This can include both active and inactive states
@@ -307,6 +311,10 @@
           (org-agenda-tag-filter-preset `(,(concat "+" tag))))
       (org-todo-list nil)))
 
+  (defun jethro/org-archive-done-tasks ()
+    "Archive all done tasks."
+    (interactive)
+    (org-map-entries 'org-archive-subtree "/DONE" 'file))
   )
 
 ;;; =========================================================================
@@ -446,6 +454,13 @@
 ;;; EDITOR
 ;;; =========================================================================
 ;;;
+
+
+;; Enable evil-visual-mark-mode
+(use-package evil-visual-mark-mode
+  :demand
+  :config
+  (evil-visual-mark-mode))
 
 ;; accept completion from copilot and fallback to company
 (use-package! copilot
