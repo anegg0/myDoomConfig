@@ -50,8 +50,8 @@
 ;; ...Or *all* packages (NOT RECOMMENDED; will likely break things)
 ;; (unpin! t)
 ;;
-(package! emacs-dropbox
-  :recipe (:host github :repo "lorniu/emacs-dropbox" :files ("*.el")))
+;; (package! emacs-dropbox
+;;   :recipe (:host github :repo "lorniu/emacs-dropbox" :files ("*.el")))
 
 
 ;; lsp tailwindcss

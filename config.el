@@ -163,7 +163,7 @@
 ;; Set initial frame size and position
 (setq initial-frame-alist
       (append initial-frame-alist
-              '((top . 1) (left . 1) (width . 230) (height . 180))))
+              '((top . 1) (left . 1) (width . 200) (height . 160))))
 
 ;; Solaire mode for better contrast
 (after! solaire-mode
@@ -266,7 +266,9 @@
                           (expand-file-name "daily" org-directory)
                           (expand-file-name "gtd" org-directory)
                           (expand-file-name "reference" org-directory)
-                          (expand-file-name "articles" org-directory)))
+                          (expand-file-name "articles" org-directory)
+                          ;; Explicitly include linear.org
+                          (expand-file-name "gtd/linear.org" org-directory)))
 
   ;; Ensure all your custom TODO states are included in the agenda
   (setq org-agenda-todo-keywords-for-agenda
@@ -307,7 +309,7 @@
     "Display all TODO states in org-todo-list filtered by TAG."
     (interactive "sTag: ")
     (let ((org-agenda-todo-keywords-for-agenda
-           '("TODO" "IN-PROGRESS" "IN-REVIEW" "BACKLOG" "BLOCKED"))
+           '("TODO" "IN-PROGRESS" "IN-REVIEW"))
           (org-agenda-tag-filter-preset `(,(concat "+" tag))))
       (org-todo-list nil)))
 
@@ -454,8 +456,6 @@
 ;;; EDITOR
 ;;; =========================================================================
 ;;;
-
-
 ;; Enable evil-visual-mark-mode
 (use-package evil-visual-mark-mode
   :demand
@@ -468,7 +468,17 @@
   :bind (:map copilot-completion-map
               ("C-<tab>" . 'copilot-accept-completion)
               ("C-TAB" . 'copilot-accept-completion-by-word)
-              ("<tab>" . 'copilot-accept-completion-by-word)))
+              ("<tab>" . 'copilot-accept-completion-by-word))
+  :config
+  (add-to-list 'copilot-indentation-alist '(prog-mode 2))
+  (add-to-list 'copilot-indentation-alist '(org-mode 2))
+  (add-to-list 'copilot-indentation-alist '(text-mode 2))
+  (add-to-list 'copilot-indentation-alist '(markdown-mode 2))
+  (add-to-list 'copilot-indentation-alist '(gfm-mode 2))
+  (add-to-list 'copilot-indentation-alist '(rust-mode 2))
+  (add-to-list 'copilot-indentation-alist '(emacs-lisp-mode 2))
+
+  )
 
 ;; Disable dired-omit-mode globally
 (remove-hook 'dired-mode-hook 'dired-omit-mode)
@@ -573,3 +583,128 @@ Version: 2015-12-08 2023-04-07"
   ;; Add advice to magit-checkout
   (advice-add 'magit-checkout :after #'my/magit-checkout-advice)
   )
+
+
+;;; =========================================================================
+;;; LINEAR
+;;; =========================================================================
+
+(defun my/linear-load-api-key-from-auth-source ()
+  "Load Linear API key from auth-source."
+  (interactive)
+  (require 'auth-source)
+  (let* ((auth-info (auth-source-search :host "api.linear.app" :user "apikey" :max 1))
+         (secret (when auth-info
+                   (funcall (plist-get (car auth-info) :secret)))))
+    (if secret
+        (progn
+          (setq linear-api-key secret)
+          (message "Successfully loaded Linear API key from auth-source"))
+      (message "Failed to retrieve Linear API key from auth-source"))))
+
+(after! linear
+  ;; (linear-load-api-key-from-env)
+  (my/linear-load-api-key-from-auth-source)
+  ;; Improved synchronization function that only updates the changed issue
+  (defun my/linear-sync-single-issue-at-point ()
+    "Sync only the current issue at point to Linear API."
+    (interactive)
+    (save-excursion
+      ;; Move to the beginning of the current heading
+      (org-back-to-heading t)
+      ;; Check if this is a Linear issue heading
+      (when (looking-at "^\\*\\*\\* \\(TODO\\|IN-PROGRESS\\|IN-REVIEW\\|BACKLOG\\|BLOCKED\\|DONE\\)")
+        (let ((todo-state (match-string 1))
+              (issue-id nil)
+              (issue-identifier nil)
+              (team-id nil))
+          ;; Get issue ID, identifier, and team ID from properties
+          (save-excursion
+            ;; Move to the property drawer
+            (forward-line)
+            (when (looking-at ":PROPERTIES:")
+              (forward-line)
+              (while (and (not (looking-at ":END:"))
+                          (not (eobp)))
+                (cond
+                 ((looking-at ":ID:\\s-+\\(.+\\)")
+                  (setq issue-id (match-string 1)))
+                 ((looking-at ":ID-LINEAR:\\s-+\\(.+\\)")
+                  (setq issue-identifier (match-string 1)))
+                 ;; Extract team ID from the TEAM property
+                 ((looking-at ":TEAM:\\s-+\\(.+\\)")
+                  ;; Fetch the actual team ID based on team name
+                  (let ((team-name (match-string 1)))
+                    (setq team-id (linear--get-team-id-by-name team-name)))))
+                (forward-line))))
+
+          ;; If we found an issue ID, state, and team ID, update the Linear API
+          (when (and issue-id issue-identifier team-id)
+            ;; Map org TODO state to Linear state
+            (let ((linear-state (cond
+                                 ((string= todo-state "TODO") "Todo")
+                                 ((string= todo-state "IN-PROGRESS") "In Progress")
+                                 ((string= todo-state "IN-REVIEW") "In Review")
+                                 ((string= todo-state "BACKLOG") "Backlog")
+                                 ((string= todo-state "BLOCKED") "Blocked")
+                                 ((string= todo-state "DONE") "Done")
+                                 (t nil))))
+              (when linear-state
+                (linear-update-issue-state issue-id linear-state team-id)
+                (message "Updated issue %s state to %s" issue-identifier linear-state))))))))
+
+  ;; Override linear-sync-org-to-linear to only sync the current issue
+  (defun linear-sync-org-to-linear ()
+    "Sync only the current issue to Linear API."
+    (interactive)
+    (my/linear-sync-single-issue-at-point))
+
+  ;; Run linear-list-issues before org-todo-list to include Linear issues
+  (defun my/run-linear-list-issues-before-todo (&rest _)
+    "Run linear-list-issues before org-todo-list to include Linear issues."
+    (when (fboundp 'linear-list-issues)
+      (message "Updating Linear issues before showing todo list...")
+      (condition-case err
+          (linear-list-issues)
+        (error (message "Error updating Linear issues: %s" (error-message-string err))))))
+
+  ;; Add advice to org-todo-list, but make it optional
+  (defvar my/auto-sync-linear-before-todo nil
+    "Whether to automatically sync Linear issues before showing todo list.")
+
+  (defun my/toggle-linear-auto-sync ()
+    "Toggle automatic syncing of Linear issues before todo list."
+    (interactive)
+    (setq my/auto-sync-linear-before-todo (not my/auto-sync-linear-before-todo))
+    (if my/auto-sync-linear-before-todo
+        (progn
+          (advice-add 'org-todo-list :before #'my/run-linear-list-issues-before-todo)
+          (message "Linear auto-sync before todo list enabled"))
+      (advice-remove 'org-todo-list #'my/run-linear-list-issues-before-todo)
+      (message "Linear auto-sync before todo list disabled")))
+
+  ;; Automatically enable two-way sync when linear.org is opened
+  (defun my/enable-linear-org-sync ()
+    "Enable Linear-org synchronization when linear.org is opened."
+    (when (and buffer-file-name
+               (string-match-p "linear\\.org$" buffer-file-name))
+      (when (fboundp 'linear-enable-org-sync)
+        (linear-enable-org-sync)
+        (message "Linear-org synchronization enabled for this buffer"))))
+
+  ;; Add hook to auto-enable sync when linear.org is opened
+  (add-hook 'find-file-hook #'my/enable-linear-org-sync)
+
+  ;; Enable sync for org-after-todo-state-change-hook globally
+  (add-hook 'org-after-todo-state-change-hook
+            (lambda ()
+              (when (and buffer-file-name
+                         (string-match-p "linear\\.org$" buffer-file-name)
+                         (fboundp 'linear-sync-org-to-linear))
+                (linear-sync-org-to-linear))))
+
+  ;; Add convenient keybinding for manually syncing all issues
+  (map! :leader
+        :prefix "l"
+        :desc "Sync all Linear issues" "s" #'linear-list-issues
+        :desc "Toggle Linear auto-sync" "t" #'my/toggle-linear-auto-sync))
