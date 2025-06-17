@@ -127,6 +127,14 @@
       "7" #'my/org-export-html-and-open)
 
 (map! :leader
+      :desc "my/org-md-export-to-markdown-visible-only"
+      "e m" #'my/org-md-export-to-markdown-visible-only)
+
+(map! :leader
+      :desc "consult-buffer"
+      "8" #'consult-buffer)
+
+(map! :leader
       :desc "dired-jump"
       "9" #'dired-jump)
 
@@ -172,6 +180,41 @@
 ;; Cursor settings
 (blink-cursor-mode 1)
 
+;; Custom Markdown export function that always uses visible-only option,
+;; removes anchor tags, and disables table of contents
+(defun my/org-md-export-to-markdown-visible-only (&optional async subtreep)
+  "Export current buffer to a Markdown file with visible-only option.
+This only exports the visible content, ignoring hidden elements.
+ASYNC and SUBTREEP have the same meaning as in `org-md-export-to-markdown`.
+Also removes anchor tags (<a id=\"org...\"></a>) from the output
+and disables the table of contents."
+  (interactive)
+  ;; Make sure ox-md is loaded
+  (require 'ox-md)
+  
+  ;; Set export options
+  (let* ((org-md-headline-style 'atx) ; Use # style headers instead of underlines
+         (org-html-self-link-headlines nil) ; Disable self-link headlines
+         (org-export-with-toc nil)) ; Disable table of contents
+    
+    ;; Call the original function with visible-only set to t
+    (let ((outfile (org-md-export-to-markdown async subtreep t)))
+      ;; Post-process to remove anchor tags
+      (with-temp-buffer
+        (insert-file-contents outfile)
+        (goto-char (point-min))
+        ;; Remove anchor tags
+        (while (re-search-forward "<a id=\"org[^\"]+\"></a>\n?" nil t)
+          (replace-match ""))
+        ;; Remove any TOC markers
+        (goto-char (point-min))
+        (when (re-search-forward "^\s*\\[TOC\\]\s*$" nil t)
+          (replace-match ""))
+        ;; Save the changes
+        (write-file outfile))
+      ;; Return the filename
+      outfile)))
+
 
 ;;; =========================================================================
 ;;; ORGMODE
@@ -192,6 +235,9 @@
    org-ellipsis " ▼ "
    org-adapt-indentation nil
    org-habit-show-habits-only-for-today t)
+  
+  ;; Disable company-mode in org-mode
+  (add-hook 'org-mode-hook (lambda () (company-mode -1)))
 
   ;; Hot-reload function for org-mode files
   (defun my/org-hot-reload-html-export ()
@@ -551,7 +597,11 @@ Version: 2015-12-08 2023-04-07"
               (when (and buffer-file-name
                          (string-match-p "\\.mdx\\'" buffer-file-name)
                          (not (eq major-mode 'gfm-mode)))
-                (gfm-mode)))))
+                (gfm-mode))))
+
+  ;; Disable company-mode for markdown files
+  (add-hook 'markdown-mode-hook (lambda () (company-mode -1)))
+  (add-hook 'gfm-mode-hook (lambda () (company-mode -1))))
 
 
 
