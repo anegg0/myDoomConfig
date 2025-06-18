@@ -150,12 +150,17 @@
       :desc "other-window"
       "]" #'other-window)
 
-
 (map! :leader
       :prefix ("r" . "org-roam")
       :n "F" #'my/org-roam-node-find-by-tag)
 
+(map! :leader
+      :prefix ("C" . "company-mode")
+      "C" #'company-mode)
 
+(map! :leader
+      :prefix ("P" . "copilot-mode")
+      "P" #'copilot-mode)
 ;;; =========================================================================
 ;;; APPEARANCE
 ;;; =========================================================================
@@ -502,6 +507,15 @@ and disables the table of contents."
 ;;; EDITOR
 ;;; =========================================================================
 ;;;
+
+(use-package evil
+  :init
+  (setq evil-undo-system 'undo-fu))
+
+(setq undo-limit 67108864) ; 64mb.
+(setq undo-strong-limit 100663296) ; 96mb.
+(setq undo-outer-limit 1006632960) ; 960mb.
+
 ;; Enable evil-visual-mark-mode
 (use-package evil-visual-mark-mode
   :demand
@@ -510,7 +524,9 @@ and disables the table of contents."
 
 ;; accept completion from copilot and fallback to company
 (use-package! copilot
-  :hook (prog-mode . copilot-mode)
+  :hook ((prog-mode . copilot-mode)
+         (git-commit-mode . copilot-mode)  ;; Enable copilot in git commit messages
+         (with-editor-mode . copilot-mode)) ;; Enable copilot in magit commit editor
   :bind (:map copilot-completion-map
               ("C-<tab>" . 'copilot-accept-completion)
               ("C-TAB" . 'copilot-accept-completion-by-word)
@@ -523,6 +539,8 @@ and disables the table of contents."
   (add-to-list 'copilot-indentation-alist '(gfm-mode 2))
   (add-to-list 'copilot-indentation-alist '(rust-mode 2))
   (add-to-list 'copilot-indentation-alist '(emacs-lisp-mode 2))
+  (add-to-list 'copilot-indentation-alist '(git-commit-mode 2))
+  (add-to-list 'copilot-indentation-alist '(with-editor-mode 2))
 
   )
 
