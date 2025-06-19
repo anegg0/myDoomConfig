@@ -523,17 +523,6 @@ and disables the table of contents."
               (find-file file))
             files))))
 
-(use-package! claudemacs)
-;; (require 'claudemacs)
-(define-key prog-mode-map (kbd "C-c C-e") #'claudemacs-transient-menu)
-(define-key emacs-lisp-mode-map (kbd "C-c C-e") #'claudemacs-transient-menu)
-(define-key text-mode-map (kbd "C-c C-e") #'claudemacs-transient-menu)
-(define-key python-base-mode-map (kbd "C-c C-e") #'claudemacs-transient-menu))
-
-;; Set a big buffer so we can search our history.
-(with-eval-after-load 'eat
-  (setq eat-term-scrollback-size 400000))
-
 (use-package evil
   :init
   (setq evil-undo-system 'undo-fu))
@@ -811,3 +800,69 @@ Version: 2015-12-08 2023-04-07"
 (add-to-list 'load-path "~/dev/org-notion/")
 
 (require 'org-notion)
+
+;;; =========================================================================
+;;; CLAUDEMACS
+;;; =========================================================================
+;;;
+
+;; font insanity for Claudemacs
+;;
+(defun my/setup-custom-font-fallbacks-mac ()
+  (interactive)
+  "Configure font fallbacks on mac for symbols and emojis.
+This will need to be called every time you change your font size,
+to load the new symbol and emoji fonts."
+
+  (setq use-default-font-for-symbols nil)
+
+  ;; --- Configure for 'symbol' script ---
+  ;; We add fonts one by one. Since we use 'prepend',
+  ;; the last one added here will be the first one Emacs tries.
+  ;; So, list them in reverse order of your preference.
+
+  ;; Least preferred among this list for symbols (will be at the end of our preferred list)
+  (set-fontset-font t 'symbol "Hiragino Sans" nil 'prepend)
+  (set-fontset-font t 'symbol "STIX Two Math" nil 'prepend)
+  (set-fontset-font t 'symbol "Zapf Dingbats" nil 'prepend)
+  (set-fontset-font t 'symbol "Monaco" nil 'prepend)
+  (set-fontset-font t 'symbol "Menlo" nil 'prepend)
+  ;; Most preferred for symbols -- use your main font here
+  (set-fontset-font t 'symbol "JetBrainsMono Nerd Font Mono" nil 'prepend)
+
+
+  ;; --- Configure for 'emoji' script ---
+  ;; Add fonts one by one, in reverse order of preference.
+
+  ;; Least preferred among this list for emojis
+  (set-fontset-font t 'emoji "Hiragino Sans" nil 'prepend)
+  (set-fontset-font t 'emoji "STIX Two Math" nil 'prepend)
+  (set-fontset-font t 'emoji "Zapf Dingbats" nil 'prepend)
+  (set-fontset-font t 'emoji "Monaco" nil 'prepend)
+  (set-fontset-font t 'emoji "Menlo" nil 'prepend)
+  ;; (set-fontset-font t 'emoji "Noto Emoji" nil 'prepend) ;; If you install Noto Emoji
+  ;; Most preferred for emojis -- use your main font here
+  (set-fontset-font t 'emoji "JetBrainsMono Nerd Font Mono" nil 'prepend))
+
+;; to test if you have a font family installed:
+                                        ;   (find-font (font-spec :family "Menlo"))
+
+;; Then, add the fonts after your setup is complete:
+
+;; Set a big buffer so we can search our history.
+(with-eval-after-load 'eat
+  (setq eat-term-scrollback-size 400000))
+
+(use-package! claudemacs)
+(after! claudemacs
+  ;; (require 'claudemacs)
+  (define-key prog-mode-map (kbd "C-c C-e") #'claudemacs-transient-menu)
+  (define-key emacs-lisp-mode-map (kbd "C-c C-e") #'claudemacs-transient-menu)
+  (define-key text-mode-map (kbd "C-c C-e") #'claudemacs-transient-menu)
+  (define-key python-base-mode-map (kbd "C-c C-e") #'claudemacs-transient-menu)
+
+  (add-hook 'emacs-startup-hook
+            (lambda ()
+              (progn
+                (when (string-equal system-type "darwin")
+                  (my/setup-custom-font-fallbacks-mac))))))
