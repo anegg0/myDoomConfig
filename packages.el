@@ -92,3 +92,4 @@
 (package! org-preview-html)
 (package! undo-fu)
 (package! undo-fu-session)
+(package! eat)
