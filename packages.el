@@ -93,3 +93,5 @@
 (package! undo-fu)
 (package! undo-fu-session)
 (package! eat)
+(package! claudemacs
+  :recipe (:host github :repo "cpoile/claudemacs"))

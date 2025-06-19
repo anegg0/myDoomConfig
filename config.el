@@ -523,7 +523,16 @@ and disables the table of contents."
               (find-file file))
             files))))
 
+(use-package! claudemacs)
+;; (require 'claudemacs)
+(define-key prog-mode-map (kbd "C-c C-e") #'claudemacs-transient-menu)
+(define-key emacs-lisp-mode-map (kbd "C-c C-e") #'claudemacs-transient-menu)
+(define-key text-mode-map (kbd "C-c C-e") #'claudemacs-transient-menu)
+(define-key python-base-mode-map (kbd "C-c C-e") #'claudemacs-transient-menu))
 
+;; Set a big buffer so we can search our history.
+(with-eval-after-load 'eat
+  (setq eat-term-scrollback-size 400000))
 
 (use-package evil
   :init
