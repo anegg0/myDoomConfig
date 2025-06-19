@@ -297,17 +297,18 @@ and disables the table of contents."
 
   ;; Custom TODO keywords
   (setq org-todo-keywords
-        '((sequence "TODO(t)" "IN-PROGRESS(i)" "IN-REVIEW(r)" "|" "BACKLOG(b)" "BLOCKED(l)" "DONE(d)" "CANCELED(c)" "DUPLICATE(p)")))
+        '((sequence "TODO(t)" "IN-PROGRESS(i)" "IN-REVIEW(r)" "|" "BACKLOG(b)" "BLOCKED(l)" "DONE(d)" "CANCELED(c)" "DUPLICATE(p)" "NEXT(n)" "HOLD(h)")))
 
   ;; Optional: Add custom faces for your TODO states
   (setq org-todo-keyword-faces
         '(("TODO" . (:foreground "red" :weight bold))
           ("IN-PROGRESS" . (:foreground "blue" :weight bold))
           ("IN-REVIEW" . (:foreground "orange" :weight bold))
-          ("BACKLOG" . (:foreground "orange" :weight bold))
+          ("BACKLOG" . (:foreground "purple" :weight bold))
           ("BLOCKED" . (:foreground "green" :weight bold))
           ("DONE" . (:foreground "green" :weight bold))
           ("CANCELLED" . (:foreground "gray" :weight bold))
+          ("NEXT" . (:foreground "gray" :weight bold))
           ("DUPLICATE" . (:foreground "black" :weight bold))))
 
   ;; Define org-agenda-files to include the right directories
@@ -323,7 +324,7 @@ and disables the table of contents."
 
   ;; Ensure all your custom TODO states are included in the agenda
   (setq org-agenda-todo-keywords-for-agenda
-        '("TODO" "IN-PROGRESS" "IN-REVIEW" "BACKLOG" "BLOCKED" "DONE" "CANCELLED" "DUPLICATE"))
+        '((sequence "TODO(t)" "IN-PROGRESS(i)" "IN-REVIEW(r)" "|" "BACKLOG(b)" "BLOCKED(l)" "DONE(d)" "CANCELED(c)" "DUPLICATE(p)" "NEXT(n)" "HOLD(h)")))
 
   ;; Set which TODO states should be included in the agenda by default
   ;; This can include both active and inactive states
@@ -507,6 +508,22 @@ and disables the table of contents."
 ;;; EDITOR
 ;;; =========================================================================
 ;;;
+
+;; Enable drag-and-drop functionality without emacsclient
+(defun my/drag-n-drop-handler (event)
+  "Handle files dropped onto Emacs frame."
+  (interactive "e")
+  (let* ((window (posn-window (event-start event)))
+         (files (mapcar (lambda (x)
+                          (if (eq system-type 'windows-nt)
+                              (substitute-in-file-name x) x))
+                        (car (last event)))))
+    (with-selected-window window
+      (mapc (lambda (file)
+              (find-file file))
+            files))))
+
+
 
 (use-package evil
   :init
@@ -776,3 +793,12 @@ Version: 2015-12-08 2023-04-07"
         :prefix "l"
         :desc "Sync all Linear issues" "s" #'linear-list-issues
         :desc "Toggle Linear auto-sync" "t" #'my/toggle-linear-auto-sync))
+
+;;; =========================================================================
+;;; org-notion
+;;; =========================================================================
+;;;
+
+(add-to-list 'load-path "~/dev/org-notion/")
+
+(require 'org-notion)
