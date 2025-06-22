@@ -806,6 +806,7 @@ Version: 2015-12-08 2023-04-07"
 ;;; =========================================================================
 ;;;
 
+;;
 ;; font insanity for Claudemacs
 ;;
 (defun my/setup-custom-font-fallbacks-mac ()
@@ -848,21 +849,23 @@ to load the new symbol and emoji fonts."
                                         ;   (find-font (font-spec :family "Menlo"))
 
 ;; Then, add the fonts after your setup is complete:
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (progn
+              (when (string-equal system-type "darwin")
+                (my/setup-custom-font-fallbacks-mac)))))
 
 ;; Set a big buffer so we can search our history.
 (with-eval-after-load 'eat
   (setq eat-term-scrollback-size 400000))
 
 (use-package! claudemacs)
-(after! claudemacs
-  ;; (require 'claudemacs)
-  (define-key prog-mode-map (kbd "C-c C-e") #'claudemacs-transient-menu)
-  (define-key emacs-lisp-mode-map (kbd "C-c C-e") #'claudemacs-transient-menu)
-  (define-key text-mode-map (kbd "C-c C-e") #'claudemacs-transient-menu)
-  (define-key python-base-mode-map (kbd "C-c C-e") #'claudemacs-transient-menu)
+;; (after! claudemacs
+(require 'claudemacs)
+(define-key prog-mode-map (kbd "C-c C-e") #'claudemacs-transient-menu)
+(define-key emacs-lisp-mode-map (kbd "C-c C-e") #'claudemacs-transient-menu)
+(define-key text-mode-map (kbd "C-c C-e") #'claudemacs-transient-menu)
 
-  (add-hook 'emacs-startup-hook
-            (lambda ()
-              (progn
-                (when (string-equal system-type "darwin")
-                  (my/setup-custom-font-fallbacks-mac))))))
+(defun greet (name)
+  "Greet someone by name"
+  (message "Hello, %s!" name))
