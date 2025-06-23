@@ -866,6 +866,149 @@ to load the new symbol and emoji fonts."
 (define-key emacs-lisp-mode-map (kbd "C-c C-e") #'claudemacs-transient-menu)
 (define-key text-mode-map (kbd "C-c C-e") #'claudemacs-transient-menu)
 
-(defun greet (name)
-  "Greet someone by name"
-  (message "Hello, %s!" name))
+;;; =========================================================================
+;;; DIRED INTEGRATION WITH ORG-ROAM
+;;; =========================================================================
+
+;; (defun my/dired-org-roam-tag-marked-files (tags)
+;;   "Add TAGS to all marked org files in Dired as org-roam tags.
+;; TAGS should be a list of strings. Only adds tags that don't already exist.
+;; Only processes .org files and skips all other file types."
+;;   (interactive
+;;    (list (let ((crm-separator "[ \t]*:[ \t]*"))
+;;            (completing-read-multiple "Tags to add (colon-separated): "
+;;                                      (org-roam-tag-completions)))))
+;;   (let ((marked-files (dired-get-marked-files))
+;;         (files-updated 0)
+;;         (non-org-files 0)
+;;         (non-roam-files 0)
+;;         (already-open-buffers nil))
+;;     (if (null marked-files)
+;;         (message "No files marked")
+;;       ;; First filter out non-org files
+;;       (let ((org-files (seq-filter (lambda (file)
+;;                                      (and (string-match-p "\\.org$" file)
+;;                                           (file-exists-p file)))
+;;                                    marked-files)))
+;;         (setq non-org-files (- (length marked-files) (length org-files)))
+
+;;         ;; Process org files
+;;         (dolist (file org-files)
+;;           (let ((buffer (find-buffer-visiting file))
+;;                 (was-open (get-file-buffer file)))
+;;             ;; If buffer is already open, use it; otherwise open the file
+;;             (with-current-buffer (or buffer (find-file-noselect file))
+;;               (condition-case err
+;;                   ;; Try to get org-roam node for the file
+;;                   (if-let ((file-node (org-roam-node-from-file (buffer-file-name))))
+;;                       (let* ((current-tags (org-roam-node-tags file-node))
+;;                              ;; Filter out tags that already exist
+;;                              (new-tags (seq-difference tags current-tags #'string-equal)))
+;;                         (when new-tags
+;;                           (condition-case tag-err
+;;                               (progn
+;;                                 (org-roam-tag-add new-tags)
+;;                                 (save-buffer)
+;;                                 (cl-incf files-updated))
+;;                             (error
+;;                              (message "Error adding tags to %s: %s"
+;;                                       (file-name-nondirectory file)
+;;                                       (error-message-string tag-err))))))
+;;                     ;; No org-roam node found
+;;                     (cl-incf non-roam-files))
+;;                 (error
+;;                  (cl-incf non-roam-files)
+;;                  (message "Error processing file %s: %s"
+;;                           (file-name-nondirectory file)
+;;                           (error-message-string err))))
+;;               ;; Only kill buffer if it wasn't already open
+;;               (unless was-open
+;;                 (kill-buffer)))))
+
+;;         ;; Detailed message about results
+;;         (cond
+;;          ((and (= files-updated 0) (> non-org-files 0) (> non-roam-files 0))
+;;           (message "No files updated. Skipped %d non-org files and %d non-roam files."
+;;                    non-org-files non-roam-files))
+;;          ((and (= files-updated 0) (> non-roam-files 0))
+;;           (message "No files updated. %d files were not org-roam nodes."
+;;                    non-roam-files))
+;;          ((> non-org-files 0)
+;;           (message "Added tags %s to %d org-roam files. Skipped %d non-org files and %d non-roam files."
+;;                    (mapconcat 'identity tags ", ") files-updated non-org-files non-roam-files))
+;;          (t
+;;           (message "Added tags %s to %d org-roam files"
+;;                    (mapconcat 'identity tags ", ") files-updated))))))
+
+;;   (defun my/dired-org-roam-ensure-filetags-property ()
+;;     "Add #+FILETAGS: property to marked .org files in Dired if it doesn't exist.
+;; Only processes .org files and skips all other file types."
+;;     (interactive)
+;;     (let ((marked-files (dired-get-marked-files))
+;;           (files-updated 0)
+;;           (non-org-files 0)
+;;           (already-had-property 0))
+;;       (if (null marked-files)
+;;           (message "No files marked")
+;;         ;; First filter out non-org files
+;;         (let ((org-files (seq-filter (lambda (file)
+;;                                        (and (string-match-p "\\.org$" file)
+;;                                             (file-exists-p file)))
+;;                                      marked-files)))
+;;           (setq non-org-files (- (length marked-files) (length org-files)))
+
+;;           ;; Process org files
+;;           (dolist (file org-files)
+;;             (let ((buffer (find-buffer-visiting file))
+;;                   (was-open (get-file-buffer file)))
+;;               ;; If buffer is already open, use it; otherwise open the file
+;;               (with-current-buffer (or buffer (find-file-noselect file))
+;;                 (condition-case err
+;;                     (save-excursion
+;;                       ;; Check if #+FILETAGS: already exists
+;;                       (goto-char (point-min))
+;;                       (if (re-search-forward "^#\\+FILETAGS:" nil t)
+;;                           (cl-incf already-had-property)
+;;                         (progn
+;;                           ;; Look for the proper position to add the property
+;;                           (goto-char (point-min))
+;;                           ;; Try to add it after #+TITLE or other common properties
+;;                           (if (re-search-forward "^#\\+\\(TITLE\\|AUTHOR\\|DATE\\|STARTUP\\|OPTIONS\\):" nil t)
+;;                               (progn
+;;                                 (forward-line 1)
+;;                                 (while (and (not (eobp)) (looking-at "^#\\+"))
+;;                                   (forward-line 1)))
+;;                             ;; If no such properties exist, add it at the very top
+;;                             (goto-char (point-min)))
+
+;;                           ;; Insert the FILETAGS property
+;;                           (if (bolp)
+;;                               (insert "#+FILETAGS: :\n")
+;;                             (insert "\n#+FILETAGS: :\n"))
+;;                           (save-buffer)
+;;                           (cl-incf files-updated))))
+;;                   (error
+;;                    (message "Error processing file %s: %s"
+;;                           (file-name-nondirectory file)
+;;                           (error-message-string err))))
+;;                 ;; Only kill buffer if it wasn't already open
+;;                 (unless was-open
+;;                   (kill-buffer))))))
+
+;;         ;; Detailed message about results
+;;         (cond
+;;          ((and (= files-updated 0) (= already-had-property 0) (> non-org-files 0))
+;;           (message "No files updated. Skipped %d non-org files." non-org-files))
+;;          ((and (= files-updated 0) (> already-had-property 0))
+;;           (message "No files updated. %d files already had the FILETAGS property. Skipped %d non-org files."
+;;                    already-had-property non-org-files))
+;;          (t
+;;           (message "Added FILETAGS property to %d files. %d already had it. Skipped %d non-org files."
+;;                    files-updated already-had-property non-org-files))))))
+
+;;   ;; Add keybindings for the dired org-roam functions
+;;   (after! dired
+;;     (map! :map dired-mode-map
+;;           :localleader
+;;           :desc "Add org-roam tags to marked files" "T" #'my/dired-org-roam-tag-marked-files
+;;           :desc "Ensure FILETAGS property in marked files" "F" #'my/dired-org-roam-ensure-filetags-property))
