@@ -72,7 +72,7 @@
        electric          ; smarter, keyword-based electric-indent
        ibuffer         ; interactive buffer management
        ;; (undo +tree)              ; persistent, smarter undo for your inevitable mistakes
-       ;; vc                ; version-control and emacs, sitting in a tree
+       vc                ; version-control and emacs, sitting in a tree
 
        :term
        ;;eshell            ; the elisp shell that works everywhere
@@ -97,7 +97,7 @@
        (eval +overlay)     ; run code, run (also, repls)
        lookup              ; navigate your code and its documentation
        lsp               ; M-x vscode
-       (magit +forge)            ; a git porcelain for Emacs
+       magit            ; a git porcelain for Emacs
        ;;make              ; run make tasks from Emacs
        pass              ; password manager for nerds
        pdf               ; pdf enhancements

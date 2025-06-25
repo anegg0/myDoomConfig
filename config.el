@@ -176,7 +176,7 @@
 ;; Set initial frame size and position
 (setq initial-frame-alist
       (append initial-frame-alist
-              '((top . 1) (left . 1) (width . 200) (height . 160))))
+              '((top . 1) (left . 1) (width . 200) (height . 140))))
 
 ;; Solaire mode for better contrast
 (after! solaire-mode
@@ -184,6 +184,13 @@
 
 ;; Cursor settings
 (blink-cursor-mode 1)
+
+
+
+;;; =========================================================================
+;;; ORGMODE
+;;; =========================================================================
+
 
 ;; Custom Markdown export function that always uses visible-only option,
 ;; removes anchor tags, and disables table of contents
@@ -196,12 +203,12 @@ and disables the table of contents."
   (interactive)
   ;; Make sure ox-md is loaded
   (require 'ox-md)
-  
+
   ;; Set export options
   (let* ((org-md-headline-style 'atx) ; Use # style headers instead of underlines
          (org-html-self-link-headlines nil) ; Disable self-link headlines
          (org-export-with-toc nil)) ; Disable table of contents
-    
+
     ;; Call the original function with visible-only set to t
     (let ((outfile (org-md-export-to-markdown async subtreep t)))
       ;; Post-process to remove anchor tags
@@ -219,12 +226,6 @@ and disables the table of contents."
         (write-file outfile))
       ;; Return the filename
       outfile)))
-
-
-;;; =========================================================================
-;;; ORGMODE
-;;; =========================================================================
-
 
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
@@ -507,7 +508,6 @@ and disables the table of contents."
 ;;; =========================================================================
 ;;; EDITOR
 ;;; =========================================================================
-;;;
 
 ;; Enable drag-and-drop functionality without emacsclient
 (defun my/drag-n-drop-handler (event)
@@ -791,224 +791,3 @@ Version: 2015-12-08 2023-04-07"
         :prefix "l"
         :desc "Sync all Linear issues" "s" #'linear-list-issues
         :desc "Toggle Linear auto-sync" "t" #'my/toggle-linear-auto-sync))
-
-;;; =========================================================================
-;;; org-notion
-;;; =========================================================================
-;;;
-
-(add-to-list 'load-path "~/dev/org-notion/")
-
-(require 'org-notion)
-
-;;; =========================================================================
-;;; CLAUDEMACS
-;;; =========================================================================
-;;;
-
-;;
-;; font insanity for Claudemacs
-;;
-(defun my/setup-custom-font-fallbacks-mac ()
-  (interactive)
-  "Configure font fallbacks on mac for symbols and emojis.
-This will need to be called every time you change your font size,
-to load the new symbol and emoji fonts."
-
-  (setq use-default-font-for-symbols nil)
-
-  ;; --- Configure for 'symbol' script ---
-  ;; We add fonts one by one. Since we use 'prepend',
-  ;; the last one added here will be the first one Emacs tries.
-  ;; So, list them in reverse order of your preference.
-
-  ;; Least preferred among this list for symbols (will be at the end of our preferred list)
-  (set-fontset-font t 'symbol "Hiragino Sans" nil 'prepend)
-  (set-fontset-font t 'symbol "STIX Two Math" nil 'prepend)
-  (set-fontset-font t 'symbol "Zapf Dingbats" nil 'prepend)
-  (set-fontset-font t 'symbol "Monaco" nil 'prepend)
-  (set-fontset-font t 'symbol "Menlo" nil 'prepend)
-  ;; Most preferred for symbols -- use your main font here
-  (set-fontset-font t 'symbol "JetBrainsMono Nerd Font Mono" nil 'prepend)
-
-
-  ;; --- Configure for 'emoji' script ---
-  ;; Add fonts one by one, in reverse order of preference.
-
-  ;; Least preferred among this list for emojis
-  (set-fontset-font t 'emoji "Hiragino Sans" nil 'prepend)
-  (set-fontset-font t 'emoji "STIX Two Math" nil 'prepend)
-  (set-fontset-font t 'emoji "Zapf Dingbats" nil 'prepend)
-  (set-fontset-font t 'emoji "Monaco" nil 'prepend)
-  (set-fontset-font t 'emoji "Menlo" nil 'prepend)
-  ;; (set-fontset-font t 'emoji "Noto Emoji" nil 'prepend) ;; If you install Noto Emoji
-  ;; Most preferred for emojis -- use your main font here
-  (set-fontset-font t 'emoji "JetBrainsMono Nerd Font Mono" nil 'prepend))
-
-;; to test if you have a font family installed:
-                                        ;   (find-font (font-spec :family "Menlo"))
-
-;; Then, add the fonts after your setup is complete:
-(add-hook 'emacs-startup-hook
-          (lambda ()
-            (progn
-              (when (string-equal system-type "darwin")
-                (my/setup-custom-font-fallbacks-mac)))))
-
-;; Set a big buffer so we can search our history.
-(with-eval-after-load 'eat
-  (setq eat-term-scrollback-size 400000))
-
-(use-package! claudemacs)
-;; (after! claudemacs
-(require 'claudemacs)
-(define-key prog-mode-map (kbd "C-c C-e") #'claudemacs-transient-menu)
-(define-key emacs-lisp-mode-map (kbd "C-c C-e") #'claudemacs-transient-menu)
-(define-key text-mode-map (kbd "C-c C-e") #'claudemacs-transient-menu)
-
-;;; =========================================================================
-;;; DIRED INTEGRATION WITH ORG-ROAM
-;;; =========================================================================
-
-;; (defun my/dired-org-roam-tag-marked-files (tags)
-;;   "Add TAGS to all marked org files in Dired as org-roam tags.
-;; TAGS should be a list of strings. Only adds tags that don't already exist.
-;; Only processes .org files and skips all other file types."
-;;   (interactive
-;;    (list (let ((crm-separator "[ \t]*:[ \t]*"))
-;;            (completing-read-multiple "Tags to add (colon-separated): "
-;;                                      (org-roam-tag-completions)))))
-;;   (let ((marked-files (dired-get-marked-files))
-;;         (files-updated 0)
-;;         (non-org-files 0)
-;;         (non-roam-files 0)
-;;         (already-open-buffers nil))
-;;     (if (null marked-files)
-;;         (message "No files marked")
-;;       ;; First filter out non-org files
-;;       (let ((org-files (seq-filter (lambda (file)
-;;                                      (and (string-match-p "\\.org$" file)
-;;                                           (file-exists-p file)))
-;;                                    marked-files)))
-;;         (setq non-org-files (- (length marked-files) (length org-files)))
-
-;;         ;; Process org files
-;;         (dolist (file org-files)
-;;           (let ((buffer (find-buffer-visiting file))
-;;                 (was-open (get-file-buffer file)))
-;;             ;; If buffer is already open, use it; otherwise open the file
-;;             (with-current-buffer (or buffer (find-file-noselect file))
-;;               (condition-case err
-;;                   ;; Try to get org-roam node for the file
-;;                   (if-let ((file-node (org-roam-node-from-file (buffer-file-name))))
-;;                       (let* ((current-tags (org-roam-node-tags file-node))
-;;                              ;; Filter out tags that already exist
-;;                              (new-tags (seq-difference tags current-tags #'string-equal)))
-;;                         (when new-tags
-;;                           (condition-case tag-err
-;;                               (progn
-;;                                 (org-roam-tag-add new-tags)
-;;                                 (save-buffer)
-;;                                 (cl-incf files-updated))
-;;                             (error
-;;                              (message "Error adding tags to %s: %s"
-;;                                       (file-name-nondirectory file)
-;;                                       (error-message-string tag-err))))))
-;;                     ;; No org-roam node found
-;;                     (cl-incf non-roam-files))
-;;                 (error
-;;                  (cl-incf non-roam-files)
-;;                  (message "Error processing file %s: %s"
-;;                           (file-name-nondirectory file)
-;;                           (error-message-string err))))
-;;               ;; Only kill buffer if it wasn't already open
-;;               (unless was-open
-;;                 (kill-buffer)))))
-
-;;         ;; Detailed message about results
-;;         (cond
-;;          ((and (= files-updated 0) (> non-org-files 0) (> non-roam-files 0))
-;;           (message "No files updated. Skipped %d non-org files and %d non-roam files."
-;;                    non-org-files non-roam-files))
-;;          ((and (= files-updated 0) (> non-roam-files 0))
-;;           (message "No files updated. %d files were not org-roam nodes."
-;;                    non-roam-files))
-;;          ((> non-org-files 0)
-;;           (message "Added tags %s to %d org-roam files. Skipped %d non-org files and %d non-roam files."
-;;                    (mapconcat 'identity tags ", ") files-updated non-org-files non-roam-files))
-;;          (t
-;;           (message "Added tags %s to %d org-roam files"
-;;                    (mapconcat 'identity tags ", ") files-updated))))))
-
-;;   (defun my/dired-org-roam-ensure-filetags-property ()
-;;     "Add #+FILETAGS: property to marked .org files in Dired if it doesn't exist.
-;; Only processes .org files and skips all other file types."
-;;     (interactive)
-;;     (let ((marked-files (dired-get-marked-files))
-;;           (files-updated 0)
-;;           (non-org-files 0)
-;;           (already-had-property 0))
-;;       (if (null marked-files)
-;;           (message "No files marked")
-;;         ;; First filter out non-org files
-;;         (let ((org-files (seq-filter (lambda (file)
-;;                                        (and (string-match-p "\\.org$" file)
-;;                                             (file-exists-p file)))
-;;                                      marked-files)))
-;;           (setq non-org-files (- (length marked-files) (length org-files)))
-
-;;           ;; Process org files
-;;           (dolist (file org-files)
-;;             (let ((buffer (find-buffer-visiting file))
-;;                   (was-open (get-file-buffer file)))
-;;               ;; If buffer is already open, use it; otherwise open the file
-;;               (with-current-buffer (or buffer (find-file-noselect file))
-;;                 (condition-case err
-;;                     (save-excursion
-;;                       ;; Check if #+FILETAGS: already exists
-;;                       (goto-char (point-min))
-;;                       (if (re-search-forward "^#\\+FILETAGS:" nil t)
-;;                           (cl-incf already-had-property)
-;;                         (progn
-;;                           ;; Look for the proper position to add the property
-;;                           (goto-char (point-min))
-;;                           ;; Try to add it after #+TITLE or other common properties
-;;                           (if (re-search-forward "^#\\+\\(TITLE\\|AUTHOR\\|DATE\\|STARTUP\\|OPTIONS\\):" nil t)
-;;                               (progn
-;;                                 (forward-line 1)
-;;                                 (while (and (not (eobp)) (looking-at "^#\\+"))
-;;                                   (forward-line 1)))
-;;                             ;; If no such properties exist, add it at the very top
-;;                             (goto-char (point-min)))
-
-;;                           ;; Insert the FILETAGS property
-;;                           (if (bolp)
-;;                               (insert "#+FILETAGS: :\n")
-;;                             (insert "\n#+FILETAGS: :\n"))
-;;                           (save-buffer)
-;;                           (cl-incf files-updated))))
-;;                   (error
-;;                    (message "Error processing file %s: %s"
-;;                           (file-name-nondirectory file)
-;;                           (error-message-string err))))
-;;                 ;; Only kill buffer if it wasn't already open
-;;                 (unless was-open
-;;                   (kill-buffer))))))
-
-;;         ;; Detailed message about results
-;;         (cond
-;;          ((and (= files-updated 0) (= already-had-property 0) (> non-org-files 0))
-;;           (message "No files updated. Skipped %d non-org files." non-org-files))
-;;          ((and (= files-updated 0) (> already-had-property 0))
-;;           (message "No files updated. %d files already had the FILETAGS property. Skipped %d non-org files."
-;;                    already-had-property non-org-files))
-;;          (t
-;;           (message "Added FILETAGS property to %d files. %d already had it. Skipped %d non-org files."
-;;                    files-updated already-had-property non-org-files))))))
-
-;;   ;; Add keybindings for the dired org-roam functions
-;;   (after! dired
-;;     (map! :map dired-mode-map
-;;           :localleader
-;;           :desc "Add org-roam tags to marked files" "T" #'my/dired-org-roam-tag-marked-files
-;;           :desc "Ensure FILETAGS property in marked files" "F" #'my/dired-org-roam-ensure-filetags-property))

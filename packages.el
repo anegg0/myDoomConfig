@@ -1,4 +1,3 @@
-
 ;; -*- no-byte-compile: t; -*-
 ;;; $DOOMDIR/packages.el
 
@@ -93,5 +92,5 @@
 (package! undo-fu)
 (package! undo-fu-session)
 (package! eat)
-(package! claudemacs
-  :recipe (:host github :repo "cpoile/claudemacs"))
+(package! glab)
+(package! gtea)
