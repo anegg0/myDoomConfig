@@ -298,7 +298,7 @@ and disables the table of contents."
 
   ;; Custom TODO keywords
   (setq org-todo-keywords
-        '((sequence "TODO(t)" "IN-PROGRESS(i)" "IN-REVIEW(r)" "|" "BACKLOG(b)" "BLOCKED(l)" "DONE(d)" "CANCELED(c)" "DUPLICATE(p)" "NEXT(n)" "HOLD(h)")))
+        '((sequence "TODO(t)" "IN-PROGRESS(i)" "IN-REVIEW(r)" "|" "BACKLOG(b)" "BLOCKED(l)" "DONE(d)" "CANCELED(c)" "DUPLICATE(p)" "NEXT(n)" "HOLD(h)" "WAITING-ON(w)")))
 
   ;; Optional: Add custom faces for your TODO states
   (setq org-todo-keyword-faces
@@ -325,7 +325,7 @@ and disables the table of contents."
 
   ;; Ensure all your custom TODO states are included in the agenda
   (setq org-agenda-todo-keywords-for-agenda
-        '((sequence "TODO(t)" "IN-PROGRESS(i)" "IN-REVIEW(r)" "|" "BACKLOG(b)" "BLOCKED(l)" "DONE(d)" "CANCELED(c)" "DUPLICATE(p)" "NEXT(n)" "HOLD(h)")))
+        '((sequence "TODO(t)" "IN-PROGRESS(i)" "IN-REVIEW(r)" "|" "BACKLOG(b)" "BLOCKED(l)" "DONE(d)" "CANCELED(c)" "DUPLICATE(p)" "NEXT(n)" "HOLD(h)" "WAITING-ON(w)")))
 
   ;; Set which TODO states should be included in the agenda by default
   ;; This can include both active and inactive states
@@ -362,7 +362,7 @@ and disables the table of contents."
     "Display all TODO states in org-todo-list filtered by TAG."
     (interactive "sTag: ")
     (let ((org-agenda-todo-keywords-for-agenda
-           '("TODO" "IN-PROGRESS" "IN-REVIEW"))
+           '("TODO(t)" "IN-PROGRESS(i)" "IN-REVIEW(r)" "|" "BACKLOG(b)" "BLOCKED(l)" "DONE(d)" "CANCELED(c)" "DUPLICATE(p)" "NEXT(n)" "HOLD(h)" "WAITING-ON(w)"))
           (org-agenda-tag-filter-preset `(,(concat "+" tag))))
       (org-todo-list nil)))
 
