@@ -419,12 +419,22 @@ and disables the table of contents."
 
           ("c" "catb" plain
            "%?"
-           :if-new (file+head "main/gb_b_catb_${slug}.org"
+           :if-new (file+head "catb/${slug}.org"
                               "#+title: ${title}\n#+TAGS: :\n#+FILETAGS: :catb:\n")
            :immediate-finish t
            :unnarrowed t)
-          ;; ("s" "Slipbox" entry  (file "/braindump/org/braindump.org")
-          ;;  "* %?\n")
+          ("o" "OCL" plain
+           "%?"
+           :if-new (file+head "OCL/OCL_${slug}.org"
+                              "#+title: ${title}\n#+TAGS: :\n#+FILETAGS: :OCL:e:\n")
+           :immediate-finish t
+           :unnarrowed t)
+          ("p" "prompts" plain
+           "%?"
+           :if-new (file+head "prompts/twai_${slug}.org"
+                              "#+title: ${title}\n#+TAGS: :\n#+FILETAGS: :twai:e:\n")
+           :immediate-finish t
+           :unnarrowed t)
           ("r" "reference" plain "%?"
            :if-new
            (file+head "reference/${slug}.org" "#+title: ${title}\n")
@@ -508,6 +518,9 @@ and disables the table of contents."
 ;;; =========================================================================
 ;;; EDITOR
 ;;; =========================================================================
+
+;; Enable word-wrap-mode globally
+(global-visual-line-mode 1)
 
 ;; Enable drag-and-drop functionality without emacsclient
 (defun my/drag-n-drop-handler (event)
