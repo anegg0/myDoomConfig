@@ -126,6 +126,11 @@
       :desc "my/org-export-html-and-open"
       "7" #'my/org-export-html-and-open)
 
+;; Terminal
+(map! :leader
+      :desc "eat terminal"
+      "o e" #'my/eat-popup)
+
 (map! :leader
       :desc "my/org-md-export-to-markdown-visible-only"
       "e m" #'my/org-md-export-to-markdown-visible-only)
@@ -863,6 +868,17 @@ to load the new symbol and emoji fonts."
 ;; Set a big buffer so we can search our history.
 (with-eval-after-load 'eat
   (setq eat-term-scrollback-size 400000))
+
+;; Configure eat popup
+(set-popup-rules!
+  '(("^\\*eat\\*" :side bottom :size 0.4 :select t :quit nil :ttl nil)
+    ("^\\*eat:.+\\*$" :side bottom :size 0.4 :select t :quit nil :ttl nil)))
+
+;; Wrapper function to ensure eat opens in popup
+(defun my/eat-popup ()
+  "Open eat terminal in a popup window."
+  (interactive)
+  (eat))
 
 (use-package! claudemacs)
 ;; (after! claudemacs
