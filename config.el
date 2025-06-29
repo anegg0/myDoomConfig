@@ -524,6 +524,10 @@ and disables the table of contents."
 ;;; EDITOR
 ;;; =========================================================================
 
+;; Make white spaces visible in programming modes.
+(after! prog-mode
+  (add-hook! prog-mode #'whitespace-mode))
+
 ;; Enable word-wrap-mode globally
 (global-visual-line-mode 1)
 
@@ -885,3 +889,15 @@ to load the new symbol and emoji fonts."
 (define-key prog-mode-map (kbd "C-c C-e") #'claudemacs-transient-menu)
 (define-key emacs-lisp-mode-map (kbd "C-c C-e") #'claudemacs-transient-menu)
 (define-key text-mode-map (kbd "C-c C-e") #'claudemacs-transient-menu)
+
+
+;;; =========================================================================
+;;; SSH
+;;; =========================================================================
+
+(setq tramp-default-method "ssh")
+(setq tramp-ssh-controlmaster-options
+      "-o ControlMaster=auto -o ControlPath='tramp.%%C' -o ControlPersist=no")
+(after! tramp-sh
+  (setq tramp-use-connection-share nil
+        tramp-chunksize 2000))
