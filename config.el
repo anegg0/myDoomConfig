@@ -524,6 +524,29 @@ and disables the table of contents."
 ;;; EDITOR
 ;;; =========================================================================
 
+(setq +lsp-backend 'eglot)
+
+;; Show Eglot status in modeline
+(setq eglot-report-progress t)
+
+;; Custom modeline segment for Eglot
+(defun +modeline-eglot-status ()
+  "Display Eglot connection status."
+  (when (and (bound-and-true-p eglot--managed-mode)
+             (eglot-current-server))
+    (let* ((server (eglot-current-server))
+           (nick (eglot--project-nickname server))
+           (status (if (eglot--shutdown-requested server)
+                       "disconnected"
+                     "connected")))
+      (propertize (format " LSP[%s:%s]" nick status)
+                  'face (if (string= status "connected")
+                            'success
+                          'error)))))
+
+;; Add to modeline
+(add-to-list 'global-mode-string '(:eval (+modeline-eglot-status)))
+
 ;; Make white spaces visible in programming modes.
 (after! prog-mode
   (add-hook! prog-mode #'whitespace-mode))
