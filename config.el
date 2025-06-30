@@ -524,6 +524,23 @@ and disables the table of contents."
 ;;; EDITOR
 ;;; =========================================================================
 
+
+
+;; Better workspace session support
+(after! desktop
+  (setq desktop-restore-frames t
+        desktop-restore-in-current-display t
+        desktop-restore-forces-onscreen t)
+
+  ;; Save workspace information
+  (add-to-list 'desktop-globals-to-save '+workspace--list)
+  (add-to-list 'desktop-globals-to-save '+workspace--index))
+
+;; Ensure workspaces are restored properly
+(after! persp-mode
+  (setq persp-auto-save-opt 1
+        persp-auto-resume-time 1.0))
+
 (setq +lsp-backend 'eglot)
 
 ;; Show Eglot status in modeline
@@ -924,3 +941,30 @@ to load the new symbol and emoji fonts."
 (after! tramp-sh
   (setq tramp-use-connection-share nil
         tramp-chunksize 2000))
+
+(after! tramp
+  ;; Use bash for TRAMP connections
+  (setenv "SHELL" "/bin/bash")
+
+  ;; More comprehensive prompt pattern
+  (setq tramp-shell-prompt-pattern
+        "\\(?:^\\|\n\\|\x0d\\)[^]#$%>\n]*#?[]#$%>] *\\(\e\\[[0-9;]*[a-zA-Z] *\\)*")
+
+  ;; Additional TRAMP optimizations
+  (setq tramp-default-method "ssh"
+        tramp-copy-size-limit nil
+        tramp-use-connection-share nil
+        tramp-verbose 6  ;; Enable debugging
+        tramp-connection-timeout 10  ;; Set connection timeout
+        password-cache-expiry nil  ;; Keep passwords in cache
+        tramp-completion-reread-directory-timeout nil)  ;; Disable auto-refresh
+
+  ;; Ensure clean remote environment
+  (setq tramp-remote-shell "/bin/bash"
+        tramp-remote-shell-args '("-c"))
+  
+  ;; Disable version control for TRAMP files (can cause freezing)
+  (setq vc-ignore-dir-regexp
+        (format "\\(%s\\)\\|\\(%s\\)"
+                vc-ignore-dir-regexp
+                tramp-file-name-regexp)))
