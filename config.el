@@ -524,23 +524,6 @@ and disables the table of contents."
 ;;; EDITOR
 ;;; =========================================================================
 
-
-
-;; Better workspace session support
-(after! desktop
-  (setq desktop-restore-frames t
-        desktop-restore-in-current-display t
-        desktop-restore-forces-onscreen t)
-
-  ;; Save workspace information
-  (add-to-list 'desktop-globals-to-save '+workspace--list)
-  (add-to-list 'desktop-globals-to-save '+workspace--index))
-
-;; Ensure workspaces are restored properly
-(after! persp-mode
-  (setq persp-auto-save-opt 1
-        persp-auto-resume-time 1.0))
-
 (setq +lsp-backend 'eglot)
 
 ;; Show Eglot status in modeline
