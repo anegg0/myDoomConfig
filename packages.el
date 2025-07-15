@@ -96,3 +96,4 @@
 (package! claudemacs
   :recipe (:host github :repo "cpoile/claudemacs"))
 (package! spell-fu)
+(package! copilot-chat)

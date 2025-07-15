@@ -9,7 +9,8 @@
      "10e5d4cc0f67ed5cafac0f4252093d2119ee8b8cb449e7053273453c1a1eb7cc"
      "0325a6b5eea7e5febae709dab35ec8648908af12cf2d2b569bedc8da0a3a81c1" default))
  '(ignored-local-variable-values '((flycheck-disabled-checkers proselint textlint)))
- '(package-selected-packages '(async glab org-preview-html undo-fu undo-fu-session))
+ '(package-selected-packages
+   '(async copilot-chat glab org-preview-html undo-fu undo-fu-session))
  '(safe-local-variable-values
    '((eval add-hook 'after-save-hook 'org-html-export-to-html t t)
      (checkdoc-allow-quoting-nil-and-t . t)
