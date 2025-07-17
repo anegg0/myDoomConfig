@@ -171,7 +171,7 @@
 ;;; =========================================================================
 
 ;; Font settings
-(setq doom-font (font-spec :family "Fira Code" :size 11))
+(setq doom-font (font-spec :family "Fira Code" :size 18))
 
 
 ;; Frame transparency
@@ -752,6 +752,7 @@ Version: 2015-12-08 2023-04-07"
 (after! linear
   ;; (linear-load-api-key-from-env)
   (my/linear-load-api-key-from-auth-source)
+  (setq linear-org-file-path (expand-file-name "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/gtd/linear.org" org-directory))
   ;; Improved synchronization function that only updates the changed issue
   (defun my/linear-sync-single-issue-at-point ()
     "Sync only the current issue at point to Linear API."
