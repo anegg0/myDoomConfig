@@ -171,7 +171,7 @@
 ;;; =========================================================================
 
 ;; Font settings
-(setq doom-font (font-spec :family "Fira Code" :size 18))
+(setq doom-font (font-spec :family "Fira Code" :size 16))
 
 
 ;; Frame transparency
@@ -181,7 +181,8 @@
 ;; Set initial frame size and position
 (setq initial-frame-alist
       (append initial-frame-alist
-              '((top . 1) (left . 1) (width . 200) (height . 140))))
+              '((top . 1) (left . 1) (width . 180) (height . 140))))
+;; '((top . 1) (left . 1) (width . 200) (height . 140))))
 
 ;; Solaire mode for better contrast
 (after! solaire-mode
@@ -736,6 +737,10 @@ Version: 2015-12-08 2023-04-07"
 ;;; LINEAR
 ;;; =========================================================================
 
+;; Load linear-emacs from local development directory
+(add-load-path! "~/dev/linear-emacs/")
+(require 'linear-emacs nil t)
+
 (defun my/linear-load-api-key-from-auth-source ()
   "Load Linear API key from auth-source."
   (interactive)
@@ -745,14 +750,14 @@ Version: 2015-12-08 2023-04-07"
                    (funcall (plist-get (car auth-info) :secret)))))
     (if secret
         (progn
-          (setq linear-api-key secret)
+          (setq linear-emacs-api-key secret)
           (message "Successfully loaded Linear API key from auth-source"))
       (message "Failed to retrieve Linear API key from auth-source"))))
 
-(after! linear
-  ;; (linear-load-api-key-from-env)
+(after! linear-emacs
+  ;; (linear-emacs-load-api-key-from-env)
   (my/linear-load-api-key-from-auth-source)
-  (setq linear-org-file-path (expand-file-name "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/gtd/linear.org" org-directory))
+  (setq linear-emacs-org-file-path (expand-file-name "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/gtd/linear.org" org-directory))
   ;; Improved synchronization function that only updates the changed issue
   (defun my/linear-sync-single-issue-at-point ()
     "Sync only the current issue at point to Linear API."
@@ -783,37 +788,39 @@ Version: 2015-12-08 2023-04-07"
                  ((looking-at ":TEAM:\\s-+\\(.+\\)")
                   ;; Fetch the actual team ID based on team name
                   (let ((team-name (match-string 1)))
-                    (setq team-id (linear--get-team-id-by-name team-name)))))
+                    (setq team-id (linear-emacs--get-team-id-by-name team-name)))))
                 (forward-line))))
 
           ;; If we found an issue ID, state, and team ID, update the Linear API
           (when (and issue-id issue-identifier team-id)
             ;; Map org TODO state to Linear state
-            (let ((linear-state (cond
-                                 ((string= todo-state "TODO") "Todo")
-                                 ((string= todo-state "IN-PROGRESS") "In Progress")
-                                 ((string= todo-state "IN-REVIEW") "In Review")
-                                 ((string= todo-state "BACKLOG") "Backlog")
-                                 ((string= todo-state "BLOCKED") "Blocked")
-                                 ((string= todo-state "DONE") "Done")
-                                 (t nil))))
-              (when linear-state
-                (linear-update-issue-state issue-id linear-state team-id)
-                (message "Updated issue %s state to %s" issue-identifier linear-state))))))))
+            (let ((linear-emacs-state (cond
+                                       ((string= todo-state "TODO") "Todo")
+                                       ((string= todo-state "IN-PROGRESS") "In Progress")
+                                       ((string= todo-state "IN-REVIEW") "In Review")
+                                       ((string= todo-state "BACKLOG") "Backlog")
+                                       ((string= todo-state "BLOCKED") "Blocked")
+                                       ((string= todo-state "DONE") "Done")
+                                       (t nil))))
+              (when linear-emacs-state
+                (linear-emacs--update-issue-state-async issue-id linear-emacs-state team-id))))))))
 
-  ;; Override linear-sync-org-to-linear to only sync the current issue
-  (defun linear-sync-org-to-linear ()
+  ;; Override linear-emacs-sync-org-to-linear to only sync the current issue
+  (defun linear-emacs-sync-org-to-linear ()
     "Sync only the current issue to Linear API."
     (interactive)
-    (my/linear-sync-single-issue-at-point))
+    (if (eq this-command 'org-todo)
+        (my/linear-sync-single-issue-at-point)
+      ;; For manual sync, use the original function from linear-emacs
+      (linear-emacs-sync-current-heading-to-linear)))
 
-  ;; Run linear-list-issues before org-todo-list to include Linear issues
-  (defun my/run-linear-list-issues-before-todo (&rest _)
-    "Run linear-list-issues before org-todo-list to include Linear issues."
-    (when (fboundp 'linear-list-issues)
+  ;; Run linear-emacs-list-issues before org-todo-list to include Linear issues
+  (defun my/run-linear-emacs-list-issues-before-todo (&rest _)
+    "Run linear-emacs-list-issues before org-todo-list to include Linear issues."
+    (when (fboundp 'linear-emacs-list-issues)
       (message "Updating Linear issues before showing todo list...")
       (condition-case err
-          (linear-list-issues)
+          (linear-emacs-list-issues)
         (error (message "Error updating Linear issues: %s" (error-message-string err))))))
 
   ;; Add advice to org-todo-list, but make it optional
@@ -826,9 +833,9 @@ Version: 2015-12-08 2023-04-07"
     (setq my/auto-sync-linear-before-todo (not my/auto-sync-linear-before-todo))
     (if my/auto-sync-linear-before-todo
         (progn
-          (advice-add 'org-todo-list :before #'my/run-linear-list-issues-before-todo)
+          (advice-add 'org-todo-list :before #'my/run-linear-emacs-list-issues-before-todo)
           (message "Linear auto-sync before todo list enabled"))
-      (advice-remove 'org-todo-list #'my/run-linear-list-issues-before-todo)
+      (advice-remove 'org-todo-list #'my/run-linear-emacs-list-issues-before-todo)
       (message "Linear auto-sync before todo list disabled")))
 
   ;; Automatically enable two-way sync when linear.org is opened
@@ -836,8 +843,8 @@ Version: 2015-12-08 2023-04-07"
     "Enable Linear-org synchronization when linear.org is opened."
     (when (and buffer-file-name
                (string-match-p "linear\\.org$" buffer-file-name))
-      (when (fboundp 'linear-enable-org-sync)
-        (linear-enable-org-sync)
+      (when (fboundp 'linear-emacs-enable-org-sync)
+        (linear-emacs-enable-org-sync)
         (message "Linear-org synchronization enabled for this buffer"))))
 
   ;; Add hook to auto-enable sync when linear.org is opened
@@ -848,14 +855,18 @@ Version: 2015-12-08 2023-04-07"
             (lambda ()
               (when (and buffer-file-name
                          (string-match-p "linear\\.org$" buffer-file-name)
-                         (fboundp 'linear-sync-org-to-linear))
-                (linear-sync-org-to-linear))))
+                         (fboundp 'linear-emacs-sync-org-to-linear))
+                (linear-emacs-sync-org-to-linear))))
 
   ;; Add convenient keybinding for manually syncing all issues
   (map! :leader
         :prefix "l"
-        :desc "Sync all Linear issues" "s" #'linear-list-issues
-        :desc "Toggle Linear auto-sync" "t" #'my/toggle-linear-auto-sync))
+        :desc "Sync all Linear issues" "s" #'linear-emacs-list-issues
+        :desc "Toggle Linear auto-sync" "t" #'my/toggle-linear-auto-sync
+        :desc "Create new Linear issue" "n" #'linear-emacs-new-issue
+        :desc "Test Linear connection" "c" #'linear-emacs-test-connection
+        :desc "Check Linear setup" "C" #'linear-emacs-check-setup
+        :desc "Toggle Linear debug mode" "d" #'linear-emacs-toggle-debug))
 
 
 ;;; =========================================================================
