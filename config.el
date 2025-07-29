@@ -197,6 +197,137 @@
 ;;; ORGMODE
 ;;; =========================================================================
 
+;; LaTeX/PDF export configuration
+(after! ox-latex
+  ;; Set the default LaTeX compiler (pdflatex, xelatex, or lualatex)
+  (setq org-latex-compiler "pdflatex")
+  
+  ;; Configure the PDF compilation process
+  (setq org-latex-pdf-process
+        '("pdflatex -interaction nonstopmode -output-directory %o %f"
+          "bibtex %b"
+          "pdflatex -interaction nonstopmode -output-directory %o %f"
+          "pdflatex -interaction nonstopmode -output-directory %o %f"))
+  
+  ;; Clean up auxiliary files after export
+  (setq org-latex-logfiles-extensions
+        '("lof" "lot" "tex~" "aux" "idx" "log" "out" "toc" "nav" 
+          "snm" "vrb" "dvi" "fdb_latexmk" "blg" "brf" "fls" "entoc" 
+          "ps" "spl" "bbl" "tex" "bcf"))
+  
+  ;; Configure code listings with minted (syntax highlighting)
+  (setq org-latex-listings 'minted)
+  (setq org-latex-minted-options
+        '(("frame" "lines")
+          ("fontsize" "\\scriptsize")
+          ("linenos" "")))
+  
+  ;; Add minted package to default packages
+  (add-to-list 'org-latex-packages-alist '("" "minted"))
+  
+  ;; Custom LaTeX class with modified title handling
+  (add-to-list 'org-latex-classes
+               '("letter-style"
+                 "\\documentclass[11pt,a4paper]{article}
+\\usepackage[utf8]{inputenc}
+\\usepackage[T1]{fontenc}
+\\usepackage{graphicx}
+\\usepackage{longtable}
+\\usepackage{hyperref}
+\\usepackage{geometry}
+\\geometry{left=1in,right=1in,top=1in,bottom=1in}
+\\usepackage{fancyhdr}
+\\pagestyle{fancy}
+\\fancyhf{}
+\\rhead{\\thepage}
+\\usepackage{titlesec}
+\\titleformat{\\section}{\\Large\\bfseries}{\\thesection}{1em}{}
+\\titleformat{\\subsection}{\\large\\bfseries}{\\thesubsection}{1em}{}
+\\titleformat{\\subsubsection}{\\normalsize\\bfseries}{\\thesubsubsection}{1em}{}
+% Custom recipient command
+\\newcommand{\\recipient}[1]{\\gdef\\@recipient{#1}}
+\\recipient{Larry} % default recipient
+% Redefine maketitle to show author, date, and recipient
+\\makeatletter
+\\renewcommand{\\maketitle}{%
+  \\begingroup
+  \\renewcommand\\thefootnote{\\@fnsymbol\\c@footnote}%
+  \\def\\@makefnmark{\\rlap{\\@textsuperscript{\\normalfont\\@thefnmark}}}%
+  \\long\\def\\@makefntext##1{\\parindent 1em\\noindent
+            \\hb@xt@1.8em{%
+                \\hss\\@textsuperscript{\\normalfont\\@thefnmark}}##1}%
+  \\global\\@topnum\\z@
+  \\noindent
+  \\@author\\\\
+  \\@date\\\\
+  \\@recipient\\\\[2ex]
+  \\endgroup
+  \\setcounter{footnote}{0}%
+  \\global\\let\\thanks\\relax
+  \\global\\let\\maketitle\\relax
+  \\global\\let\\@maketitle\\relax
+  \\global\\let\\@thanks\\@empty
+  \\global\\let\\@author\\@empty
+  \\global\\let\\@date\\@empty
+  \\global\\let\\@title\\@empty
+  \\global\\let\\title\\relax
+  \\global\\let\\author\\relax
+  \\global\\let\\date\\relax
+  \\global\\let\\and\\relax
+}
+\\makeatother"
+                 ("\\section{%s}" . "\\section*{%s}")
+                 ("\\subsection{%s}" . "\\subsection*{%s}")
+                 ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+                 ("\\paragraph{%s}" . "\\paragraph*{%s}")
+                 ("\\subparagraph{%s}" . "\\subparagraph*{%s}")))
+  
+  ;; Set default class
+  (setq org-latex-default-class "article")
+  
+  ;; Configure hyperref settings (without metadata)
+  (setq org-latex-hyperref-template
+        "\\hypersetup{
+  pdfkeywords={%k},
+  pdfcreator={%c},
+  pdflang={%L},
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=blue
+}")
+  
+  ;; Disable table of contents by default
+  (setq org-latex-toc-command "")
+  
+  ;; Ensure \maketitle is called to display our custom title
+  (setq org-latex-title-command "\\maketitle")
+  
+  ;; Table export settings
+  (setq org-latex-tables-centered t)
+  (setq org-latex-tables-booktabs t)
+  
+  ;; Image handling
+  (setq org-latex-image-default-width "0.9\\linewidth")
+  
+  ;; Add custom packages if needed
+  (add-to-list 'org-latex-packages-alist '("" "booktabs"))
+  (add-to-list 'org-latex-packages-alist '("" "tabularx")))
+
+;; Custom export function for PDF with preview
+(defun my/org-export-pdf-and-open ()
+  "Export current org file to PDF and open it."
+  (interactive)
+  (if (not (eq major-mode 'org-mode))
+      (message "This is not an org-mode buffer!")
+    (org-latex-export-to-pdf)
+    (org-open-file (concat (file-name-sans-extension (buffer-file-name)) ".pdf"))))
+
+;; Add keybinding for PDF export
+(map! :leader
+      :desc "Export to PDF and open"
+      "e p" #'my/org-export-pdf-and-open)
+
 
 ;; Custom Markdown export function that always uses visible-only option,
 ;; removes anchor tags, and disables table of contents
