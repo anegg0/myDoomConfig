@@ -197,158 +197,6 @@
 ;;; ORGMODE
 ;;; =========================================================================
 
-;; LaTeX/PDF export configuration
-(after! ox-latex
-  ;; Set the default LaTeX compiler (pdflatex, xelatex, or lualatex)
-  (setq org-latex-compiler "pdflatex")
-  
-  ;; Configure the PDF compilation process
-  (setq org-latex-pdf-process
-        '("pdflatex -interaction nonstopmode -output-directory %o %f"
-          "bibtex %b"
-          "pdflatex -interaction nonstopmode -output-directory %o %f"
-          "pdflatex -interaction nonstopmode -output-directory %o %f"))
-  
-  ;; Clean up auxiliary files after export
-  (setq org-latex-logfiles-extensions
-        '("lof" "lot" "tex~" "aux" "idx" "log" "out" "toc" "nav" 
-          "snm" "vrb" "dvi" "fdb_latexmk" "blg" "brf" "fls" "entoc" 
-          "ps" "spl" "bbl" "tex" "bcf"))
-  
-  ;; Configure code listings with minted (syntax highlighting)
-  (setq org-latex-listings 'minted)
-  (setq org-latex-minted-options
-        '(("frame" "lines")
-          ("fontsize" "\\scriptsize")
-          ("linenos" "")))
-  
-  ;; Add minted package to default packages
-  (add-to-list 'org-latex-packages-alist '("" "minted"))
-  
-  ;; Custom LaTeX classes
-  (add-to-list 'org-latex-classes
-               '("article-custom"
-                 "\\documentclass[11pt,a4paper]{article}
-\\usepackage[utf8]{inputenc}
-\\usepackage[T1]{fontenc}
-\\usepackage{graphicx}
-\\usepackage{longtable}
-\\usepackage{hyperref}
-\\usepackage{geometry}
-\\geometry{left=1in,right=1in,top=1in,bottom=1in}
-\\usepackage{fancyhdr}
-\\pagestyle{fancy}
-\\fancyhf{}
-\\rhead{\\thepage}
-\\usepackage{titlesec}
-\\titleformat{\\section}{\\Large\\bfseries}{\\thesection}{1em}{}
-\\titleformat{\\subsection}{\\large\\bfseries}{\\thesubsection}{1em}{}
-\\titleformat{\\subsubsection}{\\normalsize\\bfseries}{\\thesubsubsection}{1em}{}"
-                 ("\\section{%s}" . "\\section*{%s}")
-                 ("\\subsection{%s}" . "\\subsection*{%s}")
-                 ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
-                 ("\\paragraph{%s}" . "\\paragraph*{%s}")
-                 ("\\subparagraph{%s}" . "\\subparagraph*{%s}")))
-  
-  (add-to-list 'org-latex-classes
-               '("report-custom"
-                 "\\documentclass[11pt,a4paper]{report}
-\\usepackage[utf8]{inputenc}
-\\usepackage[T1]{fontenc}
-\\usepackage{graphicx}
-\\usepackage{longtable}
-\\usepackage{hyperref}
-\\usepackage{geometry}
-\\geometry{left=1.5in,right=1in,top=1.5in,bottom=1.5in}"
-                 ("\\chapter{%s}" . "\\chapter*{%s}")
-                 ("\\section{%s}" . "\\section*{%s}")
-                 ("\\subsection{%s}" . "\\subsection*{%s}")
-                 ("\\subsubsection{%s}" . "\\subsubsection*{%s}")))
-  
-  ;; Set default class
-  (setq org-latex-default-class "article-custom")
-  
-  ;; Configure hyperref settings (removed pdfauthor, pdftitle, pdfsubject)
-  (setq org-latex-hyperref-template
-        "\\hypersetup{
-  pdfkeywords={%k},
-  pdfcreator={%c},
-  pdflang={%L},
-  colorlinks=true,
-  linkcolor=blue,
-  citecolor=blue,
-  urlcolor=blue
-}")
-  
-  ;; Table export settings
-  (setq org-latex-tables-centered t)
-  (setq org-latex-tables-booktabs t)
-  
-  ;; Image handling
-  (setq org-latex-image-default-width "0.9\\linewidth")
-  (setq org-latex-image-default-height "")
-  (setq org-latex-image-default-option "")
-  
-  ;; Caption settings
-  (setq org-latex-caption-above '(table))
-  
-  ;; Add custom packages if needed
-  (add-to-list 'org-latex-packages-alist '("" "booktabs"))
-  (add-to-list 'org-latex-packages-alist '("" "tabularx"))
-  (add-to-list 'org-latex-packages-alist '("" "float"))
-  
-  ;; Disable table of contents by default
-  (setq org-latex-toc-command "")
-  
-  ;; Remove the default title command entirely
-  (setq org-latex-title-command "")
-  
-  ;; Define custom org export option for recipient
-  (defun org-latex-keyword-recipient (keyword contents info)
-    "Handle #+RECIPIENT: keyword."
-    (plist-put info :recipient (org-element-property :value keyword))
-    "")
-  
-  ;; Register the RECIPIENT keyword
-  (add-to-list 'org-export-options-alist
-               '(:recipient "RECIPIENT" nil nil t))
-  
-  ;; Custom filter to add author/date/recipient info at the beginning
-  (defun my/org-latex-add-custom-header (text backend info)
-    "Add custom header with author, date, and recipient after \\begin{document}."
-    (when (org-export-derived-backend-p backend 'latex)
-      (let* ((author (org-export-data (plist-get info :author) info))
-             (date (org-export-data (plist-get info :date) info))
-             (recipient (or (plist-get info :recipient) "Larry"))
-             (custom-header (concat "\\noindent\n" 
-                                   (or author "") "\\\\\n"
-                                   (or date "\\today") "\\\\\n"
-                                   recipient "\\\\[2ex]\n\n")))
-        ;; Find where \begin{document} is and insert our header after it
-        (if (string-match "\\\\begin{document}\n" text)
-            (concat (substring text 0 (match-end 0))
-                    custom-header
-                    (substring text (match-end 0)))
-          text))))
-  
-  ;; Add the filter to the export process
-  (add-to-list 'org-export-filter-final-output-functions
-               'my/org-latex-add-custom-header))
-
-;; Custom export function for PDF with preview
-(defun my/org-export-pdf-and-open ()
-  "Export current org file to PDF and open it."
-  (interactive)
-  (if (not (eq major-mode 'org-mode))
-      (message "This is not an org-mode buffer!")
-    (org-latex-export-to-pdf)
-    (org-open-file (concat (file-name-sans-extension (buffer-file-name)) ".pdf"))))
-
-;; Add keybinding for PDF export
-(map! :leader
-      :desc "Export to PDF and open"
-      "e p" #'my/org-export-pdf-and-open)
-
 
 ;; Custom Markdown export function that always uses visible-only option,
 ;; removes anchor tags, and disables table of contents
@@ -494,12 +342,6 @@ and disables the table of contents."
         org-agenda-todo-ignore-deadlines nil
         org-agenda-todo-ignore-timestamp nil
         org-agenda-todo-ignore-with-date nil)
-  
-  ;; Sort org-todo-list by TODO keyword priority (TODO before NEXT)
-  (setq org-agenda-sorting-strategy
-        '((todo todo-state-down priority-down category-keep)
-          (tags priority-down category-keep)
-          (search category-keep)))
 
   ;; Enable refile targets to include agenda files
   (setq org-refile-targets '((org-agenda-files :maxlevel . 3)))
@@ -523,11 +365,12 @@ and disables the table of contents."
   (bind-key "C-c SPC" #'jethro/org-capture-slipbox)
 
   (defun my/org-todo-list-all-by-tag (tag)
-    "Display all tasks (in any TODO state) filtered by TAG."
+    "Display all TODO states in org-todo-list filtered by TAG."
     (interactive "sTag: ")
-    (let ((match-string (format "+%s+TODO={.+}" tag))
-          (org-agenda-prefix-format '((tags . "  "))))
-      (org-tags-view nil match-string)))
+    (let ((org-agenda-todo-keywords-for-agenda
+           '("TODO(t)" "IN-PROGRESS(i)" "IN-REVIEW(r)" "|" "BACKLOG(b)" "BLOCKED(l)" "DONE(d)" "CANCELED(c)" "DUPLICATE(p)" "NEXT(n)" "HOLD(h)" "WAITING-ON(w)"))
+          (org-agenda-tag-filter-preset `(,(concat "+" tag))))
+      (org-todo-list nil)))
 
   (defun jethro/org-archive-done-tasks ()
     "Archive all done tasks."
