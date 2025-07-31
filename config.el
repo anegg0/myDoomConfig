@@ -228,14 +228,14 @@
   ;; Custom LaTeX class with modified title handling
   (add-to-list 'org-latex-classes
                '("letter-style"
-                 "\\documentclass[11pt,a4paper]{article}
+                 "\\documentclass[11pt,letterpaper]{article}
 \\usepackage[utf8]{inputenc}
 \\usepackage[T1]{fontenc}
 \\usepackage{graphicx}
 \\usepackage{longtable}
 \\usepackage{hyperref}
 \\usepackage{geometry}
-\\geometry{left=1in,right=1in,top=1in,bottom=1in}
+\\geometry{letterpaper,left=1in,right=1in,top=1in,bottom=1in}
 \\usepackage{fancyhdr}
 \\pagestyle{fancy}
 \\fancyhf{}
@@ -244,10 +244,7 @@
 \\titleformat{\\section}{\\Large\\bfseries}{\\thesection}{1em}{}
 \\titleformat{\\subsection}{\\large\\bfseries}{\\thesubsection}{1em}{}
 \\titleformat{\\subsubsection}{\\normalsize\\bfseries}{\\thesubsubsection}{1em}{}
-% Custom recipient command
-\\newcommand{\\recipient}[1]{\\gdef\\@recipient{#1}}
-\\recipient{Larry} % default recipient
-% Redefine maketitle to show author, date, and recipient
+% Redefine maketitle to show author and date
 \\makeatletter
 \\renewcommand{\\maketitle}{%
   \\begingroup
@@ -259,8 +256,7 @@
   \\global\\@topnum\\z@
   \\noindent
   \\@author\\\\
-  \\@date\\\\
-  \\@recipient\\\\[2ex]
+  \\@date\\\\[2ex]
   \\endgroup
   \\setcounter{footnote}{0}%
   \\global\\let\\thanks\\relax
