@@ -431,7 +431,7 @@ and disables the table of contents."
 
   ;; Custom TODO keywords
   (setq org-todo-keywords
-        '((sequence "TODO(t)" "IN-PROGRESS(i)" "IN-REVIEW(r)" "|" "BACKLOG(b)" "BLOCKED(l)" "DONE(d)" "CANCELED(c)" "DUPLICATE(p)" "NEXT(n)" "HOLD(h)" "WAITING-ON(w)")))
+        '((sequence "TODO(t)" "IN-PROGRESS(i)" "IN-REVIEW(r)" "BACKLOG(b)" "BLOCKED(l)" "|" "DONE(d)" "CANCELED(c)" "DUPLICATE(p)" "NEXT(n)" "HOLD(h)" "WAITING-ON(w)")))
 
   ;; Optional: Add custom faces for your TODO states
   (setq org-todo-keyword-faces
@@ -441,7 +441,7 @@ and disables the table of contents."
           ("BACKLOG" . (:foreground "purple" :weight bold))
           ("BLOCKED" . (:foreground "green" :weight bold))
           ("DONE" . (:foreground "green" :weight bold))
-          ("CANCELLED" . (:foreground "gray" :weight bold))
+          ("CANCELED" . (:foreground "gray" :weight bold))
           ("NEXT" . (:foreground "gray" :weight bold))
           ("DUPLICATE" . (:foreground "black" :weight bold))))
 
@@ -456,9 +456,8 @@ and disables the table of contents."
                           ;; Explicitly include linear.org
                           (expand-file-name "gtd/linear.org" org-directory)))
 
-  ;; Ensure all your custom TODO states are included in the agenda
-  (setq org-agenda-todo-keywords-for-agenda
-        '((sequence "TODO(t)" "IN-PROGRESS(i)" "IN-REVIEW(r)" "|" "BACKLOG(b)" "BLOCKED(l)" "DONE(d)" "CANCELED(c)" "DUPLICATE(p)" "NEXT(n)" "HOLD(h)" "WAITING-ON(w)")))
+  ;; Let agenda inherit TODO keywords from org-todo-keywords
+  ;; (Removed redundant org-agenda-todo-keywords-for-agenda setting)
 
   ;; Set which TODO states should be included in the agenda by default
   ;; This can include both active and inactive states
@@ -494,8 +493,7 @@ and disables the table of contents."
   (defun my/org-todo-list-all-by-tag (tag)
     "Display all TODO states in org-todo-list filtered by TAG."
     (interactive "sTag: ")
-    (let ((org-agenda-todo-keywords-for-agenda
-           '("TODO(t)" "IN-PROGRESS(i)" "IN-REVIEW(r)" "|" "BACKLOG(b)" "BLOCKED(l)" "DONE(d)" "CANCELED(c)" "DUPLICATE(p)" "NEXT(n)" "HOLD(h)" "WAITING-ON(w)"))
+    (let ((org-agenda-todo-keywords-for-agenda org-todo-keywords)
           (org-agenda-tag-filter-preset `(,(concat "+" tag))))
       (org-todo-list nil)))
 
@@ -796,6 +794,21 @@ Version: 2015-12-08 2023-04-07"
 (after! emacs-everywhere
   ;; Set the default major mode to markdown-mode
   (setq emacs-everywhere-major-mode-function 'markdown-mode)
+  
+  ;; Store emacs-everywhere messages in ProtonDrive
+  (setq emacs-everywhere-file-dir 
+        (expand-file-name "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/emacs-everywhere-msgs/"))
+  
+  ;; Custom filename function to add .md extension
+  (defun my/emacs-everywhere-markdown-filename (app-info)
+    "Generate a markdown filename for emacs-everywhere."
+    (concat "emacs-everywhere-"
+            (format-time-string "%Y%m%d-%H%M%S-" (current-time))
+            (emacs-everywhere-app-class app-info)
+            ".md"))
+  
+  ;; Use custom filename function for markdown files
+  (setq emacs-everywhere-filename-function #'my/emacs-everywhere-markdown-filename)
 
   ;; Optionally add hooks for specific adjustments when Emacs Everywhere activates
   (add-hook 'emacs-everywhere-init-hooks
@@ -928,6 +941,10 @@ Version: 2015-12-08 2023-04-07"
                                        ((string= todo-state "BACKLOG") "Backlog")
                                        ((string= todo-state "BLOCKED") "Blocked")
                                        ((string= todo-state "DONE") "Done")
+                                       ((string= todo-state "CANCELED") "Canceled")
+                                       ((string= todo-state "DUPLICATE") "Duplicate")
+                                       ;; Non-Linear states - don't sync to Linear
+                                       ((member todo-state '("NEXT" "HOLD" "WAITING-ON")) nil)
                                        (t nil))))
               (when linear-emacs-state
                 (linear-emacs--update-issue-state-async issue-id linear-emacs-state team-id))))))))
@@ -951,7 +968,7 @@ Version: 2015-12-08 2023-04-07"
         (error (message "Error updating Linear issues: %s" (error-message-string err))))))
 
   ;; Add advice to org-todo-list, but make it optional
-  (defvar my/auto-sync-linear-before-todo nil
+  (defvar my/auto-sync-linear-before-todo t
     "Whether to automatically sync Linear issues before showing todo list.")
 
   (defun my/toggle-linear-auto-sync ()
@@ -964,6 +981,10 @@ Version: 2015-12-08 2023-04-07"
           (message "Linear auto-sync before todo list enabled"))
       (advice-remove 'org-todo-list #'my/run-linear-emacs-list-issues-before-todo)
       (message "Linear auto-sync before todo list disabled")))
+  
+  ;; Enable Linear auto-sync by default
+  (when my/auto-sync-linear-before-todo
+    (advice-add 'org-todo-list :before #'my/run-linear-emacs-list-issues-before-todo))
 
   ;; Automatically enable two-way sync when linear.org is opened
   (defun my/enable-linear-org-sync ()
@@ -984,6 +1005,18 @@ Version: 2015-12-08 2023-04-07"
                          (string-match-p "linear\\.org$" buffer-file-name)
                          (fboundp 'linear-emacs-sync-org-to-linear))
                 (linear-emacs-sync-org-to-linear))))
+
+  ;; Auto-save linear.org and inbox.org when todo state changes
+  (defun my/auto-save-org-files-on-todo-change ()
+    "Automatically save linear.org and inbox.org when todo states change."
+    (when (and buffer-file-name
+               (or (string-match-p "linear\\.org$" buffer-file-name)
+                   (string-match-p "inbox\\.org$" buffer-file-name)))
+      (save-buffer)
+      (message "Auto-saved %s after todo state change" (file-name-nondirectory buffer-file-name))))
+
+  ;; Add hook to auto-save on todo state changes
+  (add-hook 'org-after-todo-state-change-hook #'my/auto-save-org-files-on-todo-change)
 
   ;; Add convenient keybinding for manually syncing all issues
   (map! :leader
