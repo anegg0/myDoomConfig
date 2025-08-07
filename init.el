@@ -71,7 +71,6 @@
        (dired +icons)             ; making dired pretty [functional]
        electric          ; smarter, keyword-based electric-indent
        ( ibuffer +icons )         ; interactive buffer management
-       ;; (undo +tree)              ; persistent, smarter undo for your inevitable mistakes
        vc                ; version-control and emacs, sitting in a tree
 
        :term
@@ -115,6 +114,7 @@
 
        :lang
        ;;agda              ; types of types of types of types...
+       ;; (undo +tree)              ; persistent, smarter undo for your inevitable mistakes
        ;;beancount         ; mind the GAAP
        ;;(cc +lsp)         ; C > C++ == 1
        ;;clojure           ; java with a lisp
