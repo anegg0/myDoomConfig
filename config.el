@@ -1109,3 +1109,4 @@ to load the new symbol and emoji fonts."
         (format "\\(%s\\)\\|\\(%s\\)"
                 vc-ignore-dir-regexp
                 tramp-file-name-regexp)))
+(setq delete-by-moving-to-trash "~/.Trash/" )
