@@ -43,7 +43,9 @@
        nav-flash         ; blink cursor line after big motions
        ;; neotree           ; a project drawer, like nerdtree for vim
        ophints           ; highlight the region an operation acts on
-       (popup +defaults)   ; tame sudden yet inevitable temporary windows
+       (popup
+        +all
+        +defaults)   ; tame sudden yet inevitable temporary windows
        ;; tabs              ; a tab bar for emacs
        treemacs          ; a project drawer, like neotree but cooler
        ;;unicode           ; extended unicode support for various languages
@@ -63,7 +65,7 @@
        multiple-cursors  ; editing in many places at once
        ;;objed             ; text object editing for the innocent
        ;;parinfer          ; turn lisp into python, sort of
-       ;;rotate-text       ; cycle region at point between text candidates
+       rotate-text       ; cycle region at point between text candidates
        snippets          ; my elves. they type so i don't have to
        word-wrap         ; soft wrapping with language-aware indent
 
