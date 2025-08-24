@@ -176,7 +176,7 @@
 
 ;; Frame transparency
 ;; (set-frame-parameter (selected-frame) 'alpha '(95 95))
-(add-to-list 'default-frame-alist '(alpha 95 95))
+(add-to-list 'default-frame-alist '(alpha 80 80))
 
 ;; Set initial frame size and position
 (setq initial-frame-alist
@@ -868,6 +868,19 @@ Version: 2015-12-08 2023-04-07"
   ;; Save workspaces more frequently (optional)
   (setq persp-auto-save-num-of-the-last-sessions 10)
   
+  ;; Disable saving of certain problematic parameters
+  (setq persp-filter-save-buffers-functions
+        (list (lambda (b) (not (string-match-p "^\\*" (buffer-name b)))))
+        persp-save-buffers-functions
+        (list #'persp-buffers-from-savelist))
+  
+  ;; Suppress winner-mode warnings during save
+  (defadvice! my/suppress-winner-warnings (orig-fn &rest args)
+    "Suppress winner-ring warnings when saving perspectives."
+    :around #'persp-save-state-to-file
+    (let ((inhibit-message t))
+      (apply orig-fn args)))
+  
   ;; Create workspace names based on project root
   (defun my/workspace-name-from-project (project-root)
     "Generate workspace name from PROJECT-ROOT."
@@ -882,8 +895,8 @@ Version: 2015-12-08 2023-04-07"
     (let* ((workspace-name (safe-persp-name (get-current-persp)))
            (project-root (projectile-project-root))
            (workspace-file (expand-file-name 
-                           (concat workspace-name ".el") 
-                           persp-save-dir)))
+                            (concat workspace-name ".el")
+                            persp-save-dir)))
       (when workspace-name
         ;; Save the workspace - pass workspace name as a list
         (persp-save-to-file-by-names workspace-file (list workspace-name) t)
@@ -891,16 +904,16 @@ Version: 2015-12-08 2023-04-07"
         (when project-root
           (my/save-workspace-project-metadata workspace-name project-root))
         (message "Saved workspace '%s' with project '%s'" 
-                workspace-name (or project-root "none")))))
+                 workspace-name (or project-root "none")))))
 
   (defun my/save-workspace-project-metadata (workspace-name project-root)
     "Save metadata linking WORKSPACE-NAME to PROJECT-ROOT."
     (let ((metadata-file (expand-file-name "workspace-projects.el" persp-save-dir))
           (metadata (if (file-exists-p (expand-file-name "workspace-projects.el" persp-save-dir))
-                       (with-temp-buffer
-                         (insert-file-contents (expand-file-name "workspace-projects.el" persp-save-dir))
-                         (read (current-buffer)))
-                     '())))
+                        (with-temp-buffer
+                          (insert-file-contents (expand-file-name "workspace-projects.el" persp-save-dir))
+                          (read (current-buffer)))
+                      '())))
       ;; Update or add the workspace-project association
       (setq metadata (assq-delete-all (intern workspace-name) metadata))
       (push (cons (intern workspace-name) project-root) metadata)
@@ -912,10 +925,10 @@ Version: 2015-12-08 2023-04-07"
     "Load workspace and switch to its associated project."
     (interactive 
      (list (completing-read "Workspace: " 
-                           (my/get-saved-workspace-names))))
-    (let* ((workspace-file (expand-file-name 
-                           (concat workspace-name ".el") 
-                           persp-save-dir))
+                            (my/get-saved-workspace-names))))
+    (let* ((workspace-file (expand-file-name
+                            (concat workspace-name ".el")
+                            persp-save-dir))
            (project-root (my/get-workspace-project workspace-name)))
       ;; Load the workspace
       (when (file-exists-p workspace-file)
@@ -924,7 +937,7 @@ Version: 2015-12-08 2023-04-07"
         (when (and project-root (file-directory-p project-root))
           (projectile-switch-project-by-name project-root))
         (message "Loaded workspace '%s' with project '%s'" 
-                workspace-name (or project-root "none")))))
+                 workspace-name (or project-root "none")))))
 
   (defun my/get-saved-workspace-names ()
     "Get list of saved workspace names."
@@ -951,31 +964,37 @@ Version: 2015-12-08 2023-04-07"
         (condition-case err
             (my/save-workspace-with-project)
           (error (message "Failed to auto-save workspace: %s" 
-                         (error-message-string err)))))))
+                          (error-message-string err)))))))
 
   ;; Enhanced session management
   (defun my/save-complete-session ()
     "Save complete session including all workspaces and their project associations."
     (interactive)
     (let ((session-name (read-string "Session name: " 
-                                    (format-time-string "%Y%m%d-%H%M"))))
-      ;; Save persp session
-      (persp-save-state-to-file 
-       (expand-file-name (concat session-name ".persp") persp-save-dir))
+                                     (format-time-string "%Y%m%d-%H%M")))
+          (inhibit-message t))  ; Suppress verbose messages during save
+      ;; Save persp session using safe method
+      (condition-case err
+          (persp-save-state-to-file 
+           (expand-file-name (concat session-name ".persp") persp-save-dir))
+        (error (message "Warning during save: %s" (error-message-string err))))
       ;; Save all individual workspaces with their projects
       (dolist (workspace (persp-names))
         (unless (string= workspace persp-nil-name)
           (persp-switch workspace)
-          (my/save-workspace-with-project)))
+          (condition-case err
+              (my/save-workspace-with-project)
+            (error (message "Failed to save workspace %s: %s" 
+                            workspace (error-message-string err))))))
       (message "Saved complete session '%s'" session-name)))
 
   (defun my/load-complete-session ()
     "Load complete session with all workspaces and project associations."
     (interactive)
     (let* ((session-files (when (file-directory-p persp-save-dir)
-                           (directory-files persp-save-dir nil "\\.persp$")))
-           (session-name (completing-read "Session: " 
-                                         (mapcar #'file-name-sans-extension session-files))))
+                            (directory-files persp-save-dir nil "\\.persp$")))
+           (session-name (completing-read "Session: "
+                                          (mapcar #'file-name-sans-extension session-files))))
       (when session-name
         (persp-load-state-from-file 
          (expand-file-name (concat session-name ".persp") persp-save-dir))
@@ -1016,7 +1035,7 @@ Version: 2015-12-08 2023-04-07"
   (interactive)
   (let* ((project-root (projectile-project-root))
          (workspace-name (when project-root
-                          (my/workspace-name-from-project project-root))))
+                           (my/workspace-name-from-project project-root))))
     (when workspace-name
       (+workspace/switch-to workspace-name)
       (when project-root
@@ -1042,9 +1061,9 @@ Version: 2015-12-08 2023-04-07"
   "Clean up magit buffers in current workspace to prevent persistence issues."
   (interactive)
   (let ((magit-buffers (cl-remove-if-not 
-                       (lambda (buf) 
-                         (string-match-p "^\\*magit" (buffer-name buf)))
-                       (persp-buffer-list))))
+                        (lambda (buf)
+                          (string-match-p "^\\*magit" (buffer-name buf)))
+                        (persp-buffer-list))))
     (dolist (buf magit-buffers)
       (persp-remove-buffer buf))
     (message "Cleaned up %d magit buffers from workspace" (length magit-buffers))))
@@ -1069,9 +1088,9 @@ Version: 2015-12-08 2023-04-07"
   (interactive)
   (let* ((metadata-file (expand-file-name "workspace-projects.el" persp-save-dir))
          (associations (when (file-exists-p metadata-file)
-                        (with-temp-buffer
-                          (insert-file-contents metadata-file)
-                          (read (current-buffer))))))
+                         (with-temp-buffer
+                           (insert-file-contents metadata-file)
+                           (read (current-buffer))))))
     (if associations
         (with-current-buffer (get-buffer-create "*Workspace-Project Associations*")
           (erase-buffer)
