@@ -863,7 +863,8 @@ Version: 2015-12-08 2023-04-07"
   (setq persp-auto-save-fname "auto-save")
   
   ;; Include project root in workspace names for clarity
-  (setq +workspaces-switch-project-function #'+workspaces/switch-to-project)
+  ;; Comment out to use Doom's default behavior
+  ;; (setq +workspaces-switch-project-function #'+workspaces-switch-to-project)
   
   ;; Save workspaces more frequently (optional)
   (setq persp-auto-save-num-of-the-last-sessions 10)
