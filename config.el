@@ -650,6 +650,19 @@ and disables the table of contents."
 ;;; EDITOR
 ;;; =========================================================================
 
+;; Project-wide occur function that returns a list of matching buffers:
+  (defun my/smart-project-occur (regexp)
+    "Search project files with occur, only opening files that match."
+    (interactive "sRegexp: ")
+    (let* ((project-root (projectile-project-root))
+           (matching-files (projectile-files-with-string regexp project-root))
+           (buffers '()))
+      (dolist (file matching-files)
+        (push (find-file-noselect file) buffers))
+      (if buffers
+          (multi-occur buffers regexp)
+        (message "No files found containing: %s" regexp))))
+
 (setq +lsp-backend 'eglot)
 
 ;; Show Eglot status in modeline
@@ -1143,3 +1156,4 @@ to load the new symbol and emoji fonts."
                 vc-ignore-dir-regexp
                 tramp-file-name-regexp)))
 (setq delete-by-moving-to-trash "~/.Trash/" )
+
