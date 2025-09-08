@@ -16,7 +16,7 @@
       (package-recipe-mode))
      (flycheck-disabled-checkers proselint textlint)))
  '(package-selected-packages
-   '(async copilot-chat glab org-preview-html undo-fu undo-fu-session))
+   '(accent async copilot-chat glab org-preview-html undo-fu undo-fu-session))
  '(safe-local-variable-values
    '((eval add-hook 'after-save-hook 'org-html-export-to-html t t)
      (checkdoc-allow-quoting-nil-and-t . t)
