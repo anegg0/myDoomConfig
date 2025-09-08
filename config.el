@@ -650,6 +650,144 @@ and disables the table of contents."
 ;;; EDITOR
 ;;; =========================================================================
 
+;; French accent menu for repeated key presses
+(use-package accent
+  :ensure t
+  :hook ((text-mode . accent-menu-mode)
+         (org-mode . accent-menu-mode)
+         (message-mode . accent-menu-mode)
+         (markdown-mode . accent-menu-mode)
+         (gfm-mode . accent-menu-mode))
+  :init
+  ;; Ensure accent-menu works in markdown files
+  (with-eval-after-load 'markdown-mode
+    (add-hook 'markdown-mode-hook #'accent-menu-mode)
+    (add-hook 'gfm-mode-hook #'accent-menu-mode))
+  ;; Also activate for files already open when config loads
+  (add-hook 'after-init-hook
+            (lambda ()
+              (dolist (buffer (buffer-list))
+                (with-current-buffer buffer
+                  (when (and (derived-mode-p 'markdown-mode 'gfm-mode)
+                             (not accent-menu-mode))
+                    (accent-menu-mode 1))))))
+  :config
+  ;; French accent configuration
+  (setq accent-diacritics '((a (à â))
+                            (e (é è ê ë))
+                            (i (î ï))
+                            (o (ô))
+                            (u (ù û ü))
+                            (c (ç))
+                            (A (À Â))
+                            (E (É È Ê Ë))
+                            (I (Î Ï))
+                            (O (Ô))
+                            (U (Ù Û Ü))
+                            (C (Ç))))
+  (defvar accent-menu-monitor--last-edit-time nil)
+  
+  (defun accent-menu-reset-timer ()
+    "Reset the accent menu timer when exiting insert/replace state."
+    (setq accent-menu-monitor--last-edit-time nil))
+
+  (define-minor-mode accent-menu-mode
+    "Toggle `accent-menu' if repeated keys are detected."
+    :lighter " accent-menu mode"
+    (if accent-menu-mode
+        (progn
+          (remove-hook 'after-change-functions #'accent-menu-monitor--text-change t)
+          (add-hook 'after-change-functions #'accent-menu-monitor--text-change 0 t)
+          ;; Add evil-mode specific hooks if evil is available
+          (when (bound-and-true-p evil-mode)
+            (add-hook 'evil-insert-state-exit-hook #'accent-menu-reset-timer nil t)
+            (add-hook 'evil-replace-state-exit-hook #'accent-menu-reset-timer nil t)))
+      (remove-hook 'after-change-functions #'accent-menu-monitor--text-change t)
+      (when (bound-and-true-p evil-mode)
+        (remove-hook 'evil-insert-state-exit-hook #'accent-menu-reset-timer t)
+        (remove-hook 'evil-replace-state-exit-hook #'accent-menu-reset-timer t))))
+
+  (defun accent-menu-monitor--text-change (beginning end length)
+    "Monitors text change BEGINNING, END, and LENGTH."
+    (let ((last-edit-time accent-menu-monitor--last-edit-time)
+          (edit-time (float-time)))
+      (when (and (> end beginning)
+                 (eq length 0)
+                 last-edit-time
+                 (not undo-in-progress)
+                 ;; Only trigger in insert or replace states when evil-mode is active
+                 (or (not (bound-and-true-p evil-mode))
+                     (memq evil-state '(insert replace)))
+                 ;; 0.27 seems to work for my macOS keyboard settings.
+                 ;; Key Repeat: Fast | Delay Until Repeat: Short.
+                 (< (- edit-time last-edit-time) 0.27)
+                 (float-time (time-subtract (current-time) edit-time))
+                 (accent-menu-monitor--buffer-char-string (1- beginning))
+                 (seq-contains-p (mapcar (lambda (item)
+                                           (symbol-name (car item)))
+                                         accent-diacritics)
+                                 (accent-menu-monitor--buffer-char-string beginning))
+                 (string-equal (accent-menu-monitor--buffer-char-string (1- beginning))
+                               (accent-menu-monitor--buffer-char-string beginning)))
+        ;; Temporarily disable org-element cache during accent menu operations
+        (let ((org-element-use-cache-backup (when (boundp 'org-element-use-cache)
+                                               org-element-use-cache)))
+          (when (derived-mode-p 'org-mode)
+            (setq-local org-element-use-cache nil))
+          ;; Delete the repeated character
+          (delete-char -1)
+          ;; Show accent menu
+          (ignore-error quit
+            (accent-menu))
+          ;; Restore org-element cache setting
+          (when (derived-mode-p 'org-mode)
+            (setq-local org-element-use-cache org-element-use-cache-backup))))
+      (setq accent-menu-monitor--last-edit-time edit-time)))
+
+  (defun accent-menu-monitor--buffer-char-string (at)
+    (when (and (>= at (point-min))
+               (< at (point-max)))
+      (buffer-substring-no-properties at (+ at 1))))
+  
+  ;; Manual command to enable accent menu in current buffer
+  (defun my/enable-accent-menu ()
+    "Manually enable accent-menu-mode in current buffer."
+    (interactive)
+    (accent-menu-mode 1)
+    (message "Accent menu enabled in %s" (buffer-name)))
+  
+  ;; Debug function to check accent-menu status
+  (defun my/debug-accent-menu ()
+    "Debug accent-menu configuration in current buffer."
+    (interactive)
+    (message "Buffer: %s | Mode: %s | Evil state: %s | Accent-menu: %s | Last-edit-time: %s"
+             (buffer-name)
+             major-mode
+             (if (bound-and-true-p evil-mode) evil-state "no-evil")
+             (if accent-menu-mode "ON" "OFF")
+             accent-menu-monitor--last-edit-time))
+  
+  ;; Force enable accent-menu for all markdown files
+  (defun my/force-accent-menu-in-markdown ()
+    "Force enable accent-menu in markdown buffers."
+    (when (and (derived-mode-p 'markdown-mode 'gfm-mode 'text-mode)
+               (not accent-menu-mode))
+      (accent-menu-mode 1)))
+  
+  ;; Add multiple hooks to catch markdown files
+  (add-hook 'find-file-hook #'my/force-accent-menu-in-markdown)
+  (add-hook 'after-change-major-mode-hook #'my/force-accent-menu-in-markdown)
+  
+  ;; Test function to verify accent menu works
+  (defun my/test-accent-menu ()
+    "Test if accent-menu is working properly."
+    (interactive)
+    (if (not accent-menu-mode)
+        (progn
+          (accent-menu-mode 1)
+          (message "Enabled accent-menu. Now type 'nn' quickly to test"))
+      (message "Accent-menu is ON. Type 'aa' quickly to get à"))))
+
 ;; Project-wide occur function that returns a list of matching buffers:
   (defun my/smart-project-occur (regexp)
     "Search project files with occur, only opening files that match."
