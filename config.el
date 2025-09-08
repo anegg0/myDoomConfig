@@ -720,7 +720,7 @@ and disables the table of contents."
                      (memq evil-state '(insert replace)))
                  ;; 0.27 seems to work for my macOS keyboard settings.
                  ;; Key Repeat: Fast | Delay Until Repeat: Short.
-                 (< (- edit-time last-edit-time) 0.27)
+                 (< (- edit-time last-edit-time) 0.17)
                  (float-time (time-subtract (current-time) edit-time))
                  (accent-menu-monitor--buffer-char-string (1- beginning))
                  (seq-contains-p (mapcar (lambda (item)
@@ -754,39 +754,7 @@ and disables the table of contents."
     "Manually enable accent-menu-mode in current buffer."
     (interactive)
     (accent-menu-mode 1)
-    (message "Accent menu enabled in %s" (buffer-name)))
-  
-  ;; Debug function to check accent-menu status
-  (defun my/debug-accent-menu ()
-    "Debug accent-menu configuration in current buffer."
-    (interactive)
-    (message "Buffer: %s | Mode: %s | Evil state: %s | Accent-menu: %s | Last-edit-time: %s"
-             (buffer-name)
-             major-mode
-             (if (bound-and-true-p evil-mode) evil-state "no-evil")
-             (if accent-menu-mode "ON" "OFF")
-             accent-menu-monitor--last-edit-time))
-  
-  ;; Force enable accent-menu for all markdown files
-  (defun my/force-accent-menu-in-markdown ()
-    "Force enable accent-menu in markdown buffers."
-    (when (and (derived-mode-p 'markdown-mode 'gfm-mode 'text-mode)
-               (not accent-menu-mode))
-      (accent-menu-mode 1)))
-  
-  ;; Add multiple hooks to catch markdown files
-  (add-hook 'find-file-hook #'my/force-accent-menu-in-markdown)
-  (add-hook 'after-change-major-mode-hook #'my/force-accent-menu-in-markdown)
-  
-  ;; Test function to verify accent menu works
-  (defun my/test-accent-menu ()
-    "Test if accent-menu is working properly."
-    (interactive)
-    (if (not accent-menu-mode)
-        (progn
-          (accent-menu-mode 1)
-          (message "Enabled accent-menu. Now type 'nn' quickly to test"))
-      (message "Accent-menu is ON. Type 'aa' quickly to get à"))))
+    (message "Accent menu enabled in %s" (buffer-name)))) ; End of use-package accent
 
 ;; Project-wide occur function that returns a list of matching buffers:
   (defun my/smart-project-occur (regexp)
