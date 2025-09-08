@@ -1,7 +1,7 @@
 # This is my Doom Emacs Config
 
-I customized this config mostly around Software Technical Writing, which is my day-job. 
-If you like to work with vim and Orgmode, you might like this config.
+I customized this config mostly around Software Technical Writing, which is my day job. 
+If you like to work with Vim and Orgmode, you might find elements to work with.
 
 Note that it integrates with:
 - Linear.app (you will need to clone https://github.com/anegg0/linear-emacs for that feature to be available)
