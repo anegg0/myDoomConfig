@@ -6,7 +6,7 @@ If you like to work with vim and Orgmode, you might like this config.
 Note that it integrates with:
 - Linear.app (you will need to clone https://github.com/anegg0/linear-emacs for that feature to be available)
 - Jethro Kuan's fabulous https://github.com/org-roam/org-roam
-- Alvaro Ramirez's perfect solutions for accentuated characters on Emacs/MacOS: https://xenodium.com/an-accentuated-emacs-experiment/ 
+- Alvaro Ramirez's perfect solution for accentuated characters on Emacs/MacOS: https://xenodium.com/an-accentuated-emacs-experiment/ 
 
 ## Key Features
 - **Enhanced Org-mode**: Org-roam integration, custom export templates, Linear.app synchronization
