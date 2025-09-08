@@ -651,6 +651,7 @@ and disables the table of contents."
 ;;; =========================================================================
 
 ;; French accent menu for repeated key presses
+;; Thanks to Alvaro Ramirez's solution for accentuated characters on Emacs/MacOS: https://xenodium.com/an-accentuated-emacs-experiment/
 (use-package accent
   :ensure t
   :hook ((text-mode . accent-menu-mode)
