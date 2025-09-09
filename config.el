@@ -650,6 +650,13 @@ and disables the table of contents."
 ;;; EDITOR
 ;;; =========================================================================
 
+;; Disable in-buffer text completion globally
+(after! corfu
+  (global-corfu-mode -1))
+
+(after! company
+  (global-company-mode -1))
+
 ;; French accent menu for repeated key presses
 ;; Thanks to Alvaro Ramirez's solution for accentuated characters on Emacs/MacOS: https://xenodium.com/an-accentuated-emacs-experiment/
 (use-package accent
