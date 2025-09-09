@@ -654,24 +654,36 @@ and disables the table of contents."
 ;; Thanks to Alvaro Ramirez's solution for accentuated characters on Emacs/MacOS: https://xenodium.com/an-accentuated-emacs-experiment/
 (use-package accent
   :ensure t
-  :hook ((text-mode . accent-menu-mode)
-         (org-mode . accent-menu-mode)
-         (message-mode . accent-menu-mode)
-         (markdown-mode . accent-menu-mode)
-         (gfm-mode . accent-menu-mode))
   :init
-  ;; Ensure accent-menu works in markdown files
-  (with-eval-after-load 'markdown-mode
-    (add-hook 'markdown-mode-hook #'accent-menu-mode)
-    (add-hook 'gfm-mode-hook #'accent-menu-mode))
-  ;; Also activate for files already open when config loads
-  (add-hook 'after-init-hook
-            (lambda ()
-              (dolist (buffer (buffer-list))
-                (with-current-buffer buffer
-                  (when (and (derived-mode-p 'markdown-mode 'gfm-mode)
-                             (not accent-menu-mode))
-                    (accent-menu-mode 1))))))
+  ;; Variable to control whether accent-menu-mode is enabled globally
+  (defvar my/accent-menu-enabled nil
+    "Whether accent-menu-mode should be enabled in supported modes.")
+  
+  ;; Function to toggle accent-menu-mode globally
+  (defun my/toggle-accent-menu-global ()
+    "Toggle accent-menu-mode in all supported buffers."
+    (interactive)
+    (setq my/accent-menu-enabled (not my/accent-menu-enabled))
+    (dolist (buffer (buffer-list))
+      (with-current-buffer buffer
+        (when (derived-mode-p 'text-mode 'org-mode 'message-mode 
+                               'markdown-mode 'gfm-mode)
+          (accent-menu-mode (if my/accent-menu-enabled 1 -1)))))
+    (message "Accent menu %s globally" 
+             (if my/accent-menu-enabled "enabled" "disabled")))
+  
+  ;; Hook function to conditionally enable accent-menu-mode
+  (defun my/maybe-enable-accent-menu ()
+    "Enable accent-menu-mode if my/accent-menu-enabled is true."
+    (when my/accent-menu-enabled
+      (accent-menu-mode 1)))
+  
+  ;; Add hooks but don't enable by default
+  :hook ((text-mode . my/maybe-enable-accent-menu)
+         (org-mode . my/maybe-enable-accent-menu)
+         (message-mode . my/maybe-enable-accent-menu)
+         (markdown-mode . my/maybe-enable-accent-menu)
+         (gfm-mode . my/maybe-enable-accent-menu))
   :config
   ;; French accent configuration
   (setq accent-diacritics '((a (à â))
@@ -750,12 +762,22 @@ and disables the table of contents."
                (< at (point-max)))
       (buffer-substring-no-properties at (+ at 1))))
   
-  ;; Manual command to enable accent menu in current buffer
-  (defun my/enable-accent-menu ()
-    "Manually enable accent-menu-mode in current buffer."
+  ;; Manual command to toggle accent menu in current buffer
+  (defun my/toggle-accent-menu-buffer ()
+    "Toggle accent-menu-mode in current buffer."
     (interactive)
-    (accent-menu-mode 1)
-    (message "Accent menu enabled in %s" (buffer-name)))) ; End of use-package accent
+    (accent-menu-mode (if accent-menu-mode -1 1))
+    (message "Accent menu %s in %s" 
+             (if accent-menu-mode "enabled" "disabled")
+             (buffer-name)))) ; End of use-package accent
+
+;; Keybindings for accent-menu-mode
+(map! :leader
+      :desc "Toggle accent menu (global)"
+      "t a" #'my/toggle-accent-menu-global)
+(map! :leader
+      :desc "Toggle accent menu (buffer)"
+      "t A" #'my/toggle-accent-menu-buffer)
 
 ;; Project-wide occur function that returns a list of matching buffers:
   (defun my/smart-project-occur (regexp)
