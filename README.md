@@ -51,8 +51,14 @@ Note that it integrates with:
 ## Custom Configuration Details
 
 ### EDITOR
-- **French Accent Support**: Integrated `accent` package with custom configuration for French diacritics (à, â, é, è, ê, ë, î, ï, ô, ù, û, ü, ç). Double-tap keys quickly to insert accented characters. Includes org-mode cache fix to prevent conflicts.
-Special thank you to Alvaro Ramirez from xenodium.com!
+- **French Accent Support**: Integrated `accent` package with custom configuration for French diacritics (à, â, é, è, ê, ë, î, ï, ô, ù, û, ü, ç). **Disabled by default** - must be manually enabled.
+  - **Usage**: When enabled, double-tap keys quickly (within 0.17s) to insert accented characters
+  - **Toggle Commands**:
+    - `SPC t a`: Toggle accent menu globally (all text/org/markdown buffers)
+    - `SPC t A`: Toggle accent menu for current buffer only
+  - **Example**: Type "ee" quickly → menu appears with (é è ê ë) options
+  - Includes org-mode cache fix to prevent conflicts
+  - Special thank you to Alvaro Ramirez from xenodium.com!
 - **Project-wide Search**: Custom `my/smart-project-occur` function for efficient regex searches across project files using projectile
 - **Eglot Modeline**: Custom status indicator `+modeline-eglot-status` showing LSP connection state
 - **Enhanced Undo Limits**: Increased to 64MB/96MB/960MB for handling large operations
@@ -60,7 +66,8 @@ Special thank you to Alvaro Ramirez from xenodium.com!
 
 **Custom Functions:**
 - `my/smart-project-occur`: Project-wide occur search with file filtering
-- `my/enable-accent-menu`: Manually enable accent menu in current buffer
+- `my/toggle-accent-menu-global`: Toggle accent menu in all supported buffers
+- `my/toggle-accent-menu-buffer`: Toggle accent menu in current buffer only
 - `my/drag-n-drop-handler`: Handle files dropped onto Emacs frame
 - `my/eat-popup`: Open eat terminal in popup window
 - `my/setup-custom-font-fallbacks-mac`: Configure font fallbacks for symbols and emojis on macOS
