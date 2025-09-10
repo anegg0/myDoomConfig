@@ -176,12 +176,12 @@
 
 ;; Frame transparency
 ;; (set-frame-parameter (selected-frame) 'alpha '(95 95))
-(add-to-list 'default-frame-alist '(alpha 95 95))
+(add-to-list 'default-frame-alist '(alpha 80 80))
 
 ;; Set initial frame size and position
 (setq initial-frame-alist
       (append initial-frame-alist
-              '((top . 1) (left . 1) (width . 180) (height . 140))))
+              '((top . 1) (left . 1) (width . 170) (height . 140))))
 ;; '((top . 1) (left . 1) (width . 200) (height . 140))))
 
 ;; Solaire mode for better contrast
@@ -993,6 +993,271 @@ Version: 2015-12-08 2023-04-07"
 
 
 ;;; =========================================================================
+;;; WORKSPACES & PROJECTILE
+;;; =========================================================================
+
+;; Configure workspace-project integration
+(after! persp-mode
+  ;; Automatically create workspaces when switching projects
+  (setq +workspaces-on-switch-project-behavior 'ask)  ; Options: t, nil, 'ask
+  
+  ;; Set workspace save directory
+  (setq persp-save-dir (expand-file-name "workspaces/" doom-etc-dir))
+  
+  ;; Auto-save workspace sessions
+  (setq persp-auto-save-opt 2)  ; 2 = save when killing Emacs
+  (setq persp-auto-save-persps-to-their-file-before-kill t)
+  
+  ;; Session file naming
+  (setq persp-auto-save-fname "auto-save")
+  
+  ;; Include project root in workspace names for clarity
+  ;; Comment out to use Doom's default behavior
+  ;; (setq +workspaces-switch-project-function #'+workspaces-switch-to-project)
+  
+  ;; Save workspaces more frequently (optional)
+  (setq persp-auto-save-num-of-the-last-sessions 10)
+  
+  ;; Disable saving of certain problematic parameters
+  (setq persp-filter-save-buffers-functions
+        (list (lambda (b) (not (string-match-p "^\\*" (buffer-name b)))))
+        persp-save-buffers-functions
+        (list #'persp-buffers-from-savelist))
+  
+  ;; Suppress winner-mode warnings during save
+  (defadvice! my/suppress-winner-warnings (orig-fn &rest args)
+    "Suppress winner-ring warnings when saving perspectives."
+    :around #'persp-save-state-to-file
+    (let ((inhibit-message t))
+      (apply orig-fn args)))
+  
+  ;; Create workspace names based on project root
+  (defun my/workspace-name-from-project (project-root)
+    "Generate workspace name from PROJECT-ROOT."
+    (if project-root
+        (file-name-nondirectory (string-trim-right project-root "/"))
+      "default"))
+
+  ;; Enhanced workspace-project persistence functions
+  (defun my/save-workspace-with-project ()
+    "Save current workspace with its project association."
+    (interactive)
+    (let* ((workspace-name (safe-persp-name (get-current-persp)))
+           (project-root (projectile-project-root))
+           (workspace-file (expand-file-name 
+                            (concat workspace-name ".el")
+                            persp-save-dir)))
+      (when workspace-name
+        ;; Save the workspace - pass workspace name as a list
+        (persp-save-to-file-by-names workspace-file (list workspace-name) t)
+        ;; Save project association metadata
+        (when project-root
+          (my/save-workspace-project-metadata workspace-name project-root))
+        (message "Saved workspace '%s' with project '%s'" 
+                 workspace-name (or project-root "none")))))
+
+  (defun my/save-workspace-project-metadata (workspace-name project-root)
+    "Save metadata linking WORKSPACE-NAME to PROJECT-ROOT."
+    (let ((metadata-file (expand-file-name "workspace-projects.el" persp-save-dir))
+          (metadata (if (file-exists-p (expand-file-name "workspace-projects.el" persp-save-dir))
+                        (with-temp-buffer
+                          (insert-file-contents (expand-file-name "workspace-projects.el" persp-save-dir))
+                          (read (current-buffer)))
+                      '())))
+      ;; Update or add the workspace-project association
+      (setq metadata (assq-delete-all (intern workspace-name) metadata))
+      (push (cons (intern workspace-name) project-root) metadata)
+      ;; Save updated metadata
+      (with-temp-file metadata-file
+        (prin1 metadata (current-buffer)))))
+
+  (defun my/load-workspace-with-project (workspace-name)
+    "Load workspace and switch to its associated project."
+    (interactive 
+     (list (completing-read "Workspace: " 
+                            (my/get-saved-workspace-names))))
+    (let* ((workspace-file (expand-file-name
+                            (concat workspace-name ".el")
+                            persp-save-dir))
+           (project-root (my/get-workspace-project workspace-name)))
+      ;; Load the workspace
+      (when (file-exists-p workspace-file)
+        (persp-load-from-file-by-names workspace-file workspace-name)
+        ;; Switch to associated project if it exists
+        (when (and project-root (file-directory-p project-root))
+          (projectile-switch-project-by-name project-root))
+        (message "Loaded workspace '%s' with project '%s'" 
+                 workspace-name (or project-root "none")))))
+
+  (defun my/get-saved-workspace-names ()
+    "Get list of saved workspace names."
+    (when (file-directory-p persp-save-dir)
+      (mapcar (lambda (file) 
+                (file-name-sans-extension file))
+              (directory-files persp-save-dir nil "\\.el$"))))
+
+  (defun my/get-workspace-project (workspace-name)
+    "Get project root associated with WORKSPACE-NAME."
+    (let ((metadata-file (expand-file-name "workspace-projects.el" persp-save-dir)))
+      (when (file-exists-p metadata-file)
+        (with-temp-buffer
+          (insert-file-contents metadata-file)
+          (let ((metadata (read (current-buffer))))
+            (cdr (assq (intern workspace-name) metadata)))))))
+
+  ;; Auto-save workspace when switching away
+  (defun my/auto-save-workspace-on-switch ()
+    "Automatically save current workspace when switching away."
+    (let ((current-workspace (safe-persp-name (get-current-persp))))
+      (when (and current-workspace 
+                 (not (string= current-workspace persp-nil-name)))
+        (condition-case err
+            (my/save-workspace-with-project)
+          (error (message "Failed to auto-save workspace: %s" 
+                          (error-message-string err)))))))
+
+  ;; Enhanced session management
+  (defun my/save-complete-session ()
+    "Save complete session including all workspaces and their project associations."
+    (interactive)
+    (let ((session-name (read-string "Session name: " 
+                                     (format-time-string "%Y%m%d-%H%M")))
+          (inhibit-message t))  ; Suppress verbose messages during save
+      ;; Save persp session using safe method
+      (condition-case err
+          (persp-save-state-to-file 
+           (expand-file-name (concat session-name ".persp") persp-save-dir))
+        (error (message "Warning during save: %s" (error-message-string err))))
+      ;; Save all individual workspaces with their projects
+      (dolist (workspace (persp-names))
+        (unless (string= workspace persp-nil-name)
+          (persp-switch workspace)
+          (condition-case err
+              (my/save-workspace-with-project)
+            (error (message "Failed to save workspace %s: %s" 
+                            workspace (error-message-string err))))))
+      (message "Saved complete session '%s'" session-name)))
+
+  (defun my/load-complete-session ()
+    "Load complete session with all workspaces and project associations."
+    (interactive)
+    (let* ((session-files (when (file-directory-p persp-save-dir)
+                            (directory-files persp-save-dir nil "\\.persp$")))
+           (session-name (completing-read "Session: "
+                                          (mapcar #'file-name-sans-extension session-files))))
+      (when session-name
+        (persp-load-state-from-file 
+         (expand-file-name (concat session-name ".persp") persp-save-dir))
+        (message "Loaded session '%s'" session-name)))))
+
+;; Optional: Enable automatic saving with performance considerations
+(defvar my/workspace-auto-save-enabled nil
+  "Whether to enable automatic workspace saving.")
+
+(defun my/toggle-workspace-auto-save ()
+  "Toggle automatic workspace saving."
+  (interactive)
+  (setq my/workspace-auto-save-enabled (not my/workspace-auto-save-enabled))
+  (if my/workspace-auto-save-enabled
+      (progn
+        ;; Add hooks for auto-saving
+        (add-hook 'persp-before-switch-functions #'my/auto-save-workspace-on-switch)
+        (add-hook 'kill-emacs-hook #'my/save-complete-session)
+        (message "Workspace auto-save enabled"))
+    (progn
+      ;; Remove hooks
+      (remove-hook 'persp-before-switch-functions #'my/auto-save-workspace-on-switch)
+      (remove-hook 'kill-emacs-hook #'my/save-complete-session)
+      (message "Workspace auto-save disabled"))))
+
+;; Keybindings for workspace-project management
+(map! :leader
+      :prefix ("TAB w" . "workspace-project")
+      :desc "Save workspace with project" "s" #'my/save-workspace-with-project
+      :desc "Load workspace with project" "l" #'my/load-workspace-with-project
+      :desc "Save complete session" "S" #'my/save-complete-session
+      :desc "Load complete session" "L" #'my/load-complete-session
+      :desc "Toggle auto-save" "a" #'my/toggle-workspace-auto-save)
+
+;; Enhanced projectile-workspace integration
+(defun my/projectile-create-workspace-for-project ()
+  "Create or switch to workspace for current project."
+  (interactive)
+  (let* ((project-root (projectile-project-root))
+         (workspace-name (when project-root
+                           (my/workspace-name-from-project project-root))))
+    (when workspace-name
+      (+workspace/switch-to workspace-name)
+      (when project-root
+        (my/save-workspace-project-metadata workspace-name project-root))
+      (message "Switched to workspace '%s' for project '%s'" 
+               workspace-name project-root))))
+
+;; Override projectile switch behavior to always create workspaces
+(defun my/projectile-switch-project-with-workspace ()
+  "Switch project and create/switch to associated workspace."
+  (interactive)
+  (let ((+workspaces-on-switch-project-behavior t))
+    (call-interactively #'projectile-switch-project)))
+
+;; Additional keybindings for enhanced project-workspace workflow
+(map! :leader
+      :prefix "p"
+      :desc "Switch project with workspace" "W" #'my/projectile-switch-project-with-workspace
+      :desc "Create workspace for project" "w" #'my/projectile-create-workspace-for-project)
+
+;; Workarounds for known issues
+(defun my/cleanup-magit-buffers-in-workspace ()
+  "Clean up magit buffers in current workspace to prevent persistence issues."
+  (interactive)
+  (let ((magit-buffers (cl-remove-if-not 
+                        (lambda (buf)
+                          (string-match-p "^\\*magit" (buffer-name buf)))
+                        (persp-buffer-list))))
+    (dolist (buf magit-buffers)
+      (persp-remove-buffer buf))
+    (message "Cleaned up %d magit buffers from workspace" (length magit-buffers))))
+
+;; Automatically clean magit buffers before saving workspace
+(defun my/pre-save-workspace-cleanup ()
+  "Clean up problematic buffers before saving workspace."
+  (my/cleanup-magit-buffers-in-workspace)
+  ;; Add other cleanup operations here as needed
+  )
+
+;; Enhanced workspace saving with cleanup
+(defun my/save-workspace-with-project-safe ()
+  "Save current workspace with project association, with cleanup."
+  (interactive)
+  (my/pre-save-workspace-cleanup)
+  (my/save-workspace-with-project))
+
+;; Utility to show current workspace-project associations
+(defun my/show-workspace-project-associations ()
+  "Display current workspace-project associations."
+  (interactive)
+  (let* ((metadata-file (expand-file-name "workspace-projects.el" persp-save-dir))
+         (associations (when (file-exists-p metadata-file)
+                         (with-temp-buffer
+                           (insert-file-contents metadata-file)
+                           (read (current-buffer))))))
+    (if associations
+        (with-current-buffer (get-buffer-create "*Workspace-Project Associations*")
+          (erase-buffer)
+          (insert "Workspace-Project Associations:\n\n")
+          (dolist (assoc associations)
+            (insert (format "%-20s -> %s\n" (car assoc) (cdr assoc))))
+          (display-buffer (current-buffer)))
+      (message "No workspace-project associations found"))))
+
+;; Keybinding for safe saving and utilities
+(map! :leader
+      :prefix ("TAB w" . "workspace-project")
+      :desc "Safe save workspace" "C" #'my/save-workspace-with-project-safe
+      :desc "Show associations" "A" #'my/show-workspace-project-associations
+      :desc "Clean magit buffers" "c" #'my/cleanup-magit-buffers-in-workspace)
+
+;;; =========================================================================
 ;;; PROJECTILE
 ;;; =========================================================================
 ;; Auto-invalidate projectile cache when switching git branches: untested code!
@@ -1055,7 +1320,7 @@ Version: 2015-12-08 2023-04-07"
       ;; Move to the beginning of the current heading
       (org-back-to-heading t)
       ;; Check if this is a Linear issue heading
-      (when (looking-at "^\\*\\*\\* \\(TODO\\|IN-PROGRESS\\|IN-REVIEW\\|BACKLOG\\|BLOCKED\\|DONE\\)")
+      (when (looking-at "^\\*\\*\\* \\(TODO\\|IN-PROGRESS\\|IN-REVIEW\\|BACKLOG\\|BLOCKED\\|DONE\\|CANCELED\)")
         (let ((todo-state (match-string 1))
               (issue-id nil)
               (issue-identifier nil)
