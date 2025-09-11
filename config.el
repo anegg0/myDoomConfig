@@ -652,7 +652,9 @@ and disables the table of contents."
 
 ;; Disable in-buffer text completion globally
 (after! corfu
-  (global-corfu-mode -1))
+  (global-corfu-mode -1)
+  ;; Ensure corfu is disabled by default in all buffers
+  (setq global-corfu-modes nil))
 
 (after! company
   (global-company-mode -1))
