@@ -905,6 +905,9 @@ and disables the table of contents."
 
 ;; Enable auto-revert for dired buffers globally
 (setq dired-auto-revert-buffer t)
+
+;; Enable global auto-revert mode to automatically refresh buffers when files change
+(global-auto-revert-mode 1)
 ;; Utility functions for copy/paste with registers
 (defun xah-copy-to-register-1 ()
   "Copy current line or selection to register 1.
