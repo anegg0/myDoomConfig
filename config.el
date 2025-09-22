@@ -1529,37 +1529,50 @@ to load the new symbol and emoji fonts."
 ;;; =========================================================================
 
 (setq tramp-default-method "ssh")
+;; SSH ControlMaster configuration for better connection reuse
 (setq tramp-ssh-controlmaster-options
-      "-o ControlMaster=auto -o ControlPath='tramp.%%C' -o ControlPersist=no")
+      "-o ControlMaster=auto -o ControlPath='tramp.%%C' -o ControlPersist=yes")
+;; Enable connection sharing for better performance
 (after! tramp-sh
-  (setq tramp-use-connection-share nil
-        tramp-chunksize 2000))
+  (setq tramp-use-connection-share t
+        tramp-chunksize 500))  ;; Reduced chunk size for better performance (was 2000)
 
 (after! tramp
   ;; Use bash for TRAMP connections
   (setenv "SHELL" "/bin/bash")
 
-  ;; More comprehensive prompt pattern
+  ;; Improved shell prompt pattern for better compatibility
   (setq tramp-shell-prompt-pattern
         "\\(?:^\\|\n\\|\x0d\\)[^]#$%>\n]*#?[]#$%>] *\\(\e\\[[0-9;]*[a-zA-Z] *\\)*")
+  
+  ;; Additional prompt patterns for various shells
+  (setq tramp-terminal-prompt-regexp "[pP]assword\\|Enter passphrase")
 
   ;; Additional TRAMP optimizations
   (setq tramp-default-method "ssh"
         tramp-copy-size-limit nil
-        tramp-use-connection-share nil
-        tramp-verbose 6  ;; Enable debugging
-        tramp-connection-timeout 10  ;; Set connection timeout
+        tramp-use-connection-share t  ;; Enable connection sharing (consistent with tramp-sh setting)
+        tramp-verbose 1  ;; Reduced verbosity (was 6 - too noisy)
+        tramp-connection-timeout 15  ;; Increased connection timeout (was 10)
         password-cache-expiry nil  ;; Keep passwords in cache
-        tramp-completion-reread-directory-timeout nil)  ;; Disable auto-refresh
+        tramp-completion-reread-directory-timeout 60)  ;; Re-enabled with reasonable timeout (was nil)
 
   ;; Ensure clean remote environment
   (setq tramp-remote-shell "/bin/bash"
         tramp-remote-shell-args '("-c"))
   
-  ;; Disable version control for TRAMP files (can cause freezing)
-  (setq vc-ignore-dir-regexp
-        (format "\\(%s\\)\\|\\(%s\\)"
-                vc-ignore-dir-regexp
-                tramp-file-name-regexp)))
+  ;; Selective version control settings for TRAMP files
+  ;; Instead of completely disabling, we optimize for better performance
+  (setq vc-handled-backends '(Git)  ;; Only use Git for version control
+        vc-git-resolve-symlinks nil  ;; Don't resolve symlinks
+        vc-follow-symlinks t)  ;; But follow them when needed
+  
+  ;; For very slow connections, you can still disable VC entirely:
+  ;; (setq vc-ignore-dir-regexp
+  ;;       (format "\\(%s\\)\\|\\(%s\\)"
+  ;;               vc-ignore-dir-regexp
+  ;;               tramp-file-name-regexp)))
+  ) ;; Close (after! tramp block
+
 (setq delete-by-moving-to-trash "~/.Trash/" )
 
