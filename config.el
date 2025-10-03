@@ -676,17 +676,17 @@ and disables the table of contents."
     (dolist (buffer (buffer-list))
       (with-current-buffer buffer
         (when (derived-mode-p 'text-mode 'org-mode 'message-mode 
-                               'markdown-mode 'gfm-mode)
+                              'markdown-mode 'gfm-mode)
           (accent-menu-mode (if my/accent-menu-enabled 1 -1)))))
     (message "Accent menu %s globally" 
              (if my/accent-menu-enabled "enabled" "disabled")))
-  
+    
   ;; Hook function to conditionally enable accent-menu-mode
   (defun my/maybe-enable-accent-menu ()
     "Enable accent-menu-mode if my/accent-menu-enabled is true."
     (when my/accent-menu-enabled
       (accent-menu-mode 1)))
-  
+    
   ;; Add hooks but don't enable by default
   :hook ((text-mode . my/maybe-enable-accent-menu)
          (org-mode . my/maybe-enable-accent-menu)
@@ -753,7 +753,7 @@ and disables the table of contents."
                                (accent-menu-monitor--buffer-char-string beginning)))
         ;; Temporarily disable org-element cache during accent menu operations
         (let ((org-element-use-cache-backup (when (boundp 'org-element-use-cache)
-                                               org-element-use-cache)))
+                                              org-element-use-cache)))
           (when (derived-mode-p 'org-mode)
             (setq-local org-element-use-cache nil))
           ;; Delete the repeated character
@@ -770,7 +770,7 @@ and disables the table of contents."
     (when (and (>= at (point-min))
                (< at (point-max)))
       (buffer-substring-no-properties at (+ at 1))))
-  
+    
   ;; Manual command to toggle accent menu in current buffer
   (defun my/toggle-accent-menu-buffer ()
     "Toggle accent-menu-mode in current buffer."
@@ -789,17 +789,17 @@ and disables the table of contents."
       "t A" #'my/toggle-accent-menu-buffer)
 
 ;; Project-wide occur function that returns a list of matching buffers:
-  (defun my/smart-project-occur (regexp)
-    "Search project files with occur, only opening files that match."
-    (interactive "sRegexp: ")
-    (let* ((project-root (projectile-project-root))
-           (matching-files (projectile-files-with-string regexp project-root))
-           (buffers '()))
-      (dolist (file matching-files)
-        (push (find-file-noselect file) buffers))
-      (if buffers
-          (multi-occur buffers regexp)
-        (message "No files found containing: %s" regexp))))
+(defun my/smart-project-occur (regexp)
+  "Search project files with occur, only opening files that match."
+  (interactive "sRegexp: ")
+  (let* ((project-root (projectile-project-root))
+         (matching-files (projectile-files-with-string regexp project-root))
+         (buffers '()))
+    (dolist (file matching-files)
+      (push (find-file-noselect file) buffers))
+    (if buffers
+        (multi-occur buffers regexp)
+      (message "No files found containing: %s" regexp))))
 
 (setq +lsp-backend 'eglot)
 
@@ -881,25 +881,6 @@ and disables the table of contents."
 
   )
 
-;; Copilot Chat configuration
-(use-package! copilot-chat
-  :after (copilot)
-  :config
-  ;;   ;; Configure copilot-chat backend (curl is recommended)
-  (setq copilot-chat-backend 'curl)
-
-  ;;   ;; Optional: Set custom keybindings for copilot-chat
-  (map! :leader
-        :prefix ("C c" . "copilot-chat")
-        :desc "Start chat" "c" #'copilot-chat-display
-        :desc "Ask about region" "r" #'copilot-chat-ask-region
-        :desc "Ask about buffer" "b" #'copilot-chat-ask-buffer
-        :desc "Explain code" "e" #'copilot-chat-explain
-        :desc "Fix code" "f" #'copilot-chat-fix
-        :desc "Generate docs" "d" #'copilot-chat-doc
-        :desc "Review code" "R" #'copilot-chat-review
-        :desc "Add code" "a" #'copilot-chat-add))
-
 ;; Disable dired-omit-mode globally
 (remove-hook 'dired-mode-hook 'dired-omit-mode)
 
@@ -948,11 +929,11 @@ Version: 2015-12-08 2023-04-07"
 (after! emacs-everywhere
   ;; Set the default major mode to markdown-mode
   (setq emacs-everywhere-major-mode-function 'markdown-mode)
-  
+
   ;; Store emacs-everywhere messages in ProtonDrive
-  (setq emacs-everywhere-file-dir 
+  (setq emacs-everywhere-file-dir
         (expand-file-name "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/emacs-everywhere-msgs/"))
-  
+
   ;; Custom filename function to add .md extension
   (defun my/emacs-everywhere-markdown-filename (app-info)
     "Generate a markdown filename for emacs-everywhere."
@@ -960,11 +941,46 @@ Version: 2015-12-08 2023-04-07"
             (format-time-string "%Y%m%d-%H%M%S-" (current-time))
             (emacs-everywhere-app-class app-info)
             ".md"))
-  
+
   ;; Use custom filename function for markdown files
   (setq emacs-everywhere-filename-function #'my/emacs-everywhere-markdown-filename)
 
-  ;; Optionally add hooks for specific adjustments when Emacs Everywhere activates
+  ;; Fix the markdown template issue with a multi-layered approach
+
+  ;; Method 1: Set inhibit flag before major mode is applied
+  (defun my/emacs-everywhere-inhibit-templates ()
+    "Inhibit file templates for emacs-everywhere sessions."
+    (setq-local +file-templates-inhibit t))
+
+  ;; Remove the default major mode hook and re-add it after our inhibit hook
+  (setq emacs-everywhere-init-hooks
+        (remove 'emacs-everywhere-apply-major-mode emacs-everywhere-init-hooks))
+
+  ;; Add our hooks in the correct order
+  (add-hook 'emacs-everywhere-init-hooks #'my/emacs-everywhere-inhibit-templates)
+  (add-hook 'emacs-everywhere-init-hooks #'emacs-everywhere-apply-major-mode 'append)
+
+  ;; Method 2: Also advise the template check function to detect emacs-everywhere buffers
+  (defun my/inhibit-templates-in-emacs-everywhere (orig-fn &rest args)
+    "Prevent file templates from being applied in emacs-everywhere buffers."
+    (if (and buffer-file-name
+             (string-match-p "emacs-everywhere" buffer-file-name))
+        nil  ; Return nil to prevent template expansion
+      (apply orig-fn args)))
+
+  (after! yasnippet
+    (advice-add '+file-templates-check-h :around #'my/inhibit-templates-in-emacs-everywhere))
+
+  ;; Method 3: Hook into markdown-mode itself to prevent templates
+  (defun my/inhibit-templates-for-emacs-everywhere-markdown ()
+    "Set inhibit flag when markdown-mode is activated in emacs-everywhere."
+    (when (and buffer-file-name
+               (string-match-p "emacs-everywhere" buffer-file-name))
+      (setq-local +file-templates-inhibit t)))
+
+  (add-hook 'markdown-mode-hook #'my/inhibit-templates-for-emacs-everywhere-markdown -100)
+
+  ;; Add other customizations
   (add-hook 'emacs-everywhere-init-hooks
             (lambda ()
               ;; Enable visual-line-mode for better text wrapping
@@ -974,7 +990,8 @@ Version: 2015-12-08 2023-04-07"
               ;; Optionally center the buffer contents
               (centered-cursor-mode)
               ;; Optionally enable copilot-mode
-              (copilot-mode))))
+              (copilot-mode))
+            'append))
 
 
 
@@ -996,271 +1013,6 @@ Version: 2015-12-08 2023-04-07"
   (add-hook 'gfm-mode-hook (lambda () (company-mode -1))))
 
 
-
-;;; =========================================================================
-;;; WORKSPACES & PROJECTILE
-;;; =========================================================================
-
-;; Configure workspace-project integration
-(after! persp-mode
-  ;; Automatically create workspaces when switching projects
-  (setq +workspaces-on-switch-project-behavior 'ask)  ; Options: t, nil, 'ask
-  
-  ;; Set workspace save directory
-  (setq persp-save-dir (expand-file-name "workspaces/" doom-etc-dir))
-  
-  ;; Auto-save workspace sessions
-  (setq persp-auto-save-opt 2)  ; 2 = save when killing Emacs
-  (setq persp-auto-save-persps-to-their-file-before-kill t)
-  
-  ;; Session file naming
-  (setq persp-auto-save-fname "auto-save")
-  
-  ;; Include project root in workspace names for clarity
-  ;; Comment out to use Doom's default behavior
-  ;; (setq +workspaces-switch-project-function #'+workspaces-switch-to-project)
-  
-  ;; Save workspaces more frequently (optional)
-  (setq persp-auto-save-num-of-the-last-sessions 10)
-  
-  ;; Disable saving of certain problematic parameters
-  (setq persp-filter-save-buffers-functions
-        (list (lambda (b) (not (string-match-p "^\\*" (buffer-name b)))))
-        persp-save-buffers-functions
-        (list #'persp-buffers-from-savelist))
-  
-  ;; Suppress winner-mode warnings during save
-  (defadvice! my/suppress-winner-warnings (orig-fn &rest args)
-    "Suppress winner-ring warnings when saving perspectives."
-    :around #'persp-save-state-to-file
-    (let ((inhibit-message t))
-      (apply orig-fn args)))
-  
-  ;; Create workspace names based on project root
-  (defun my/workspace-name-from-project (project-root)
-    "Generate workspace name from PROJECT-ROOT."
-    (if project-root
-        (file-name-nondirectory (string-trim-right project-root "/"))
-      "default"))
-
-  ;; Enhanced workspace-project persistence functions
-  (defun my/save-workspace-with-project ()
-    "Save current workspace with its project association."
-    (interactive)
-    (let* ((workspace-name (safe-persp-name (get-current-persp)))
-           (project-root (projectile-project-root))
-           (workspace-file (expand-file-name 
-                            (concat workspace-name ".el")
-                            persp-save-dir)))
-      (when workspace-name
-        ;; Save the workspace - pass workspace name as a list
-        (persp-save-to-file-by-names workspace-file (list workspace-name) t)
-        ;; Save project association metadata
-        (when project-root
-          (my/save-workspace-project-metadata workspace-name project-root))
-        (message "Saved workspace '%s' with project '%s'" 
-                 workspace-name (or project-root "none")))))
-
-  (defun my/save-workspace-project-metadata (workspace-name project-root)
-    "Save metadata linking WORKSPACE-NAME to PROJECT-ROOT."
-    (let ((metadata-file (expand-file-name "workspace-projects.el" persp-save-dir))
-          (metadata (if (file-exists-p (expand-file-name "workspace-projects.el" persp-save-dir))
-                        (with-temp-buffer
-                          (insert-file-contents (expand-file-name "workspace-projects.el" persp-save-dir))
-                          (read (current-buffer)))
-                      '())))
-      ;; Update or add the workspace-project association
-      (setq metadata (assq-delete-all (intern workspace-name) metadata))
-      (push (cons (intern workspace-name) project-root) metadata)
-      ;; Save updated metadata
-      (with-temp-file metadata-file
-        (prin1 metadata (current-buffer)))))
-
-  (defun my/load-workspace-with-project (workspace-name)
-    "Load workspace and switch to its associated project."
-    (interactive 
-     (list (completing-read "Workspace: " 
-                            (my/get-saved-workspace-names))))
-    (let* ((workspace-file (expand-file-name
-                            (concat workspace-name ".el")
-                            persp-save-dir))
-           (project-root (my/get-workspace-project workspace-name)))
-      ;; Load the workspace
-      (when (file-exists-p workspace-file)
-        (persp-load-from-file-by-names workspace-file workspace-name)
-        ;; Switch to associated project if it exists
-        (when (and project-root (file-directory-p project-root))
-          (projectile-switch-project-by-name project-root))
-        (message "Loaded workspace '%s' with project '%s'" 
-                 workspace-name (or project-root "none")))))
-
-  (defun my/get-saved-workspace-names ()
-    "Get list of saved workspace names."
-    (when (file-directory-p persp-save-dir)
-      (mapcar (lambda (file) 
-                (file-name-sans-extension file))
-              (directory-files persp-save-dir nil "\\.el$"))))
-
-  (defun my/get-workspace-project (workspace-name)
-    "Get project root associated with WORKSPACE-NAME."
-    (let ((metadata-file (expand-file-name "workspace-projects.el" persp-save-dir)))
-      (when (file-exists-p metadata-file)
-        (with-temp-buffer
-          (insert-file-contents metadata-file)
-          (let ((metadata (read (current-buffer))))
-            (cdr (assq (intern workspace-name) metadata)))))))
-
-  ;; Auto-save workspace when switching away
-  (defun my/auto-save-workspace-on-switch ()
-    "Automatically save current workspace when switching away."
-    (let ((current-workspace (safe-persp-name (get-current-persp))))
-      (when (and current-workspace 
-                 (not (string= current-workspace persp-nil-name)))
-        (condition-case err
-            (my/save-workspace-with-project)
-          (error (message "Failed to auto-save workspace: %s" 
-                          (error-message-string err)))))))
-
-  ;; Enhanced session management
-  (defun my/save-complete-session ()
-    "Save complete session including all workspaces and their project associations."
-    (interactive)
-    (let ((session-name (read-string "Session name: " 
-                                     (format-time-string "%Y%m%d-%H%M")))
-          (inhibit-message t))  ; Suppress verbose messages during save
-      ;; Save persp session using safe method
-      (condition-case err
-          (persp-save-state-to-file 
-           (expand-file-name (concat session-name ".persp") persp-save-dir))
-        (error (message "Warning during save: %s" (error-message-string err))))
-      ;; Save all individual workspaces with their projects
-      (dolist (workspace (persp-names))
-        (unless (string= workspace persp-nil-name)
-          (persp-switch workspace)
-          (condition-case err
-              (my/save-workspace-with-project)
-            (error (message "Failed to save workspace %s: %s" 
-                            workspace (error-message-string err))))))
-      (message "Saved complete session '%s'" session-name)))
-
-  (defun my/load-complete-session ()
-    "Load complete session with all workspaces and project associations."
-    (interactive)
-    (let* ((session-files (when (file-directory-p persp-save-dir)
-                            (directory-files persp-save-dir nil "\\.persp$")))
-           (session-name (completing-read "Session: "
-                                          (mapcar #'file-name-sans-extension session-files))))
-      (when session-name
-        (persp-load-state-from-file 
-         (expand-file-name (concat session-name ".persp") persp-save-dir))
-        (message "Loaded session '%s'" session-name)))))
-
-;; Optional: Enable automatic saving with performance considerations
-(defvar my/workspace-auto-save-enabled nil
-  "Whether to enable automatic workspace saving.")
-
-(defun my/toggle-workspace-auto-save ()
-  "Toggle automatic workspace saving."
-  (interactive)
-  (setq my/workspace-auto-save-enabled (not my/workspace-auto-save-enabled))
-  (if my/workspace-auto-save-enabled
-      (progn
-        ;; Add hooks for auto-saving
-        (add-hook 'persp-before-switch-functions #'my/auto-save-workspace-on-switch)
-        (add-hook 'kill-emacs-hook #'my/save-complete-session)
-        (message "Workspace auto-save enabled"))
-    (progn
-      ;; Remove hooks
-      (remove-hook 'persp-before-switch-functions #'my/auto-save-workspace-on-switch)
-      (remove-hook 'kill-emacs-hook #'my/save-complete-session)
-      (message "Workspace auto-save disabled"))))
-
-;; Keybindings for workspace-project management
-(map! :leader
-      :prefix ("TAB w" . "workspace-project")
-      :desc "Save workspace with project" "s" #'my/save-workspace-with-project
-      :desc "Load workspace with project" "l" #'my/load-workspace-with-project
-      :desc "Save complete session" "S" #'my/save-complete-session
-      :desc "Load complete session" "L" #'my/load-complete-session
-      :desc "Toggle auto-save" "a" #'my/toggle-workspace-auto-save)
-
-;; Enhanced projectile-workspace integration
-(defun my/projectile-create-workspace-for-project ()
-  "Create or switch to workspace for current project."
-  (interactive)
-  (let* ((project-root (projectile-project-root))
-         (workspace-name (when project-root
-                           (my/workspace-name-from-project project-root))))
-    (when workspace-name
-      (+workspace/switch-to workspace-name)
-      (when project-root
-        (my/save-workspace-project-metadata workspace-name project-root))
-      (message "Switched to workspace '%s' for project '%s'" 
-               workspace-name project-root))))
-
-;; Override projectile switch behavior to always create workspaces
-(defun my/projectile-switch-project-with-workspace ()
-  "Switch project and create/switch to associated workspace."
-  (interactive)
-  (let ((+workspaces-on-switch-project-behavior t))
-    (call-interactively #'projectile-switch-project)))
-
-;; Additional keybindings for enhanced project-workspace workflow
-(map! :leader
-      :prefix "p"
-      :desc "Switch project with workspace" "W" #'my/projectile-switch-project-with-workspace
-      :desc "Create workspace for project" "w" #'my/projectile-create-workspace-for-project)
-
-;; Workarounds for known issues
-(defun my/cleanup-magit-buffers-in-workspace ()
-  "Clean up magit buffers in current workspace to prevent persistence issues."
-  (interactive)
-  (let ((magit-buffers (cl-remove-if-not 
-                        (lambda (buf)
-                          (string-match-p "^\\*magit" (buffer-name buf)))
-                        (persp-buffer-list))))
-    (dolist (buf magit-buffers)
-      (persp-remove-buffer buf))
-    (message "Cleaned up %d magit buffers from workspace" (length magit-buffers))))
-
-;; Automatically clean magit buffers before saving workspace
-(defun my/pre-save-workspace-cleanup ()
-  "Clean up problematic buffers before saving workspace."
-  (my/cleanup-magit-buffers-in-workspace)
-  ;; Add other cleanup operations here as needed
-  )
-
-;; Enhanced workspace saving with cleanup
-(defun my/save-workspace-with-project-safe ()
-  "Save current workspace with project association, with cleanup."
-  (interactive)
-  (my/pre-save-workspace-cleanup)
-  (my/save-workspace-with-project))
-
-;; Utility to show current workspace-project associations
-(defun my/show-workspace-project-associations ()
-  "Display current workspace-project associations."
-  (interactive)
-  (let* ((metadata-file (expand-file-name "workspace-projects.el" persp-save-dir))
-         (associations (when (file-exists-p metadata-file)
-                         (with-temp-buffer
-                           (insert-file-contents metadata-file)
-                           (read (current-buffer))))))
-    (if associations
-        (with-current-buffer (get-buffer-create "*Workspace-Project Associations*")
-          (erase-buffer)
-          (insert "Workspace-Project Associations:\n\n")
-          (dolist (assoc associations)
-            (insert (format "%-20s -> %s\n" (car assoc) (cdr assoc))))
-          (display-buffer (current-buffer)))
-      (message "No workspace-project associations found"))))
-
-;; Keybinding for safe saving and utilities
-(map! :leader
-      :prefix ("TAB w" . "workspace-project")
-      :desc "Safe save workspace" "C" #'my/save-workspace-with-project-safe
-      :desc "Show associations" "A" #'my/show-workspace-project-associations
-      :desc "Clean magit buffers" "c" #'my/cleanup-magit-buffers-in-workspace)
 
 ;;; =========================================================================
 ;;; PROJECTILE
@@ -1502,19 +1254,19 @@ to load the new symbol and emoji fonts."
                 (my/setup-custom-font-fallbacks-mac)))))
 
 ;; Set a big buffer so we can search our history.
-(with-eval-after-load 'eat
-  (setq eat-term-scrollback-size 400000))
+(with-eval-after-load 'vterm
+  (setq vterm-term-scrollback-size 400000))
 
 ;; Configure eat popup
 (set-popup-rules!
-  '(("^\\*eat\\*" :side bottom :size 0.4 :select t :quit nil :ttl nil)
-    ("^\\*eat:.+\\*$" :side bottom :size 0.4 :select t :quit nil :ttl nil)))
+  '(("^\\*vterm\\*" :side bottom :size 0.4 :select t :quit nil :ttl nil)
+    ("^\\*vterm:.+\\*$" :side bottom :size 0.4 :select t :quit nil :ttl nil)))
 
-;; Wrapper function to ensure eat opens in popup
-(defun my/eat-popup ()
+;; Wrapper function to ensure vterm opens in popup
+(defun my/vterm-popup ()
   "Open eat terminal in a popup window."
   (interactive)
-  (eat))
+  (vterm))
 
 (use-package! claudemacs)
 ;; (after! claudemacs
@@ -1523,6 +1275,123 @@ to load the new symbol and emoji fonts."
 (define-key emacs-lisp-mode-map (kbd "C-c C-e") #'claudemacs-transient-menu)
 (define-key text-mode-map (kbd "C-c C-e") #'claudemacs-transient-menu)
 
+
+;;; =========================================================================
+;;; WORKSPACES DISPLAY
+;;; =========================================================================
+
+;; Persistent workspace display in echo area
+(defvar my/workspace-display-timer nil
+  "Timer for updating workspace display in echo area.")
+
+(defvar my/workspace-display-enabled nil
+  "Whether persistent workspace display is enabled.")
+
+(defvar my/workspace-display-interval 1
+  "Interval in seconds for updating workspace display.")
+
+(defvar my/last-workspace-message ""
+  "Store the last workspace display message to avoid redundant updates.")
+
+(defun my/workspace-display-update ()
+  "Update workspace display in echo area."
+  (when (and my/workspace-display-enabled
+             persp-mode
+             (not (active-minibuffer-window))
+             (not (current-message)))
+    (let* ((workspace-line (+workspace--tabline))
+           (new-message (format "%s" workspace-line)))
+      (unless (string= new-message my/last-workspace-message)
+        (setq my/last-workspace-message new-message)
+        (let (message-log-max)
+          (message "%s" new-message))))))
+
+(defun my/workspace-display-start ()
+  "Start persistent workspace display in echo area."
+  (interactive)
+  (setq my/workspace-display-enabled t)
+  (when my/workspace-display-timer
+    (cancel-timer my/workspace-display-timer))
+  (setq my/workspace-display-timer
+        (run-with-timer 0 my/workspace-display-interval #'my/workspace-display-update))
+  ;; Also hook into workspace changes for immediate updates
+  (add-hook 'persp-activated-functions #'my/workspace-display-force-update)
+  (add-hook 'persp-before-switch-functions #'my/workspace-display-force-update)
+  (add-hook 'persp-renamed-functions #'my/workspace-display-force-update)
+  (add-hook 'persp-before-kill-functions #'my/workspace-display-force-update)
+  (add-hook 'persp-created-functions #'my/workspace-display-force-update)
+  ;; Hook into window configuration changes
+  (add-hook 'window-configuration-change-hook #'my/workspace-display-update)
+  (message "Workspace display enabled"))
+
+(defun my/workspace-display-stop ()
+  "Stop persistent workspace display in echo area."
+  (interactive)
+  (setq my/workspace-display-enabled nil)
+  (when my/workspace-display-timer
+    (cancel-timer my/workspace-display-timer)
+    (setq my/workspace-display-timer nil))
+  (remove-hook 'persp-activated-functions #'my/workspace-display-force-update)
+  (remove-hook 'persp-before-switch-functions #'my/workspace-display-force-update)
+  (remove-hook 'persp-renamed-functions #'my/workspace-display-force-update)
+  (remove-hook 'persp-before-kill-functions #'my/workspace-display-force-update)
+  (remove-hook 'persp-created-functions #'my/workspace-display-force-update)
+  (remove-hook 'window-configuration-change-hook #'my/workspace-display-update)
+  (message "Workspace display disabled"))
+
+(defun my/workspace-display-toggle ()
+  "Toggle persistent workspace display in echo area."
+  (interactive)
+  (if my/workspace-display-enabled
+      (my/workspace-display-stop)
+    (my/workspace-display-start)))
+
+(defun my/workspace-display-force-update (&rest _)
+  "Force an immediate update of the workspace display."
+  (when my/workspace-display-enabled
+    (setq my/last-workspace-message "")  ; Clear cache to force update
+    (my/workspace-display-update)))
+
+;; Alternative: Display in mode-line instead of echo area
+(defun my/workspace-modeline-segment ()
+  "Return workspace list for mode-line display."
+  (when persp-mode
+    (propertize (format " %s " (+workspace--tabline))
+                'face 'mode-line-emphasis)))
+
+(defun my/workspace-display-in-modeline ()
+  "Add workspace display to the mode-line."
+  (interactive)
+  (unless (memq 'my/workspace-modeline-segment mode-line-format)
+    (setq-default mode-line-format
+                  (append '(" " (:eval (my/workspace-modeline-segment)))
+                          mode-line-format)))
+  (force-mode-line-update t)
+  (message "Workspace display added to mode-line"))
+
+(defun my/workspace-display-remove-from-modeline ()
+  "Remove workspace display from the mode-line."
+  (interactive)
+  (setq-default mode-line-format
+                (remove 'my/workspace-modeline-segment
+                        (remove " " mode-line-format)))
+  (force-mode-line-update t)
+  (message "Workspace display removed from mode-line"))
+
+;; Keybindings for workspace display
+(map! :leader
+      :prefix "TAB"
+      :desc "Toggle workspace display (echo area)" "d" #'my/workspace-display-toggle
+      :desc "Start workspace display" "D" #'my/workspace-display-start
+      :desc "Stop workspace display" "S" #'my/workspace-display-stop
+      :desc "Add to mode-line" "m" #'my/workspace-display-in-modeline
+      :desc "Remove from mode-line" "M" #'my/workspace-display-remove-from-modeline)
+
+;; Auto-start workspace display when Emacs starts and persp-mode is ready
+(add-hook 'persp-mode-hook
+          (lambda ()
+            (when persp-mode
+              (run-with-timer 2 nil #'my/workspace-display-start))))
 
 ;;; =========================================================================
 ;;; SSH
