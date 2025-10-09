@@ -1033,6 +1033,10 @@ Version: 2015-12-08 2023-04-07"
   ;; (linear-emacs-load-api-key-from-env)
   (my/linear-load-api-key-from-auth-source)
   (setq linear-emacs-org-file-path (expand-file-name "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/gtd/linear.org" org-directory))
+
+  ;; Configure async behavior (linear-emacs now uses async-first architecture)
+  (setq linear-emacs-async-default t)       ; Use async API calls by default (non-blocking)
+  (setq linear-emacs-progress-messages t)   ; Show progress during long operations
   ;; Improved synchronization function that only updates the changed issue
   (defun my/linear-sync-single-issue-at-point ()
     "Sync only the current issue at point to Linear API."
@@ -1068,21 +1072,12 @@ Version: 2015-12-08 2023-04-07"
 
           ;; If we found an issue ID, state, and team ID, update the Linear API
           (when (and issue-id issue-identifier team-id)
-            ;; Map org TODO state to Linear state
-            (let ((linear-emacs-state (cond
-                                       ((string= todo-state "TODO") "Todo")
-                                       ((string= todo-state "IN-PROGRESS") "In Progress")
-                                       ((string= todo-state "IN-REVIEW") "In Review")
-                                       ((string= todo-state "BACKLOG") "Backlog")
-                                       ((string= todo-state "BLOCKED") "Blocked")
-                                       ((string= todo-state "DONE") "Done")
-                                       ((string= todo-state "CANCELED") "Canceled")
-                                       ((string= todo-state "DUPLICATE") "Duplicate")
-                                       ;; Non-Linear states - don't sync to Linear
-                                       ((member todo-state '("NEXT" "HOLD" "WAITING-ON")) nil)
-                                       (t nil))))
-              (when linear-emacs-state
-                (linear-emacs--update-issue-state-async issue-id linear-emacs-state team-id))))))))
+            ;; Map org TODO state to Linear state using the package's mapping system
+            ;; This respects the linear-emacs-issues-state-mapping customization
+            (let ((linear-state (linear-emacs--map-org-state-to-linear todo-state)))
+              (when linear-state
+                ;; Async update - UI remains responsive, API call happens in background
+                (linear-emacs--update-issue-state-async issue-id linear-state team-id))))))))
 
   ;; Override linear-emacs-sync-org-to-linear to only sync the current issue
   (defun linear-emacs-sync-org-to-linear ()
@@ -1094,8 +1089,11 @@ Version: 2015-12-08 2023-04-07"
       (linear-emacs-sync-current-heading-to-linear)))
 
   ;; Run linear-emacs-list-issues before org-todo-list to include Linear issues
+  ;; NOTE: linear-emacs-list-issues is async - it returns immediately and updates
+  ;; the linear.org file in the background. Progress messages will appear if enabled.
   (defun my/run-linear-emacs-list-issues-before-todo (&rest _)
-    "Run linear-emacs-list-issues before org-todo-list to include Linear issues."
+    "Run linear-emacs-list-issues before org-todo-list to include Linear issues.
+This triggers an async fetch - the todo list may show before Linear issues are updated."
     (when (fboundp 'linear-emacs-list-issues)
       (message "Updating Linear issues before showing todo list...")
       (condition-case err
