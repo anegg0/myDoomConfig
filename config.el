@@ -881,25 +881,6 @@ and disables the table of contents."
 
   )
 
-;; Copilot Chat configuration
-(use-package! copilot-chat
-  :after (copilot)
-  :config
-  ;;   ;; Configure copilot-chat backend (curl is recommended)
-  (setq copilot-chat-backend 'curl)
-
-  ;;   ;; Optional: Set custom keybindings for copilot-chat
-  (map! :leader
-        :prefix ("C c" . "copilot-chat")
-        :desc "Start chat" "c" #'copilot-chat-display
-        :desc "Ask about region" "r" #'copilot-chat-ask-region
-        :desc "Ask about buffer" "b" #'copilot-chat-ask-buffer
-        :desc "Explain code" "e" #'copilot-chat-explain
-        :desc "Fix code" "f" #'copilot-chat-fix
-        :desc "Generate docs" "d" #'copilot-chat-doc
-        :desc "Review code" "R" #'copilot-chat-review
-        :desc "Add code" "a" #'copilot-chat-add))
-
 ;; Disable dired-omit-mode globally
 (remove-hook 'dired-mode-hook 'dired-omit-mode)
 
