@@ -1074,10 +1074,21 @@ Version: 2015-12-08 2023-04-07"
           (when (and issue-id issue-identifier team-id)
             ;; Map org TODO state to Linear state using the package's mapping system
             ;; This respects the linear-emacs-issues-state-mapping customization
-            (let ((linear-state (linear-emacs--map-org-state-to-linear todo-state)))
-              (when linear-state
-                ;; Async update - UI remains responsive, API call happens in background
-                (linear-emacs--update-issue-state-async issue-id linear-state team-id))))))))
+            ;; Map org TODO state to Linear state
+            (let ((linear-emacs-state (cond
+                                       ((string= todo-state "TODO") "Todo")
+                                       ((string= todo-state "IN-PROGRESS") "In Progress")
+                                       ((string= todo-state "IN-REVIEW") "In Review")
+                                       ((string= todo-state "BACKLOG") "Backlog")
+                                       ((string= todo-state "BLOCKED") "Blocked")
+                                       ((string= todo-state "DONE") "Done")
+                                       ((string= todo-state "CANCELED") "Canceled")
+                                       ((string= todo-state "DUPLICATE") "Duplicate")
+                                       ;; Non-Linear states - don't sync to Linear
+                                       ((member todo-state '("NEXT" "HOLD" "WAITING-ON")) nil)
+                                       (t nil))))
+              (when linear-emacs-state
+                (linear-emacs--update-issue-state-async issue-id linear-emacs-state team-id))))))))
 
   ;; Override linear-emacs-sync-org-to-linear to only sync the current issue
   (defun linear-emacs-sync-org-to-linear ()
