@@ -1100,16 +1100,20 @@ Version: 2015-12-08 2023-04-07"
       (linear-emacs-sync-current-heading-to-linear)))
 
   ;; Run linear-emacs-list-issues before org-todo-list to include Linear issues
-  ;; NOTE: linear-emacs-list-issues is async - it returns immediately and updates
-  ;; the linear.org file in the background. Progress messages will appear if enabled.
+  ;; NOTE: This function now truly returns immediately and the todo list shows right away
   (defun my/run-linear-emacs-list-issues-before-todo (&rest _)
-    "Run linear-emacs-list-issues before org-todo-list to include Linear issues.
-This triggers an async fetch - the todo list may show before Linear issues are updated."
-    (when (fboundp 'linear-emacs-list-issues)
-      (message "Updating Linear issues before showing todo list...")
+    "Trigger async Linear issues fetch without blocking org-todo-list.
+The Linear issues will update in the background while the todo list displays."
+    (when (and (featurep 'linear-emacs)
+               (fboundp 'linear-emacs-list-issues))
+      (message "Updating Linear issues in background...")
+      ;; Run async without blocking - just fire and forget
       (condition-case err
-          (linear-emacs-list-issues)
-        (error (message "Error updating Linear issues: %s" (error-message-string err))))))
+          (run-with-idle-timer 0.1 nil
+                               (lambda ()
+                                 (when (boundp 'linear-emacs--active-requests)
+                                   (linear-emacs-list-issues))))
+        (error (message "Error scheduling Linear update: %s" (error-message-string err))))))
 
   ;; Add advice to org-todo-list, but make it optional
   (defvar my/auto-sync-linear-before-todo t
