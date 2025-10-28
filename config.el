@@ -431,7 +431,7 @@ and disables the table of contents."
 
   ;; Custom TODO keywords
   (setq org-todo-keywords
-        '((sequence "TODO(t)" "IN-PROGRESS(i)" "IN-REVIEW(r)" "BACKLOG(b)" "BLOCKED(l)" "|" "DONE(d)" "CANCELED(c)" "DUPLICATE(p)" "NEXT(n)" "HOLD(h)" "WAITING-ON(w)")))
+        '((sequence "TODO(t)" "IN-PROGRESS(i)" "IN-REVIEW(r)" "BACKLOG(b)" "BLOCKED(l)" "|" "DONE(d)" "CANCELED(c)" "NEXT(n)")))
 
   ;; Optional: Add custom faces for your TODO states
   (setq org-todo-keyword-faces
@@ -1083,9 +1083,8 @@ Version: 2015-12-08 2023-04-07"
                                        ((string= todo-state "BLOCKED") "Blocked")
                                        ((string= todo-state "DONE") "Done")
                                        ((string= todo-state "CANCELED") "Canceled")
-                                       ((string= todo-state "DUPLICATE") "Duplicate")
                                        ;; Non-Linear states - don't sync to Linear
-                                       ((member todo-state '("NEXT" "HOLD" "WAITING-ON")) nil)
+                                       ((member todo-state '("NEXT")) nil)
                                        (t nil))))
               (when linear-emacs-state
                 (linear-emacs--update-issue-state-async issue-id linear-emacs-state team-id))))))))
