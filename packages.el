@@ -64,7 +64,6 @@
 (package! org-roam-ui)
 (package! sqlite3)
 (package! pinentry)
-(package! gptel)
 (package! evil-visual-mark-mode)
 (package! solidity-mode)
 (package! solidity-flycheck)
