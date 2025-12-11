@@ -825,8 +825,8 @@ and disables the table of contents."
 (add-to-list 'global-mode-string '(:eval (+modeline-eglot-status)))
 
 ;; Make white spaces visible in programming modes.
-(after! prog-mode
-  (add-hook! prog-mode #'whitespace-mode))
+;; (after! prog-mode
+;;   (add-hook! prog-mode #'whitespace-mode))
 
 ;; Enable word-wrap-mode globally
 (global-visual-line-mode 1)
@@ -889,6 +889,19 @@ and disables the table of contents."
 
 ;; Enable global auto-revert mode to automatically refresh buffers when files change
 (global-auto-revert-mode 1)
+
+;;; ---------------------------------------------------------------------------
+;;; Evil-surround customization
+;;; ---------------------------------------------------------------------------
+;; Remove automatic spacing when surrounding text with opening brackets.
+;; Default behavior: { adds "{ text }", } adds "{text}"
+;; Modified behavior: BOTH { and } add "{text}" (no spaces)
+(after! evil-surround
+  ;; Override opening bracket pairs to not add spaces
+  (setf (alist-get ?\( evil-surround-pairs-alist) '("(" . ")"))
+  (setf (alist-get ?\[ evil-surround-pairs-alist) '("[" . "]"))
+  (setf (alist-get ?\{ evil-surround-pairs-alist) '("{" . "}")))
+
 ;; Utility functions for copy/paste with registers
 (defun xah-copy-to-register-1 ()
   "Copy current line or selection to register 1.
