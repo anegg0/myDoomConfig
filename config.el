@@ -132,6 +132,10 @@
       "o e" #'my/eat-popup)
 
 (map! :leader
+      :desc "Filter agenda interactive"
+      "o f" #'my/org-agenda-filter-interactive)
+
+(map! :leader
       :desc "my/org-md-export-to-markdown-visible-only"
       "e m" #'my/org-md-export-to-markdown-visible-only)
 
@@ -181,7 +185,7 @@
 ;; Set initial frame size and position
 (setq initial-frame-alist
       (append initial-frame-alist
-              '((top . 1) (left . 1) (width . 180) (height . 140))))
+              '((top . 1) (left . 1) (width . 170) (height . 140))))
 ;; '((top . 1) (left . 1) (width . 200) (height . 140))))
 
 ;; Solaire mode for better contrast
@@ -497,6 +501,78 @@ and disables the table of contents."
           (org-agenda-tag-filter-preset `(,(concat "+" tag))))
       (org-todo-list nil)))
 
+  ;; Interactive org-agenda filter by tags and TODO state
+  (defun my/extract-todo-keywords ()
+    "Extract flat list of TODO keywords from org-todo-keywords.
+Strips keyboard shortcuts like '(t)' and returns clean strings."
+    (let ((keywords '()))
+      (dolist (sequence org-todo-keywords)
+        (when (listp sequence)
+          (dolist (item (cdr sequence))  ; Skip 'sequence symbol
+            (when (stringp item)
+              (let ((keyword (replace-regexp-in-string "(.*)" "" item)))
+                (unless (string-match-p "|" keyword)
+                  (push (string-trim keyword) keywords)))))))
+      (nreverse keywords)))
+
+  (defun my/completing-read-tag (prompt)
+    "Read a tag with completion from all agenda files.
+PROMPT is the string displayed to user. Returns empty string if no input."
+    (let* ((all-tags (org-global-tags-completion-table org-agenda-files))
+           (tag (completing-read prompt all-tags nil nil)))
+      (if (string-empty-p tag) "" tag)))
+
+  (defun my/completing-read-todo (prompt)
+    "Read a TODO state with completion from org-todo-keywords.
+PROMPT is the string displayed to user. Requires valid selection."
+    (let* ((todo-keywords (my/extract-todo-keywords))
+           (state (completing-read prompt todo-keywords nil t)))
+      state))
+
+  (defun my/build-skip-function (tag1 tag2 todo-state)
+    "Build skip function that combines tag and TODO filtering.
+TAG1 and TAG2 are optional tag filters (empty string means skip).
+TODO-STATE is required TODO keyword to match.
+Returns a lambda suitable for org-agenda-skip-function."
+    (lambda ()
+      (let ((should-skip nil))
+        ;; First check TODO state (skip if doesn't match)
+        (when (and todo-state (not (string-empty-p todo-state)))
+          (setq should-skip
+                (org-agenda-skip-entry-if 'nottodo (list todo-state))))
+
+        ;; Then check tags (skip if doesn't have required tags)
+        (unless should-skip
+          (let ((entry-tags (org-get-tags nil t)))
+            ;; Check first tag
+            (when (and tag1 (not (string-empty-p tag1)))
+              (unless (member tag1 entry-tags)
+                (setq should-skip (save-excursion
+                                    (or (outline-next-heading)
+                                        (point-max))))))
+            ;; Check second tag (only if first tag passed)
+            (when (and tag2 (not (string-empty-p tag2)) (not should-skip))
+              (unless (member tag2 entry-tags)
+                (setq should-skip (save-excursion
+                                    (or (outline-next-heading)
+                                        (point-max))))))))
+        should-skip)))
+
+  (defun my/org-agenda-filter-interactive ()
+    "Interactively filter org-agenda by tags and TODO status.
+Prompts for:
+  1. First tag (optional)
+  2. Second tag (optional)
+  3. TODO state (required)
+Displays agenda entries matching ALL criteria (AND logic)."
+    (interactive)
+    (let* ((tag1 (my/completing-read-tag "First tag (optional): "))
+           (tag2 (my/completing-read-tag "Second tag (optional): "))
+           (todo-state (my/completing-read-todo "TODO state: "))
+           (org-agenda-skip-function
+            (my/build-skip-function tag1 tag2 todo-state)))
+      (org-todo-list nil)))
+
   (defun jethro/org-archive-done-tasks ()
     "Archive all done tasks."
     (interactive)
@@ -552,6 +628,12 @@ and disables the table of contents."
            "%?"
            :if-new (file+head "catb/${slug}.org"
                               "#+title: ${title}\n#+TAGS: :\n#+FILETAGS: :catb:\n")
+           :immediate-finish t
+           :unnarrowed t)
+          ("f" "fin" plain
+           "%?"
+           :if-new (file+head "fin/${slug}.org"
+                              "#+title: ${title}\n#+TAGS: :\n#+FILETAGS: :fin:\n")
            :immediate-finish t
            :unnarrowed t)
           ("o" "OCL" plain
@@ -665,34 +747,34 @@ and disables the table of contents."
   :ensure t
   :init
   ;; Variable to control whether accent-menu-mode is enabled globally
-  (defvar my/accent-menu-enabled nil
-    "Whether accent-menu-mode should be enabled in supported modes.")
+  ;; (defvar my/accent-menu-enabled nil
+  ;;   "Whether accent-menu-mode should be enabled in supported modes.")
   
-  ;; Function to toggle accent-menu-mode globally
-  (defun my/toggle-accent-menu-global ()
-    "Toggle accent-menu-mode in all supported buffers."
-    (interactive)
-    (setq my/accent-menu-enabled (not my/accent-menu-enabled))
-    (dolist (buffer (buffer-list))
-      (with-current-buffer buffer
-        (when (derived-mode-p 'text-mode 'org-mode 'message-mode 
-                              'markdown-mode 'gfm-mode)
-          (accent-menu-mode (if my/accent-menu-enabled 1 -1)))))
-    (message "Accent menu %s globally" 
-             (if my/accent-menu-enabled "enabled" "disabled")))
+  ;; ;; Function to toggle accent-menu-mode globally
+  ;; (defun my/toggle-accent-menu-global ()
+  ;;   "Toggle accent-menu-mode in all supported buffers."
+  ;;   (interactive)
+  ;;   (setq my/accent-menu-enabled (not my/accent-menu-enabled))
+  ;;   (dolist (buffer (buffer-list))
+  ;;     (with-current-buffer buffer
+  ;;       (when (derived-mode-p 'text-mode 'org-mode 'message-mode 
+  ;;                             'markdown-mode 'gfm-mode)
+  ;;         (accent-menu-mode (if my/accent-menu-enabled 1 -1)))))
+  ;;   (message "Accent menu %s globally" 
+  ;;            (if my/accent-menu-enabled "enabled" "disabled")))
   
-  ;; Hook function to conditionally enable accent-menu-mode
-  (defun my/maybe-enable-accent-menu ()
-    "Enable accent-menu-mode if my/accent-menu-enabled is true."
-    (when my/accent-menu-enabled
-      (accent-menu-mode 1)))
+  ;; ;; Hook function to conditionally enable accent-menu-mode
+  ;; (defun my/maybe-enable-accent-menu ()
+  ;;   "Enable accent-menu-mode if my/accent-menu-enabled is true."
+  ;;   (when my/accent-menu-enabled
+  ;;     (accent-menu-mode 1)))
   
-  ;; Add hooks but don't enable by default
-  :hook ((text-mode . my/maybe-enable-accent-menu)
-         (org-mode . my/maybe-enable-accent-menu)
-         (message-mode . my/maybe-enable-accent-menu)
-         (markdown-mode . my/maybe-enable-accent-menu)
-         (gfm-mode . my/maybe-enable-accent-menu))
+  ;; ;; Add hooks but don't enable by default
+  ;; :hook ((text-mode . my/maybe-enable-accent-menu)
+  ;;        (org-mode . my/maybe-enable-accent-menu)
+  ;;        (message-mode . my/maybe-enable-accent-menu)
+  ;;        (markdown-mode . my/maybe-enable-accent-menu)
+  ;;        (gfm-mode . my/maybe-enable-accent-menu))
   :config
   ;; French accent configuration
   (setq accent-diacritics '((a (à â))
@@ -1232,11 +1314,6 @@ The Linear issues will update in the background while the todo list displays."
         vc-git-resolve-symlinks nil  ;; Don't resolve symlinks
         vc-follow-symlinks t)  ;; But follow them when needed
   
-  ;; For very slow connections, you can still disable VC entirely:
-  ;; (setq vc-ignore-dir-regexp
-  ;;       (format "\\(%s\\)\\|\\(%s\\)"
-  ;;               vc-ignore-dir-regexp
-  ;;               tramp-file-name-regexp)))
   ) ;; Close (after! tramp block
 
 (setq delete-by-moving-to-trash "~/.Trash/" )
