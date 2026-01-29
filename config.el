@@ -518,7 +518,12 @@ Strips keyboard shortcuts like '(t)' and returns clean strings."
   (defun my/completing-read-tag (prompt)
     "Read a tag with completion from all agenda files.
 PROMPT is the string displayed to user. Returns empty string if no input."
-    (let* ((all-tags (org-global-tags-completion-table org-agenda-files))
+    (let* ((all-tags (delete-dups
+                      (apply #'append
+                             (org-map-entries
+                              (lambda () (org-get-tags))
+                              nil
+                              'agenda))))
            (tag (completing-read prompt all-tags nil nil)))
       (if (string-empty-p tag) "" tag)))
 
