@@ -1,76 +1,7 @@
 ;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
 
-;; Place your private configuration here! Remember, you do not need to run 'doom
-;; sync' after modifying this file!
-
-
-;; Some functionality uses this to identify you, e.g. GPG configuration, email
-;; clients, file templates and snippets. It is optional.
-;; (setq user-full-name "John Doe"
-;;       user-mail-address "john@doe.com")
-
-;; Doom exposes five (optional) variables for controlling fonts in Doom:
-;;
-;; - `doom-font' -- the primary font to use
-;; - `doom-variable-pitch-font' -- a non-monospace font (where applicable)
-;; - `doom-big-font' -- used for `doom-big-font-mode'; use this for
-;;   presentations or streaming.
-;; - `doom-symbol-font' -- for symbols
-;; - `doom-serif-font' -- for the `fixed-pitch-serif' face
-;;
-;; See 'C-h v doom-font' for documentation and more examples of what they
-;; accept. For example:
-;;
-;;(setq doom-font (font-spec :family "Fira Code" :size 12 :weight 'semi-light)
-;;      doom-variable-pitch-font (font-spec :family "Fira Sans" :size 13))
-;;
-;; If you or Emacs can't find your font, use 'M-x describe-font' to look them
-;; up, `M-x eval-region' to execute elisp code, and 'M-x doom/reload-font' to
-;; refresh your font settings. If Emacs still can't find your font, it likely
-;; wasn't installed correctly. Font issues are rarely Doom issues!
-
-;; There are two ways to load a theme. Both assume the theme is installed and
-;; available. You can either set `doom-theme' or manually load a theme with the
-;; `load-theme' function. This is the default:
 (setq doom-theme 'leuven-dark)
-
-;; This determines the style of line numbers in effect. If set to `nil', line
-;; numbers are disabled. For relative line numbers, set this to `relative'.
 (setq display-line-numbers-type t)
-
-
-
-;; Whenever you reconfigure a package, make sure to wrap your config in an
-;; `after!' block, otherwise Doom's defaults may override your settings. E.g.
-;;
-;;   (after! PACKAGE
-;;     (setq x y))
-;;
-;; The exceptions to this rule:
-;;
-;;   - Setting file/directory variables (like `org-directory')
-;;   - Setting variables which explicitly tell you to set them before their
-;;     package is loaded (see 'C-h v VARIABLE' to look up their documentation).
-;;   - Setting doom variables (which start with 'doom-' or '+').
-;;
-;; Here are some additional functions/macros that will help you configure Doom.
-;;
-;; - `load!' for loading external *.el files relative to this one
-;; - `use-package!' for configuring packages
-;; - `after!' for running code after a package has loaded
-;; - `add-load-path!' for adding directories to the `load-path', relative to
-;;   this file. Emacs searches the `load-path' when you load packages with
-;;   `require' or `use-package'.
-;; - `map!' for binding new keys
-;;
-;; To get information about any of these functions/macros, move the cursor over
-;; the highlighted symbol at press 'K' (non-evil users must press 'C-c c k').
-;; This will open documentation for it, including demos of how they are used.
-;; Alternatively, use `C-h o' to look up a symbol (functions, variables, faces,
-;; etc).
-;;
-;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
-;; they are implemented.
 
 
 ;;; =========================================================================
@@ -126,14 +57,13 @@
       :desc "my/org-export-html-and-open"
       "7" #'my/org-export-html-and-open)
 
-;; Terminal
-(map! :leader
-      :desc "eat terminal"
-      "o e" #'my/eat-popup)
-
 (map! :leader
       :desc "Filter agenda interactive"
       "o f" #'my/org-agenda-filter-interactive)
+
+(map! :leader
+      :desc "Sorted org-todo-list"
+      "o t" #'my/org-sorted-todo-list)
 
 (map! :leader
       :desc "my/org-md-export-to-markdown-visible-only"
@@ -179,14 +109,12 @@
 
 
 ;; Frame transparency
-;; (set-frame-parameter (selected-frame) 'alpha '(95 95))
 (add-to-list 'default-frame-alist '(alpha 95 95))
 
 ;; Set initial frame size and position
 (setq initial-frame-alist
       (append initial-frame-alist
               '((top . 1) (left . 1) (width . 170) (height . 140))))
-;; '((top . 1) (left . 1) (width . 200) (height . 140))))
 
 ;; Solaire mode for better contrast
 (after! solaire-mode
@@ -364,9 +292,7 @@ and disables the table of contents."
       ;; Return the filename
       outfile)))
 
-;; If you use `org' and don't want your org files in the default location below,
-;; change `org-directory'. It must be set before org loads!
-(setq org-directory "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode" )
+(setq org-directory "~/Nextcloud/orgmode" )
 
 (require 'org)
 (after! org
@@ -460,9 +386,6 @@ and disables the table of contents."
                           ;; Explicitly include linear.org
                           (expand-file-name "gtd/linear.org" org-directory)))
 
-  ;; Let agenda inherit TODO keywords from org-todo-keywords
-  ;; (Removed redundant org-agenda-todo-keywords-for-agenda setting)
-
   ;; Set which TODO states should be included in the agenda by default
   ;; This can include both active and inactive states
   (setq org-agenda-todo-list-sublevels t)
@@ -500,6 +423,36 @@ and disables the table of contents."
     (let ((org-agenda-todo-keywords-for-agenda org-todo-keywords)
           (org-agenda-tag-filter-preset `(,(concat "+" tag))))
       (org-todo-list nil)))
+
+  (defun my/org-sorted-todo-list ()
+    "Display TODO list sorted: TODO first, IN-PROGRESS second,
+remaining states (IN-REVIEW, BACKLOG, BLOCKED) split equally."
+    (interactive)
+    (let* ((remaining-states '("IN-REVIEW" "BACKLOG" "BLOCKED"))
+           (state-counts
+            (mapcar (lambda (state)
+                      (length (org-map-entries
+                               (lambda () t)
+                               (concat "/" state)
+                               'agenda)))
+                    remaining-states))
+           (total-remaining (apply #'+ state-counts))
+           (per-state (max 1 (ceiling total-remaining (length remaining-states))))
+           (org-agenda-custom-commands
+            `(("Z" "Sorted TODO"
+               ((todo "TODO"
+                      ((org-agenda-overriding-header "TODO\n")))
+                (todo "IN-PROGRESS"
+                      ((org-agenda-overriding-header "IN-PROGRESS\n")))
+                ,@(mapcar
+                   (lambda (state)
+                     `(todo ,state
+                            ((org-agenda-overriding-header ,(concat state "\n"))
+                             (org-agenda-max-entries ,per-state))))
+                   remaining-states))))))
+      (when (fboundp 'my/run-linear-emacs-list-issues-before-todo)
+        (my/run-linear-emacs-list-issues-before-todo))
+      (org-agenda nil "Z")))
 
   ;; Interactive org-agenda filter by tags and TODO state
   (defun my/extract-todo-keywords ()
@@ -602,7 +555,7 @@ Displays agenda entries matching ALL criteria (AND logic)."
         :desc "org-roam-dailies-goto-today" "t" #'org-roam-dailies-goto-today
         :desc "jethro/org-capture-slipbox" "<tab>" #'jethro/org-capture-slipbox
         :desc "org-roam-capture" "c" #'org-roam-capture)
-  (setq org-roam-directory (file-truename "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/")
+  (setq org-roam-directory (file-truename "~/Nextcloud/orgmode/")
         org-roam-database-connector 'sqlite-builtin
         org-roam-db-gc-threshold most-positive-fixnum
         org-id-link-to-org-use-id t)
@@ -751,35 +704,6 @@ Displays agenda entries matching ALL criteria (AND logic)."
 (use-package accent
   :ensure t
   :init
-  ;; Variable to control whether accent-menu-mode is enabled globally
-  ;; (defvar my/accent-menu-enabled nil
-  ;;   "Whether accent-menu-mode should be enabled in supported modes.")
-  
-  ;; ;; Function to toggle accent-menu-mode globally
-  ;; (defun my/toggle-accent-menu-global ()
-  ;;   "Toggle accent-menu-mode in all supported buffers."
-  ;;   (interactive)
-  ;;   (setq my/accent-menu-enabled (not my/accent-menu-enabled))
-  ;;   (dolist (buffer (buffer-list))
-  ;;     (with-current-buffer buffer
-  ;;       (when (derived-mode-p 'text-mode 'org-mode 'message-mode 
-  ;;                             'markdown-mode 'gfm-mode)
-  ;;         (accent-menu-mode (if my/accent-menu-enabled 1 -1)))))
-  ;;   (message "Accent menu %s globally" 
-  ;;            (if my/accent-menu-enabled "enabled" "disabled")))
-  
-  ;; ;; Hook function to conditionally enable accent-menu-mode
-  ;; (defun my/maybe-enable-accent-menu ()
-  ;;   "Enable accent-menu-mode if my/accent-menu-enabled is true."
-  ;;   (when my/accent-menu-enabled
-  ;;     (accent-menu-mode 1)))
-  
-  ;; ;; Add hooks but don't enable by default
-  ;; :hook ((text-mode . my/maybe-enable-accent-menu)
-  ;;        (org-mode . my/maybe-enable-accent-menu)
-  ;;        (message-mode . my/maybe-enable-accent-menu)
-  ;;        (markdown-mode . my/maybe-enable-accent-menu)
-  ;;        (gfm-mode . my/maybe-enable-accent-menu))
   :config
   ;; French accent configuration
   (setq accent-diacritics '((a (à â))
@@ -911,10 +835,6 @@ Displays agenda entries matching ALL criteria (AND logic)."
 ;; Add to modeline
 (add-to-list 'global-mode-string '(:eval (+modeline-eglot-status)))
 
-;; Make white spaces visible in programming modes.
-;; (after! prog-mode
-;;   (add-hook! prog-mode #'whitespace-mode))
-
 ;; Enable word-wrap-mode globally
 (global-visual-line-mode 1)
 
@@ -956,16 +876,6 @@ Displays agenda entries matching ALL criteria (AND logic)."
               ("C-TAB" . 'copilot-accept-completion-by-word)
               ("<tab>" . 'copilot-accept-completion-by-word))
   :config
-  ;; (add-to-list 'copilot-indentation-alist '(prog-mode 2))
-  ;; (add-to-list 'copilot-indentation-alist '(org-mode 2))
-  ;; (add-to-list 'copilot-indentation-alist '(text-mode 2))
-  ;; (add-to-list 'copilot-indentation-alist '(markdown-mode 2))
-  ;; (add-to-list 'copilot-indentation-alist '(gfm-mode 2))
-  ;; (add-to-list 'copilot-indentation-alist '(rust-mode 2))
-  ;; (add-to-list 'copilot-indentation-alist '(emacs-lisp-mode 2))
-  ;; (add-to-list 'copilot-indentation-alist '(git-commit-mode 2))
-  ;; (add-to-list 'copilot-indentation-alist '(with-editor-mode 2))
-
   )
 
 ;; Disable dired-omit-mode globally
@@ -1032,7 +942,7 @@ Version: 2015-12-08 2023-04-07"
   
   ;; Store emacs-everywhere messages in ProtonDrive
   (setq emacs-everywhere-file-dir 
-        (expand-file-name "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/emacs-everywhere-msgs/"))
+        (expand-file-name "~/Nextcloud/orgmode/emacs-everywhere-msgs/"))
   
   ;; Custom filename function to add .md extension
   (defun my/emacs-everywhere-markdown-filename (app-info)
@@ -1082,7 +992,6 @@ Version: 2015-12-08 2023-04-07"
 ;;; PROJECTILE
 ;;; =========================================================================
 ;; Auto-invalidate projectile cache when switching git branches: untested code!
-;; Auto-invalidate projectile cache when switching git branches: untested code!
 (after! magit
 
   (defun my/magit-submodule-update-init-recursive ()
@@ -1130,9 +1039,8 @@ Version: 2015-12-08 2023-04-07"
       (message "Failed to retrieve Linear API key from auth-source"))))
 
 (after! linear-emacs
-  ;; (linear-emacs-load-api-key-from-env)
   (my/linear-load-api-key-from-auth-source)
-  (setq linear-emacs-org-file-path (expand-file-name "~/Library/CloudStorage/ProtonDrive-gael.blanchemain@protonmail.com-folder/orgmode/gtd/linear.org" org-directory))
+  (setq linear-emacs-org-file-path (expand-file-name "~/Nextcloud/orgmode/gtd/linear.org" org-directory))
 
   ;; Configure async behavior (linear-emacs now uses async-first architecture)
   (setq linear-emacs-async-default t)       ; Use async API calls by default (non-blocking)
