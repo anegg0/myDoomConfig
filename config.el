@@ -689,6 +689,8 @@ Displays agenda entries matching ALL criteria (AND logic)."
 ;;; EDITOR
 ;;; =========================================================================
 
+(auto-save-visited-mode +1)
+
 ;; Disable in-buffer text completion globally
 (after! corfu
   (global-corfu-mode -1)
