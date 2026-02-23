@@ -382,9 +382,7 @@ and disables the table of contents."
                           (expand-file-name "daily" org-directory)
                           (expand-file-name "gtd" org-directory)
                           (expand-file-name "reference" org-directory)
-                          (expand-file-name "articles" org-directory)
-                          ;; Explicitly include linear.org
-                          (expand-file-name "gtd/linear.org" org-directory)))
+                          (expand-file-name "articles" org-directory)))
 
   ;; Set which TODO states should be included in the agenda by default
   ;; This can include both active and inactive states
@@ -555,7 +553,8 @@ Displays agenda entries matching ALL criteria (AND logic)."
         :desc "org-roam-dailies-goto-today" "t" #'org-roam-dailies-goto-today
         :desc "jethro/org-capture-slipbox" "<tab>" #'jethro/org-capture-slipbox
         :desc "org-roam-capture" "c" #'org-roam-capture)
-  (setq org-roam-directory (file-truename "~/Nextcloud/orgmode/")
+  (setq org-roam-db-location (expand-file-name "org-roam.db" doom-cache-dir)
+        org-roam-directory (file-truename "~/Nextcloud/orgmode/")
         org-roam-database-connector 'sqlite-builtin
         org-roam-db-gc-threshold most-positive-fixnum
         org-id-link-to-org-use-id t)
@@ -1040,7 +1039,7 @@ Version: 2015-12-08 2023-04-07"
 
 (after! linear-emacs
   (my/linear-load-api-key-from-auth-source)
-  (setq linear-emacs-org-file-path (expand-file-name "~/Nextcloud/orgmode/gtd/linear.org" org-directory))
+  (setq linear-emacs-org-file-path (expand-file-name "gtd/linear.org" org-directory))
 
   ;; Configure async behavior (linear-emacs now uses async-first architecture)
   (setq linear-emacs-async-default t)       ; Use async API calls by default (non-blocking)
@@ -1169,9 +1168,6 @@ The Linear issues will update in the background while the todo list displays."
                    (string-match-p "inbox\\.org$" buffer-file-name)))
       (save-buffer)
       (message "Auto-saved %s after todo state change" (file-name-nondirectory buffer-file-name))))
-
-  ;; Add hook to auto-save on todo state changes
-  (add-hook 'org-after-todo-state-change-hook #'my/auto-save-org-files-on-todo-change)
 
   ;; Add convenient keybinding for manually syncing all issues
   (map! :leader
