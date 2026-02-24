@@ -555,6 +555,11 @@ Displays agenda entries matching ALL criteria (AND logic)."
         :desc "org-roam-capture" "c" #'org-roam-capture)
   (setq org-roam-db-location (expand-file-name "org-roam.db" doom-cache-dir)
         org-roam-directory (file-truename "~/Nextcloud/orgmode/")
+        ;; Exclude GTD task files: these are managed by linear-emacs/org-agenda,
+        ;; not org-roam. Without this, autosync watches linear.org and conflict
+        ;; copies, writing back org-id properties and triggering Nextcloud
+        ;; re-sync in a feedback loop.
+        org-roam-file-exclude-regexp "gtd/"
         org-roam-database-connector 'sqlite-builtin
         org-roam-db-gc-threshold most-positive-fixnum
         org-id-link-to-org-use-id t)
