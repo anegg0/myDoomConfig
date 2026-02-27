@@ -80,18 +80,17 @@
 (package! prettier)
 (package! svg-tag-mode)
 (package! nvm)
-(package! aider :recipe (:host github :repo "tninja/aider.el" :files ("aider.el" "aider-core.el" "aider-file.el" "aider-code-change.el" "aider-discussion.el" "aider-prompt-mode.el" "aider-doom.el")))
 (package! solaire-mode)
 (package! pdf-tools)
 (package! org-download)
 (package! url)
-(package! aidermacs)
 (package! org-preview-html)
 (package! undo-fu)
 (package! undo-fu-session)
 (package! eat)
-(package! claudemacs
-  :recipe (:host github :repo "cpoile/claudemacs"))
+(package! claude-code
+  :recipe (:host github :repo "yuya373/claude-code-emacs"
+           :files ("*.el")))
 (package! spell-fu)
 (package! accent
   :recipe (:host github :repo "eliascotto/accent"))

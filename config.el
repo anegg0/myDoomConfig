@@ -82,10 +82,6 @@
       "a" #'avy-move-line)
 
 (map! :leader
-      :desc "aidermacs-run"
-      "0" #'aidermacs-run)
-
-(map! :leader
       :desc "other-window"
       "]" #'other-window)
 
@@ -871,6 +867,15 @@ Displays agenda entries matching ALL criteria (AND logic)."
   :demand
   :config
   (evil-visual-mark-mode))
+
+;; claude-code-emacs — run Claude Code CLI sessions inside Emacs
+(use-package! claude-code
+  :commands (claude-code claude-code-transient))
+
+(map! :leader
+      :prefix ("A" . "claude-code")
+      "c" #'claude-code
+      "t" #'claude-code-transient)
 
 ;; accept completion from copilot and fallback to company
 (use-package! copilot
