@@ -869,15 +869,14 @@ Displays agenda entries matching ALL criteria (AND logic)."
   (evil-visual-mark-mode))
 
 ;; claude-code-emacs — run Claude Code CLI sessions inside Emacs
-(use-package! claude-code
-  :commands (claude-code-run claude-code-transient)
-  :init
+;; Autoloads register claude-code-run from claude-code-core, so we hook
+;; into that feature to pull in the rest (ui, mcp, prompt, commands).
+(after! claude-code-core
+  (require 'claude-code)
   (defadvice! my/claude-code-run-guard (&rest _)
     :before #'claude-code-run
     (unless (projectile-project-root)
-      (user-error "Not in a project — open a file inside a git repo first")))
-  :config
-  (require 'claude-code))
+      (user-error "Not in a project — open a file inside a git repo first"))))
 
 (map! :leader
       :prefix ("A" . "claude-code")
