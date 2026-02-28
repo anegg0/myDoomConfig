@@ -870,7 +870,12 @@ Displays agenda entries matching ALL criteria (AND logic)."
 
 ;; claude-code-emacs — run Claude Code CLI sessions inside Emacs
 (use-package! claude-code
-  :commands (claude-code-run claude-code-transient))
+  :commands (claude-code-run claude-code-transient)
+  :config
+  (defadvice! my/claude-code-run-guard (&rest _)
+    :before #'claude-code-run
+    (unless (projectile-project-root)
+      (user-error "Not in a project — open a file inside a git repo first"))))
 
 (map! :leader
       :prefix ("A" . "claude-code")
