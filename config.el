@@ -870,11 +870,11 @@ Displays agenda entries matching ALL criteria (AND logic)."
 
 ;; claude-code-emacs — run Claude Code CLI sessions inside Emacs
 (use-package! claude-code
-  :commands (claude-code claude-code-transient))
+  :commands (claude-code-run claude-code-transient))
 
 (map! :leader
       :prefix ("A" . "claude-code")
-      "c" #'claude-code
+      "c" #'claude-code-run
       "t" #'claude-code-transient)
 
 ;; accept completion from copilot and fallback to company
