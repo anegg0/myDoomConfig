@@ -357,7 +357,7 @@ and disables the table of contents."
 
   ;; Custom TODO keywords
   (setq org-todo-keywords
-        '((sequence "TODO(t)" "IN-PROGRESS(i)" "IN-REVIEW(r)" "BACKLOG(b)" "BLOCKED(l)" "|" "DONE(d)" "CANCELED(c)" "NEXT(n)")))
+        '((sequence "TODO(t)" "NEXT(n)" "IN-PROGRESS(i)" "IN-REVIEW(r)" "BACKLOG(b)" "BLOCKED(l)" "|" "DONE(d)" "CANCELED(c)")))
 
   ;; Optional: Add custom faces for your TODO states
   (setq org-todo-keyword-faces
@@ -419,7 +419,7 @@ and disables the table of contents."
       (org-todo-list nil)))
 
   (defun my/org-sorted-todo-list ()
-    "Display TODO list sorted: TODO first, IN-PROGRESS second,
+    "Display TODO list sorted: TODO first, NEXT second, IN-PROGRESS third,
 remaining states (IN-REVIEW, BACKLOG, BLOCKED) split equally."
     (interactive)
     (let* ((remaining-states '("IN-REVIEW" "BACKLOG" "BLOCKED"))
@@ -436,13 +436,15 @@ remaining states (IN-REVIEW, BACKLOG, BLOCKED) split equally."
             `(("Z" "Sorted TODO"
                ((todo "TODO"
                       ((org-agenda-overriding-header "TODO\n")))
+                (todo "NEXT"
+                      ((org-agenda-overriding-header "NEXT\n")))
                 (todo "IN-PROGRESS"
                       ((org-agenda-overriding-header "IN-PROGRESS\n")))
                 ,@(mapcar
                    (lambda (state)
                      `(todo ,state
-                            ((org-agenda-overriding-header ,(concat state "\n"))
-                             (org-agenda-max-entries ,per-state))))
+                       ((org-agenda-overriding-header ,(concat state "\n"))
+                        (org-agenda-max-entries ,per-state))))
                    remaining-states))))))
       (when (fboundp 'my/run-linear-emacs-list-issues-before-todo)
         (my/run-linear-emacs-list-issues-before-todo))
@@ -1163,6 +1165,7 @@ The Linear issues will update in the background while the todo list displays."
     "Enable Linear-org synchronization when linear.org is opened."
     (when (and buffer-file-name
                (string-match-p "linear\\.org$" buffer-file-name))
+      (auto-revert-mode 1)
       (when (fboundp 'linear-emacs-enable-org-sync)
         (linear-emacs-enable-org-sync)
         (message "Linear-org synchronization enabled for this buffer"))))
@@ -1184,6 +1187,10 @@ The Linear issues will update in the background while the todo list displays."
     (when (and buffer-file-name
                (or (string-match-p "linear\\.org$" buffer-file-name)
                    (string-match-p "inbox\\.org$" buffer-file-name)))
+      ;; Acknowledge external file changes from async Linear sync to prevent
+      ;; "has changed since visited or saved" prompt
+      (unless (verify-visited-file-modtime)
+        (set-visited-file-modtime))
       (save-buffer)
       (message "Auto-saved %s after todo state change" (file-name-nondirectory buffer-file-name))))
 
