@@ -3,6 +3,9 @@
 (setq doom-theme 'leuven-dark)
 (setq display-line-numbers-type t)
 
+(after! persp-mode
+  (setq persp-auto-resume-time 3))
+
 
 ;;; =========================================================================
 ;;; KEYBINDS
