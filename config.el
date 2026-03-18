@@ -896,15 +896,14 @@ Displays agenda entries matching ALL criteria (AND logic)."
 
 ;; accept completion from copilot and fallback to company
 (use-package! copilot
-  :hook ((prog-mode . copilot-mode)
-         (git-commit-mode . copilot-mode)  ;; Enable copilot in git commit messages
-         (with-editor-mode . copilot-mode)) ;; Enable copilot in magit commit editor
+  :hook (git-commit-mode . copilot-mode)
+  :defer t
+  :init
+  (setq copilot-max-char 200000)
   :bind (:map copilot-completion-map
               ("C-<tab>" . 'copilot-accept-completion)
               ("C-TAB" . 'copilot-accept-completion-by-word)
-              ("<tab>" . 'copilot-accept-completion-by-word))
-  :config
-  )
+              ("<tab>" . 'copilot-accept-completion-by-word)))
 
 ;; Disable dired-omit-mode globally
 (remove-hook 'dired-mode-hook 'dired-omit-mode)
@@ -991,9 +990,7 @@ Version: 2015-12-08 2023-04-07"
               ;; Disable line numbers for cleaner interface
               (display-line-numbers-mode -1)
               ;; Optionally center the buffer contents
-              (centered-cursor-mode)
-              ;; Optionally enable copilot-mode
-              (copilot-mode))))
+              (centered-cursor-mode))))
 
 
 
