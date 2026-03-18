@@ -295,6 +295,7 @@ and disables the table of contents."
 
 (require 'org)
 (after! org
+  (add-to-list 'org-export-backends 'latex)
   ;; Base settings
   (setq
    load-prefer-newer t
@@ -624,6 +625,11 @@ Displays agenda entries matching ALL criteria (AND logic)."
           ("g" "glossary" plain "%?"
            :if-new
            (file+head "glossary/${slug}.org" "#+title: ${title}\n#+filetags: :glossary:\n")
+           :immediate-finish t
+           :unnarrowed t)
+          ("w" "w project" plain "%?"
+           :if-new
+           (file+head "w/${slug}.org" "#+title: ${title}\n#+filetags: :w:\n")
            :immediate-finish t
            :unnarrowed t)
           ))
