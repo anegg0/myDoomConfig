@@ -53,8 +53,8 @@
       "5" #'org-id-get-create)
 
 (map! :leader
-      :desc "my/magit-submodule-update-init-recursive"
-      "6" #'my/magit-submodule-update-init-recursive)
+      :desc "consult-org-agenda"
+      "6" #'consult-org-agenda)
 ;; Frame and buffer navigation
 (map! :leader
       :desc "my/org-export-html-and-open"
@@ -899,7 +899,9 @@ Displays agenda entries matching ALL criteria (AND logic)."
   :hook (git-commit-mode . copilot-mode)
   :defer t
   :init
-  (setq copilot-max-char 200000)
+  (setq copilot-max-char 200000
+        warning-suppress-log-types '((copilot))
+        warning-suppress-types '((copilot)))
   :bind (:map copilot-completion-map
               ("C-<tab>" . 'copilot-accept-completion)
               ("C-TAB" . 'copilot-accept-completion-by-word)
